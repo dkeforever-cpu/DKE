@@ -107,7 +107,7 @@ interface StoreContextValue {
   updateChecklistItem: (
     taskId: string,
     itemId: string,
-    patch: Partial<Pick<ChecklistItem, "label" | "progress">>
+    patch: Partial<Pick<ChecklistItem, "label" | "progress" | "dueDate">>
   ) => void;
   deleteChecklistItem: (taskId: string, itemId: string) => void;
 
@@ -218,7 +218,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (
       taskId: string,
       itemId: string,
-      patch: Partial<Pick<ChecklistItem, "label" | "progress">>
+      patch: Partial<Pick<ChecklistItem, "label" | "progress" | "dueDate">>
     ) => {
       setData((prev) => ({
         ...prev,

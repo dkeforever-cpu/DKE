@@ -16,7 +16,7 @@ export function addNode(
 export function updateNode(
   tree: ChecklistItem[],
   id: string,
-  patch: Partial<Pick<ChecklistItem, "label" | "progress">>
+  patch: Partial<Pick<ChecklistItem, "label" | "progress" | "dueDate">>
 ): ChecklistItem[] {
   return tree.map((item) =>
     item.id === id

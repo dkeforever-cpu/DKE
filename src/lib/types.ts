@@ -14,6 +14,7 @@ export interface ChecklistItem {
   id: string;
   label: string;
   progress: number; // 0-100, set independently of the parent task's progress
+  dueDate?: string; // YYYY-MM-DD, set independently of the parent task's due date
   children: ChecklistItem[];
 }
 

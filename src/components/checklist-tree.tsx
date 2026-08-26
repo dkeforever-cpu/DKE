@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChecklistItem, Comment, User } from "@/lib/types";
 import { flatten } from "@/lib/checklist";
 import { CommentList } from "@/components/comment-thread";
+import { daysOverdue, formatDateShort } from "@/lib/format";
 
 interface CommentProps {
   comments: Comment[];
@@ -46,6 +47,15 @@ function CommentIcon() {
   );
 }
 
+function CalendarIcon({ color = "#a6abb5" }: { color?: string }) {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
 function progressColor(v: number) {
   if (v >= 100) return "#1f8a4c";
   if (v === 0) return "#c7cad0";
@@ -61,7 +71,7 @@ export function ChecklistTree({
 }: {
   items: ChecklistItem[];
   onAdd: (parentId: string | null, label: string) => void;
-  onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress">>) => void;
+  onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress" | "dueDate">>) => void;
   onDelete: (id: string) => void;
   commentProps: CommentProps;
 }) {
@@ -144,7 +154,7 @@ function ChecklistNode({
   item: ChecklistItem;
   depth: number;
   onAdd: (parentId: string | null, label: string) => void;
-  onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress">>) => void;
+  onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress" | "dueDate">>) => void;
   onDelete: (id: string) => void;
   commentProps: CommentProps;
   expandSignal: ExpandSignal | null;
@@ -165,9 +175,11 @@ function ChecklistNode({
   }, [expandSignal?.token]);
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(item.label);
+  const [editingDue, setEditingDue] = useState(false);
   const hasChildren = item.children.length > 0;
   const done = item.progress >= 100;
   const indent = 12 + depth * 20;
+  const overdue = !!item.dueDate && !done && daysOverdue(item.dueDate) > 0;
 
   function saveLabel() {
     if (labelDraft.trim()) onUpdate(item.id, { label: labelDraft.trim() });
@@ -227,6 +239,28 @@ function ChecklistNode({
             <CommentIcon />
             {itemComments.length}
           </span>
+        )}
+
+        {editingDue ? (
+          <input
+            type="date"
+            autoFocus
+            value={item.dueDate ?? ""}
+            onChange={(e) => onUpdate(item.id, { dueDate: e.target.value || undefined })}
+            onBlur={() => setEditingDue(false)}
+            className="h-6 w-[122px] flex-none rounded border border-[#d7dbe0] px-1 text-[11px] outline-none focus:border-[#3355d6]"
+          />
+        ) : (
+          <button
+            onClick={() => setEditingDue(true)}
+            title="기한 설정"
+            className={`flex flex-none items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] ${
+              overdue ? "font-bold text-[#d92d20]" : item.dueDate ? "text-[#5b6068]" : "text-[#c7cad0]"
+            }`}
+          >
+            <CalendarIcon color={overdue ? "#d92d20" : item.dueDate ? "#8a8f99" : "#c7cad0"} />
+            {item.dueDate ? formatDateShort(item.dueDate) : "기한"}
+          </button>
         )}
 
         <div className="flex w-[110px] flex-none items-center gap-1.5">
