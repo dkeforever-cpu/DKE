@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChecklistItem, Comment, User } from "@/lib/types";
 import { flatten } from "@/lib/checklist";
 import { CommentList } from "@/components/comment-thread";
@@ -13,6 +13,11 @@ interface CommentProps {
   onAddComment: (itemId: string, content: string) => void;
   onUpdateComment: (commentId: string, content: string) => void;
   onDeleteComment: (commentId: string) => void;
+}
+
+interface ExpandSignal {
+  expand: boolean;
+  token: number;
 }
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -65,6 +70,8 @@ export function ChecklistTree({
     ? Math.round(all.reduce((sum, i) => sum + i.progress, 0) / all.length)
     : 0;
 
+  const [expandSignal, setExpandSignal] = useState<ExpandSignal | null>(null);
+
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
@@ -73,6 +80,26 @@ export function ChecklistTree({
           <span className="text-[11px] text-[#a6abb5]">
             {all.length}개 항목 · 평균 {avg}%
           </span>
+        )}
+        {all.length > 0 && (
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={() =>
+                setExpandSignal((prev) => ({ expand: true, token: (prev?.token ?? 0) + 1 }))
+              }
+              className="rounded border border-[#d7dbe0] px-2 py-1 text-[10.5px] text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+            >
+              전체 펴기
+            </button>
+            <button
+              onClick={() =>
+                setExpandSignal((prev) => ({ expand: false, token: (prev?.token ?? 0) + 1 }))
+              }
+              className="rounded border border-[#d7dbe0] px-2 py-1 text-[10.5px] text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+            >
+              전체 접기
+            </button>
+          </div>
         )}
       </div>
       <div className="text-[10.5px] text-[#a6abb5]">
@@ -95,6 +122,7 @@ export function ChecklistTree({
               onUpdate={onUpdate}
               onDelete={onDelete}
               commentProps={commentProps}
+              expandSignal={expandSignal}
             />
           ))
         )}
@@ -111,6 +139,7 @@ function ChecklistNode({
   onUpdate,
   onDelete,
   commentProps,
+  expandSignal,
 }: {
   item: ChecklistItem;
   depth: number;
@@ -118,6 +147,7 @@ function ChecklistNode({
   onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress">>) => void;
   onDelete: (id: string) => void;
   commentProps: CommentProps;
+  expandSignal: ExpandSignal | null;
 }) {
   const itemComments = commentProps.comments
     .filter((c) => c.targetType === "checklist" && c.targetId === item.id)
@@ -125,6 +155,14 @@ function ChecklistNode({
 
   const [expanded, setExpanded] = useState(item.children.length > 0 || itemComments.length > 0);
   const [addingChild, setAddingChild] = useState(false);
+
+  useEffect(() => {
+    if (expandSignal) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExpanded(expandSignal.expand);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandSignal?.token]);
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(item.label);
   const hasChildren = item.children.length > 0;
@@ -263,6 +301,7 @@ function ChecklistNode({
               onUpdate={onUpdate}
               onDelete={onDelete}
               commentProps={commentProps}
+              expandSignal={expandSignal}
             />
           ))}
         </div>
