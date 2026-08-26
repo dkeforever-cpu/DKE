@@ -1,8 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { ChecklistItem } from "@/lib/types";
+import { ChecklistItem, Comment, User } from "@/lib/types";
 import { flatten } from "@/lib/checklist";
+import { CommentThread } from "@/components/comment-thread";
+
+interface CommentProps {
+  comments: Comment[];
+  getUser: (id: string) => User | undefined;
+  canEdit: (authorId: string) => boolean;
+  currentUserId: string;
+  onAddComment: (itemId: string, content: string) => void;
+  onUpdateComment: (commentId: string, content: string) => void;
+  onDeleteComment: (commentId: string) => void;
+}
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -33,11 +44,13 @@ export function ChecklistTree({
   onAdd,
   onUpdate,
   onDelete,
+  commentProps,
 }: {
   items: ChecklistItem[];
   onAdd: (parentId: string | null, label: string) => void;
   onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress">>) => void;
   onDelete: (id: string) => void;
+  commentProps: CommentProps;
 }) {
   const all = flatten(items);
   const avg = all.length
@@ -69,6 +82,7 @@ export function ChecklistTree({
               onAdd={onAdd}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              commentProps={commentProps}
             />
           ))
         )}
@@ -84,12 +98,14 @@ function ChecklistNode({
   onAdd,
   onUpdate,
   onDelete,
+  commentProps,
 }: {
   item: ChecklistItem;
   depth: number;
   onAdd: (parentId: string | null, label: string) => void;
   onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress">>) => void;
   onDelete: (id: string) => void;
+  commentProps: CommentProps;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [addingChild, setAddingChild] = useState(false);
@@ -97,6 +113,11 @@ function ChecklistNode({
   const [labelDraft, setLabelDraft] = useState(item.label);
   const hasChildren = item.children.length > 0;
   const done = item.progress >= 100;
+  const indent = 12 + depth * 20;
+
+  const itemComments = commentProps.comments
+    .filter((c) => c.targetType === "checklist" && c.targetId === item.id)
+    .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
 
   function saveLabel() {
     if (labelDraft.trim()) onUpdate(item.id, { label: labelDraft.trim() });
@@ -107,7 +128,7 @@ function ChecklistNode({
     <div>
       <div
         className="flex items-center gap-2 border-b border-[#eef0f2] px-3 py-2 last:border-0"
-        style={{ paddingLeft: 12 + depth * 20 }}
+        style={{ paddingLeft: indent }}
       >
         {hasChildren ? (
           <button
@@ -200,6 +221,19 @@ function ChecklistNode({
         </button>
       </div>
 
+      <div className="border-b border-[#eef0f2] px-3 py-2 last:border-0" style={{ paddingLeft: indent + 38 }}>
+        <CommentThread
+          comments={itemComments}
+          getUser={commentProps.getUser}
+          canEdit={commentProps.canEdit}
+          currentUserId={commentProps.currentUserId}
+          onAdd={(content) => commentProps.onAddComment(item.id, content)}
+          onUpdateComment={commentProps.onUpdateComment}
+          onDeleteComment={commentProps.onDeleteComment}
+          defaultExpanded={false}
+        />
+      </div>
+
       {expanded && hasChildren && (
         <div>
           {item.children.map((child) => (
@@ -210,6 +244,7 @@ function ChecklistNode({
               onAdd={onAdd}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              commentProps={commentProps}
             />
           ))}
         </div>

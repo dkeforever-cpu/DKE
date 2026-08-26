@@ -10,6 +10,7 @@ import { TaskFormModal } from "@/components/task-form-modal";
 import { CENTERS } from "@/lib/categories";
 import { Dept, Priority, Status } from "@/lib/types";
 import { isOverdue } from "@/lib/format";
+import { flatten } from "@/lib/checklist";
 
 type DeptTab = "전체" | Dept;
 
@@ -33,7 +34,13 @@ export default function DashboardPage() {
 
   const commentCount = (taskId: string) => {
     const logIds = new Set(logEntries.filter((l) => l.taskId === taskId).map((l) => l.id));
-    return comments.filter((c) => logIds.has(c.logEntryId)).length;
+    const task = tasks.find((t) => t.id === taskId);
+    const checklistIds = new Set(flatten(task?.checklist ?? []).map((i) => i.id));
+    return comments.filter(
+      (c) =>
+        (c.targetType === "log" && logIds.has(c.targetId)) ||
+        (c.targetType === "checklist" && checklistIds.has(c.targetId))
+    ).length;
   };
 
   const deptTasks = useMemo(

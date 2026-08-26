@@ -34,3 +34,12 @@ export function removeNode(tree: ChecklistItem[], id: string): ChecklistItem[] {
 export function flatten(tree: ChecklistItem[]): ChecklistItem[] {
   return tree.flatMap((item) => [item, ...flatten(item.children)]);
 }
+
+export function findNode(tree: ChecklistItem[], id: string): ChecklistItem | undefined {
+  for (const item of tree) {
+    if (item.id === id) return item;
+    const found = findNode(item.children, id);
+    if (found) return found;
+  }
+  return undefined;
+}

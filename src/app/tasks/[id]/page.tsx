@@ -170,6 +170,21 @@ export default function TaskDetailPage() {
               onAdd={(parentId, label) => addChecklistItem(task.id, parentId, label)}
               onUpdate={(itemId, patch) => updateChecklistItem(task.id, itemId, patch)}
               onDelete={(itemId) => deleteChecklistItem(task.id, itemId)}
+              commentProps={{
+                comments,
+                getUser,
+                canEdit,
+                currentUserId: currentUser.id,
+                onAddComment: (itemId, content) =>
+                  addComment({
+                    targetType: "checklist",
+                    targetId: itemId,
+                    authorId: currentUser.id,
+                    content,
+                  }),
+                onUpdateComment: updateComment,
+                onDeleteComment: deleteComment,
+              }}
             />
           </div>
 
@@ -250,7 +265,7 @@ export default function TaskDetailPage() {
                   key={entry.id}
                   entry={entry}
                   comments={comments
-                    .filter((c) => c.logEntryId === entry.id)
+                    .filter((c) => c.targetType === "log" && c.targetId === entry.id)
                     .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1))}
                   getUser={getUser}
                   canEdit={canEdit}
@@ -259,7 +274,12 @@ export default function TaskDetailPage() {
                   onUpdateEntry={updateLogEntry}
                   onDeleteEntry={deleteLogEntry}
                   onAddComment={(content) =>
-                    addComment({ logEntryId: entry.id, authorId: currentUser.id, content })
+                    addComment({
+                      targetType: "log",
+                      targetId: entry.id,
+                      authorId: currentUser.id,
+                      content,
+                    })
                   }
                   onUpdateComment={updateComment}
                   onDeleteComment={deleteComment}

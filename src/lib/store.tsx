@@ -15,7 +15,7 @@ import {
   SEED_TASKS,
   USERS,
 } from "./seed-data";
-import { addNode, removeNode, updateNode } from "./checklist";
+import { addNode, findNode, flatten, removeNode, updateNode } from "./checklist";
 
 const STORAGE_KEY = "dke-task-system-v1";
 const SESSION_KEY = "dke-task-system-current-user";
@@ -201,12 +201,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const deleteChecklistItem = useCallback((taskId: string, itemId: string) => {
-    setData((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) =>
-        t.id === taskId ? { ...t, checklist: removeNode(t.checklist ?? [], itemId) } : t
-      ),
-    }));
+    setData((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      const removedNode = task ? findNode(task.checklist ?? [], itemId) : undefined;
+      const removedIds = new Set(
+        removedNode ? flatten([removedNode]).map((n) => n.id) : [itemId]
+      );
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId ? { ...t, checklist: removeNode(t.checklist ?? [], itemId) } : t
+        ),
+        comments: prev.comments.filter(
+          (c) => !(c.targetType === "checklist" && removedIds.has(c.targetId))
+        ),
+      };
+    });
   }, []);
 
   const addLogEntry = useCallback(
@@ -232,7 +242,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setData((prev) => ({
       ...prev,
       logEntries: prev.logEntries.filter((l) => l.id !== id),
-      comments: prev.comments.filter((c) => c.logEntryId !== id),
+      comments: prev.comments.filter((c) => !(c.targetType === "log" && c.targetId === id)),
     }));
   }, []);
 

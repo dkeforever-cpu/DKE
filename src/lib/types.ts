@@ -46,9 +46,12 @@ export interface LogEntry {
   editedAt?: string;
 }
 
+export type CommentTargetType = "log" | "checklist";
+
 export interface Comment {
   id: string;
-  logEntryId: string;
+  targetType: CommentTargetType;
+  targetId: string; // LogEntry.id or ChecklistItem.id
   authorId: string;
   content: string;
   createdAt: string; // ISO datetime

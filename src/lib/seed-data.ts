@@ -17,10 +17,13 @@ function offsetDateTime(days: number, hh: number, mm: number): string {
   return d.toISOString();
 }
 
-let ciSeq = 0;
-function ci(label: string, progress: number, children: ChecklistItem[] = []): ChecklistItem {
-  ciSeq += 1;
-  return { id: `ci_seed_${ciSeq}`, label, progress, children };
+function ci(
+  id: string,
+  label: string,
+  progress: number,
+  children: ChecklistItem[] = []
+): ChecklistItem {
+  return { id, label, progress, children };
 }
 
 export const USERS: User[] = [
@@ -55,10 +58,10 @@ export const SEED_TASKS: Task[] = [
     createdBy: "u1",
     createdAt: offsetDate(-16),
     checklist: [
-      ci("임차 조건 검토 (인상률·기간)", 60),
-      ci("건물주 협의", 40),
-      ci("계약서 날인", 0),
-      ci("재경팀 결재 상신", 0),
+      ci("ci_t1_1", "임차 조건 검토 (인상률·기간)", 60),
+      ci("ci_t1_2", "건물주 협의", 40),
+      ci("ci_t1_3", "계약서 날인", 0),
+      ci("ci_t1_4", "재경팀 결재 상신", 0),
     ],
   },
   {
@@ -248,10 +251,13 @@ export const SEED_TASKS: Task[] = [
     createdBy: "u4",
     createdAt: offsetDate(-3),
     checklist: [
-      ci("사고 사실 확인", 100),
-      ci("사고 수리 진행", 40),
-      ci("보험 접수 확인", 20, [ci("보험사 서류 제출", 50), ci("심사 결과 대기", 0)]),
-      ci("비용 입금(환입) 확인", 0),
+      ci("ci_t12_1", "사고 사실 확인", 100),
+      ci("ci_t12_2", "사고 수리 진행", 40),
+      ci("ci_t12_3", "보험 접수 확인", 20, [
+        ci("ci_t12_3_1", "보험사 서류 제출", 50),
+        ci("ci_t12_3_2", "심사 결과 대기", 0),
+      ]),
+      ci("ci_t12_4", "비용 입금(환입) 확인", 0),
     ],
   },
 ];
@@ -318,23 +324,42 @@ export const SEED_LOG_ENTRIES: LogEntry[] = [
 export const SEED_COMMENTS: Comment[] = [
   {
     id: "c1",
-    logEntryId: "l3",
+    targetType: "log",
+    targetId: "l3",
     authorId: "u7",
     content: "인상률 4%면 예산안에 반영 가능할 것 같아요. 확정되면 알려주세요.",
     createdAt: offsetDateTime(-6, 15, 1),
   },
   {
     id: "c2",
-    logEntryId: "l3",
+    targetType: "log",
+    targetId: "l3",
     authorId: "u6",
     content: "확정되면 바로 결재 올려주세요.",
     createdAt: offsetDateTime(-6, 16, 40),
   },
   {
     id: "c3",
-    logEntryId: "l1",
+    targetType: "log",
+    targetId: "l1",
     authorId: "u6",
     content: "재경팀 예산안 초안 공유드립니다. 인상률 5% 이내로 협의 부탁드려요.",
     createdAt: offsetDateTime(-15, 9, 30),
+  },
+  {
+    id: "c4",
+    targetType: "checklist",
+    targetId: "ci_t12_2",
+    authorId: "u1",
+    content: "정비소 견적 받았습니다. 부품 수급까지 3일 정도 걸린다고 하네요.",
+    createdAt: offsetDateTime(-1, 11, 20),
+  },
+  {
+    id: "c5",
+    targetType: "checklist",
+    targetId: "ci_t12_3",
+    authorId: "u4",
+    content: "보험사에 접수번호 받아서 서류 제출까지 완료했습니다.",
+    createdAt: offsetDateTime(-1, 16, 5),
   },
 ];
