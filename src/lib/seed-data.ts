@@ -1,4 +1,4 @@
-import { User, Task, LogEntry, Comment } from "./types";
+import { User, Task, LogEntry, Comment, ChecklistItem } from "./types";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -15,6 +15,12 @@ function offsetDateTime(days: number, hh: number, mm: number): string {
   d.setDate(d.getDate() + days);
   d.setHours(hh, mm, 0, 0);
   return d.toISOString();
+}
+
+let ciSeq = 0;
+function ci(label: string, progress: number, children: ChecklistItem[] = []): ChecklistItem {
+  ciSeq += 1;
+  return { id: `ci_seed_${ciSeq}`, label, progress, children };
 }
 
 export const USERS: User[] = [
@@ -48,6 +54,12 @@ export const SEED_TASKS: Task[] = [
     dueDate: offsetDate(-6),
     createdBy: "u1",
     createdAt: offsetDate(-16),
+    checklist: [
+      ci("임차 조건 검토 (인상률·기간)", 60),
+      ci("건물주 협의", 40),
+      ci("계약서 날인", 0),
+      ci("재경팀 결재 상신", 0),
+    ],
   },
   {
     id: "t2",
@@ -218,6 +230,29 @@ export const SEED_TASKS: Task[] = [
     dueDate: offsetDate(-20),
     createdBy: "u8",
     createdAt: offsetDate(-35),
+  },
+  {
+    id: "t12",
+    title: "센터 배송차량 접촉사고 처리 (서울센터 1호차)",
+    description: "서울센터 배송차량이 골목 진입 중 접촉사고 발생. 사실관계 확인 후 수리·보험·비용 정산까지 진행.",
+    dept: "관리팀",
+    categoryLarge: "시설/자산관리",
+    categoryMedium: "자산관리",
+    categorySmall: "차량관리",
+    assigneeId: "u4",
+    center: "서울센터",
+    priority: "높음",
+    status: "진행중",
+    progress: 30,
+    dueDate: offsetDate(6),
+    createdBy: "u4",
+    createdAt: offsetDate(-3),
+    checklist: [
+      ci("사고 사실 확인", 100),
+      ci("사고 수리 진행", 40),
+      ci("보험 접수 확인", 20, [ci("보험사 서류 제출", 50), ci("심사 결과 대기", 0)]),
+      ci("비용 입금(환입) 확인", 0),
+    ],
   },
 ];
 

@@ -8,13 +8,14 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Comment, LogEntry, Task, User } from "./types";
+import { ChecklistItem, Comment, LogEntry, Task, User } from "./types";
 import {
   SEED_COMMENTS,
   SEED_LOG_ENTRIES,
   SEED_TASKS,
   USERS,
 } from "./seed-data";
+import { addNode, removeNode, updateNode } from "./checklist";
 
 const STORAGE_KEY = "dke-task-system-v1";
 const SESSION_KEY = "dke-task-system-current-user";
@@ -69,6 +70,14 @@ interface StoreContextValue {
   addTask: (input: Omit<Task, "id" | "createdAt">) => string;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
+
+  addChecklistItem: (taskId: string, parentId: string | null, label: string) => string;
+  updateChecklistItem: (
+    taskId: string,
+    itemId: string,
+    patch: Partial<Pick<ChecklistItem, "label" | "progress">>
+  ) => void;
+  deleteChecklistItem: (taskId: string, itemId: string) => void;
 
   addLogEntry: (input: Omit<LogEntry, "id" | "createdAt">) => string;
   updateLogEntry: (id: string, content: string) => void;
@@ -153,6 +162,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       tasks: prev.tasks.filter((t) => t.id !== id),
       logEntries: prev.logEntries.filter((l) => l.taskId !== id),
+    }));
+  }, []);
+
+  const addChecklistItem = useCallback(
+    (taskId: string, parentId: string | null, label: string) => {
+      const id = genId("ci");
+      const node: ChecklistItem = { id, label, progress: 0, children: [] };
+      setData((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, checklist: addNode(t.checklist ?? [], parentId, node) }
+            : t
+        ),
+      }));
+      return id;
+    },
+    []
+  );
+
+  const updateChecklistItem = useCallback(
+    (
+      taskId: string,
+      itemId: string,
+      patch: Partial<Pick<ChecklistItem, "label" | "progress">>
+    ) => {
+      setData((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, checklist: updateNode(t.checklist ?? [], itemId, patch) }
+            : t
+        ),
+      }));
+    },
+    []
+  );
+
+  const deleteChecklistItem = useCallback((taskId: string, itemId: string) => {
+    setData((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((t) =>
+        t.id === taskId ? { ...t, checklist: removeNode(t.checklist ?? [], itemId) } : t
+      ),
     }));
   }, []);
 
@@ -243,6 +296,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addTask,
     updateTask,
     deleteTask,
+    addChecklistItem,
+    updateChecklistItem,
+    deleteChecklistItem,
     addLogEntry,
     updateLogEntry,
     deleteLogEntry,

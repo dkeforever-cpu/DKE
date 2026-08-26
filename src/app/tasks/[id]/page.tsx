@@ -9,6 +9,7 @@ import { Avatar } from "@/components/avatar";
 import { StatusBadge, PriorityLabel, ProgressBar } from "@/components/badges";
 import { LogEntryItem } from "@/components/log-entry-item";
 import { TaskFormModal } from "@/components/task-form-modal";
+import { ChecklistTree } from "@/components/checklist-tree";
 import { formatDateFull, formatDateTime, daysOverdue, isOverdue } from "@/lib/format";
 
 export default function TaskDetailPage() {
@@ -28,6 +29,9 @@ export default function TaskDetailPage() {
     addComment,
     updateComment,
     deleteComment,
+    addChecklistItem,
+    updateChecklistItem,
+    deleteChecklistItem,
   } = useStore();
 
   const [editOpen, setEditOpen] = useState(false);
@@ -158,6 +162,15 @@ export default function TaskDetailPage() {
             <div className="whitespace-pre-wrap text-[12.5px] leading-relaxed text-[#3d4148]">
               {task.description || "설명이 없습니다."}
             </div>
+          </div>
+
+          <div className="rounded-lg border border-[#e3e5e9] bg-white p-[22px]">
+            <ChecklistTree
+              items={task.checklist ?? []}
+              onAdd={(parentId, label) => addChecklistItem(task.id, parentId, label)}
+              onUpdate={(itemId, patch) => updateChecklistItem(task.id, itemId, patch)}
+              onDelete={(itemId) => deleteChecklistItem(task.id, itemId)}
+            />
           </div>
 
           <div className="flex flex-col gap-4 rounded-lg border border-[#e3e5e9] bg-white p-[22px]">

@@ -10,6 +10,13 @@ export interface User {
 export type Priority = "높음" | "보통" | "낮음";
 export type Status = "대기" | "진행중" | "검토중" | "완료";
 
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  progress: number; // 0-100, set independently of the parent task's progress
+  children: ChecklistItem[];
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -26,6 +33,7 @@ export interface Task {
   dueDate: string; // YYYY-MM-DD
   createdBy: string;
   createdAt: string; // YYYY-MM-DD
+  checklist?: ChecklistItem[];
 }
 
 export interface LogEntry {

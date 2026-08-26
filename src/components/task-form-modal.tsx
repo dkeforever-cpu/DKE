@@ -3,7 +3,7 @@
 import { ReactNode, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { CATEGORY_TREE, CENTERS } from "@/lib/categories";
-import { Dept, Priority, Status, Task } from "@/lib/types";
+import { ChecklistItem, Dept, Priority, Status, Task } from "@/lib/types";
 
 const STATUSES: Status[] = ["대기", "진행중", "검토중", "완료"];
 const PRIORITIES: Priority[] = ["높음", "보통", "낮음"];
@@ -50,7 +50,15 @@ export function TaskFormModal({
   const [priority, setPriority] = useState<Priority>(task?.priority ?? "보통");
   const [status, setStatus] = useState<Status>(task?.status ?? "대기");
   const [progress, setProgress] = useState(task?.progress ?? 0);
+  const [checklistDraft, setChecklistDraft] = useState<string[]>([]);
+  const [newChecklistLabel, setNewChecklistLabel] = useState("");
   const [error, setError] = useState("");
+
+  function addChecklistDraftItem() {
+    if (!newChecklistLabel.trim()) return;
+    setChecklistDraft((prev) => [...prev, newChecklistLabel.trim()]);
+    setNewChecklistLabel("");
+  }
 
   function handleDeptChange(next: Dept) {
     setDept(next);
@@ -82,6 +90,12 @@ export function TaskFormModal({
       return;
     }
     if (mode === "create") {
+      const checklist: ChecklistItem[] = checklistDraft.map((label, i) => ({
+        id: `ci_${Date.now().toString(36)}_${i}`,
+        label,
+        progress: 0,
+        children: [],
+      }));
       const id = addTask({
         title: title.trim(),
         description: description.trim(),
@@ -96,6 +110,7 @@ export function TaskFormModal({
         progress,
         dueDate,
         createdBy: currentUser.id,
+        checklist,
       });
       onSaved(id);
     } else if (task) {
@@ -284,6 +299,53 @@ export function TaskFormModal({
               className="accent-[#3355d6]"
             />
           </Field>
+
+          {mode === "create" && (
+            <Field label="필요 업무 (선택)">
+              <div className="flex flex-col gap-1.5">
+                {checklistDraft.map((label, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 rounded-md border border-[#eef0f2] bg-[#fafafb] px-2.5 py-1.5"
+                  >
+                    <span className="flex-1 text-[12px] text-[#3d4148]">{label}</span>
+                    <button
+                      onClick={() =>
+                        setChecklistDraft((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="text-[#a6abb5] hover:text-[#d92d20]"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <input
+                    value={newChecklistLabel}
+                    onChange={(e) => setNewChecklistLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addChecklistDraftItem();
+                      }
+                    }}
+                    placeholder="예: 사고 사실 확인"
+                    className="h-8 flex-1 rounded-md border border-[#d7dbe0] px-2.5 text-[12px] outline-none focus:border-[#3355d6]"
+                  />
+                  <button
+                    onClick={addChecklistDraftItem}
+                    className="h-8 rounded-md border border-[#d7dbe0] px-2.5 text-[11.5px] font-semibold text-[#5b6068]"
+                  >
+                    추가
+                  </button>
+                </div>
+                <div className="text-[10.5px] text-[#a6abb5]">
+                  업무를 세부 항목으로 나눠 각각 진척도를 관리하고 싶을 때 사용하세요. 등록 후
+                  상세 화면에서 하위 항목을 더 추가하거나 트리 형태로 펼쳐볼 수 있습니다.
+                </div>
+              </div>
+            </Field>
+          )}
 
           {mode === "create" && (
             <div className="text-[10.5px] text-[#a6abb5]">
