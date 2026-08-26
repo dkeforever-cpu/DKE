@@ -50,7 +50,7 @@ export default function TaskDetailPage() {
 
   const allAttachments = useMemo(() => {
     return taskLogEntries
-      .flatMap((l) => l.attachments.map((f) => ({ file: f, date: l.createdAt })))
+      .flatMap((l) => (l.attachments ?? []).map((f) => ({ file: f, date: l.createdAt })))
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [taskLogEntries]);
 

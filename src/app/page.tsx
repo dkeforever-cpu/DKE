@@ -30,7 +30,7 @@ export default function DashboardPage() {
   const attachmentCount = (taskId: string) =>
     logEntries
       .filter((l) => l.taskId === taskId)
-      .reduce((sum, l) => sum + l.attachments.length, 0);
+      .reduce((sum, l) => sum + (l.attachments ?? []).length, 0);
 
   const commentCount = (taskId: string) => {
     const logIds = new Set(logEntries.filter((l) => l.taskId === taskId).map((l) => l.id));

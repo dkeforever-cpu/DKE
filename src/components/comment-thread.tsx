@@ -266,9 +266,9 @@ function CommentRow({
         ) : (
           <div className="text-[12px] leading-relaxed text-[#3d4148]">{comment.content}</div>
         )}
-        {comment.attachments.length > 0 && (
+        {(comment.attachments ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {comment.attachments.map((f, i) => (
+            {(comment.attachments ?? []).map((f, i) => (
               <div
                 key={i}
                 className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"

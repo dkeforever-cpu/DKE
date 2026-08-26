@@ -32,13 +32,45 @@ function genId(prefix: string): string {
     .slice(2, 8)}`;
 }
 
+// Backfills fields added to the schema after some browsers already saved
+// data under STORAGE_KEY, so old localStorage records don't crash the UI
+// (e.g. reading .length on a field that didn't exist yet when it was saved).
+function normalizeChecklist(items: ChecklistItem[] | undefined): ChecklistItem[] {
+  if (!items) return [];
+  return items.map((item) => ({
+    ...item,
+    children: normalizeChecklist(item.children),
+  }));
+}
+
+function normalize(data: Partial<StoreData>): StoreData {
+  const tasks = (data.tasks ?? []).map((t) => ({
+    ...t,
+    checklist: normalizeChecklist(t.checklist),
+  }));
+  const logEntries = (data.logEntries ?? []).map((l) => ({
+    ...l,
+    attachments: l.attachments ?? [],
+  }));
+  const comments = (data.comments ?? []).map((c) => {
+    const legacy = c as Comment & { logEntryId?: string };
+    return {
+      ...c,
+      targetType: c.targetType ?? "log",
+      targetId: c.targetId ?? legacy.logEntryId ?? "",
+      attachments: c.attachments ?? [],
+    };
+  });
+  return { tasks, logEntries, comments };
+}
+
 function loadData(): StoreData {
   if (typeof window === "undefined") {
     return { tasks: SEED_TASKS, logEntries: SEED_LOG_ENTRIES, comments: SEED_COMMENTS };
   }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as StoreData;
+    if (raw) return normalize(JSON.parse(raw) as Partial<StoreData>);
   } catch {
     // fall through to seed
   }

@@ -109,9 +109,9 @@ export function LogEntryItem({
           </div>
         )}
 
-        {entry.attachments.length > 0 && (
+        {(entry.attachments ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1.5 pl-[30px]">
-            {entry.attachments.map((f, i) => (
+            {(entry.attachments ?? []).map((f, i) => (
               <div
                 key={i}
                 className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] px-2.5 py-1 text-[11px] text-[#5b6068]"
