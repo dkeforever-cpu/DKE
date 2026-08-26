@@ -328,6 +328,7 @@ export const SEED_COMMENTS: Comment[] = [
     targetId: "l3",
     authorId: "u7",
     content: "인상률 4%면 예산안에 반영 가능할 것 같아요. 확정되면 알려주세요.",
+    attachments: [],
     createdAt: offsetDateTime(-6, 15, 1),
   },
   {
@@ -336,6 +337,7 @@ export const SEED_COMMENTS: Comment[] = [
     targetId: "l3",
     authorId: "u6",
     content: "확정되면 바로 결재 올려주세요.",
+    attachments: [],
     createdAt: offsetDateTime(-6, 16, 40),
   },
   {
@@ -344,6 +346,7 @@ export const SEED_COMMENTS: Comment[] = [
     targetId: "l1",
     authorId: "u6",
     content: "재경팀 예산안 초안 공유드립니다. 인상률 5% 이내로 협의 부탁드려요.",
+    attachments: [],
     createdAt: offsetDateTime(-15, 9, 30),
   },
   {
@@ -352,6 +355,7 @@ export const SEED_COMMENTS: Comment[] = [
     targetId: "ci_t12_2",
     authorId: "u1",
     content: "정비소 견적 받았습니다. 부품 수급까지 3일 정도 걸린다고 하네요.",
+    attachments: ["수리견적서.jpg"],
     createdAt: offsetDateTime(-1, 11, 20),
   },
   {
@@ -360,6 +364,7 @@ export const SEED_COMMENTS: Comment[] = [
     targetId: "ci_t12_3",
     authorId: "u4",
     content: "보험사에 접수번호 받아서 서류 제출까지 완료했습니다.",
+    attachments: ["보험접수증.pdf"],
     createdAt: offsetDateTime(-1, 16, 5),
   },
 ];

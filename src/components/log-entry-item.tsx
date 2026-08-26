@@ -4,16 +4,7 @@ import { useState } from "react";
 import { Comment, LogEntry, User } from "@/lib/types";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
-import { CommentThread, PencilIcon, TrashIcon } from "@/components/comment-thread";
-
-function FileIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b6068" strokeWidth="1.8">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-    </svg>
-  );
-}
+import { CommentThread, FileIcon, PencilIcon, TrashIcon } from "@/components/comment-thread";
 
 export function LogEntryItem({
   entry,
@@ -36,7 +27,7 @@ export function LogEntryItem({
   currentUserId: string;
   onUpdateEntry: (id: string, content: string) => void;
   onDeleteEntry: (id: string) => void;
-  onAddComment: (content: string) => void;
+  onAddComment: (content: string, attachments: string[]) => void;
   onUpdateComment: (id: string, content: string) => void;
   onDeleteComment: (id: string) => void;
 }) {
@@ -53,7 +44,7 @@ export function LogEntryItem({
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-log-entry-id={entry.id}>
       <div className="flex w-4 flex-none flex-col items-center">
         <div className="mt-[5px] h-[9px] w-[9px] rounded-full bg-[#3355d6]" />
         {!isLast && <div className="w-[2px] flex-1 bg-[#eef0f2]" />}

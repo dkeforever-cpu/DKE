@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { Comment, User } from "@/lib/types";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
@@ -24,12 +24,29 @@ export function TrashIcon() {
   );
 }
 
+export function FileIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b6068" strokeWidth="1.8">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+    </svg>
+  );
+}
+
+function ClipIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5b6068" strokeWidth="1.8">
+      <path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+
 interface CommentListProps {
   comments: Comment[];
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
   currentUserId: string;
-  onAdd: (content: string) => void;
+  onAdd: (content: string, attachments: string[]) => void;
   onUpdateComment: (id: string, content: string) => void;
   onDeleteComment: (id: string) => void;
 }
@@ -45,11 +62,24 @@ export function CommentList({
   onDeleteComment,
 }: CommentListProps) {
   const [replyText, setReplyText] = useState("");
+  const [replyAttachments, setReplyAttachments] = useState<string[]>([]);
 
   function submitReply() {
     if (!replyText.trim()) return;
-    onAdd(replyText.trim());
+    onAdd(replyText.trim(), replyAttachments);
     setReplyText("");
+    setReplyAttachments([]);
+  }
+
+  function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    // Snapshot the names before clearing the input — e.target.files is a live
+    // FileList, so resetting e.target.value would empty it before a deferred
+    // functional setState update gets a chance to read it.
+    const names = Array.from(files).map((f) => f.name);
+    e.target.value = "";
+    setReplyAttachments((prev) => [...prev, ...names]);
   }
 
   return (
@@ -64,23 +94,51 @@ export function CommentList({
           onDelete={() => onDeleteComment(c.id)}
         />
       ))}
-      <div className="flex items-center gap-2">
-        <Avatar id={currentUserId} name="" size={20} />
-        <input
-          value={replyText}
-          onChange={(e) => setReplyText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") submitReply();
-          }}
-          placeholder="댓글로 피드백 남기기"
-          className="h-7 flex-1 rounded-md border border-[#d7dbe0] bg-white px-2.5 text-[11.5px] outline-none focus:border-[#3355d6]"
-        />
-        <button
-          onClick={submitReply}
-          className="h-7 rounded-md bg-[#23262e] px-2.5 text-[11px] font-semibold text-white"
-        >
-          등록
-        </button>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2">
+          <Avatar id={currentUserId} name="" size={20} />
+          <input
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submitReply();
+            }}
+            placeholder="댓글로 피드백 남기기"
+            className="h-7 flex-1 rounded-md border border-[#d7dbe0] bg-white px-2.5 text-[11.5px] outline-none focus:border-[#3355d6]"
+          />
+          <label
+            title="파일 첨부"
+            className="flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-md border border-[#d7dbe0] bg-white text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+          >
+            <ClipIcon />
+            <input type="file" multiple className="hidden" onChange={handleFilePick} />
+          </label>
+          <button
+            onClick={submitReply}
+            className="h-7 flex-none rounded-md bg-[#23262e] px-2.5 text-[11px] font-semibold text-white"
+          >
+            등록
+          </button>
+        </div>
+        {replyAttachments.length > 0 && (
+          <div className="ml-7 flex flex-wrap gap-1.5">
+            {replyAttachments.map((f, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-1.5 rounded-md border border-[#e3e5e9] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"
+              >
+                <FileIcon />
+                {f}
+                <button
+                  onClick={() => setReplyAttachments((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="text-[#a6abb5] hover:text-[#d92d20]"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -207,6 +265,19 @@ function CommentRow({
           </div>
         ) : (
           <div className="text-[12px] leading-relaxed text-[#3d4148]">{comment.content}</div>
+        )}
+        {comment.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {comment.attachments.map((f, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"
+              >
+                <FileIcon />
+                {f}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

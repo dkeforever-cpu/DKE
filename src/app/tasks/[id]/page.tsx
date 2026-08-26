@@ -92,8 +92,12 @@ export default function TaskDetailPage() {
   function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
-    setNewAttachments((prev) => [...prev, ...Array.from(files).map((f) => f.name)]);
+    // Snapshot the names before clearing the input — e.target.files is a live
+    // FileList, so resetting e.target.value would empty it before a deferred
+    // functional setState update gets a chance to read it.
+    const names = Array.from(files).map((f) => f.name);
     e.target.value = "";
+    setNewAttachments((prev) => [...prev, ...names]);
   }
 
   function handleDeleteTask() {
@@ -175,12 +179,13 @@ export default function TaskDetailPage() {
                 getUser,
                 canEdit,
                 currentUserId: currentUser.id,
-                onAddComment: (itemId, content) =>
+                onAddComment: (itemId, content, attachments) =>
                   addComment({
                     targetType: "checklist",
                     targetId: itemId,
                     authorId: currentUser.id,
                     content,
+                    attachments,
                   }),
                 onUpdateComment: updateComment,
                 onDeleteComment: deleteComment,
@@ -273,12 +278,13 @@ export default function TaskDetailPage() {
                   currentUserId={currentUser.id}
                   onUpdateEntry={updateLogEntry}
                   onDeleteEntry={deleteLogEntry}
-                  onAddComment={(content) =>
+                  onAddComment={(content, attachments) =>
                     addComment({
                       targetType: "log",
                       targetId: entry.id,
                       authorId: currentUser.id,
                       content,
+                      attachments,
                     })
                   }
                   onUpdateComment={updateComment}

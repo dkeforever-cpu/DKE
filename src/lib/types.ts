@@ -54,6 +54,7 @@ export interface Comment {
   targetId: string; // LogEntry.id or ChecklistItem.id
   authorId: string;
   content: string;
+  attachments: string[];
   createdAt: string; // ISO datetime
   editedAt?: string;
 }

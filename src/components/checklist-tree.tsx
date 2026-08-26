@@ -10,7 +10,7 @@ interface CommentProps {
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
   currentUserId: string;
-  onAddComment: (itemId: string, content: string) => void;
+  onAddComment: (itemId: string, content: string, attachments: string[]) => void;
   onUpdateComment: (commentId: string, content: string) => void;
   onDeleteComment: (commentId: string) => void;
 }
@@ -283,7 +283,9 @@ function ChecklistNode({
             getUser={commentProps.getUser}
             canEdit={commentProps.canEdit}
             currentUserId={commentProps.currentUserId}
-            onAdd={(content) => commentProps.onAddComment(item.id, content)}
+            onAdd={(content, attachments) =>
+              commentProps.onAddComment(item.id, content, attachments)
+            }
             onUpdateComment={commentProps.onUpdateComment}
             onDeleteComment={commentProps.onDeleteComment}
           />
