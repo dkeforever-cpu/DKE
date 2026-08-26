@@ -4,6 +4,8 @@ import { ChangeEvent, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { useRequireAuth } from "@/lib/use-require-auth";
+import { Attachment } from "@/lib/types";
+import { uploadAttachments } from "@/lib/upload";
 import { TopBar } from "@/components/top-bar";
 import { Avatar } from "@/components/avatar";
 import { StatusBadge, PriorityLabel, ProgressBar } from "@/components/badges";
@@ -36,7 +38,9 @@ export default function TaskDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [newContent, setNewContent] = useState("");
-  const [newAttachments, setNewAttachments] = useState<string[]>([]);
+  const [newAttachments, setNewAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   const task = tasks.find((t) => t.id === id);
 
@@ -53,6 +57,7 @@ export default function TaskDetailPage() {
       .flatMap((l) => (l.attachments ?? []).map((f) => ({ file: f, date: l.createdAt })))
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [taskLogEntries]);
+
 
   if (!ready || !currentUser) return null;
 
@@ -89,15 +94,21 @@ export default function TaskDetailPage() {
     setNewAttachments([]);
   }
 
-  function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
+  async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
-    if (!files) return;
-    // Snapshot the names before clearing the input — e.target.files is a live
-    // FileList, so resetting e.target.value would empty it before a deferred
-    // functional setState update gets a chance to read it.
-    const names = Array.from(files).map((f) => f.name);
+    if (!files || files.length === 0) return;
+    // Snapshot the files before clearing the input — e.target.files is a
+    // live FileList, so resetting e.target.value would empty it before the
+    // async upload below gets a chance to read it.
+    const picked = Array.from(files);
     e.target.value = "";
-    setNewAttachments((prev) => [...prev, ...names]);
+    setUploading(true);
+    setUploadError("");
+    const uploaded = await uploadAttachments(picked, (name, message) =>
+      setUploadError(`${name}: ${message}`)
+    );
+    setNewAttachments((prev) => [...prev, ...uploaded]);
+    setUploading(false);
   }
 
   function handleDeleteTask() {
@@ -221,6 +232,12 @@ export default function TaskDetailPage() {
                 placeholder="오늘 진행한 내용을 기록하세요 (예: 건물주 통화, 견적 확인, 서류 검토 등)"
                 className="h-14 resize-none rounded-md border border-[#d7dbe0] bg-white px-3 py-2.5 text-[12.5px] outline-none focus:border-[#3355d6]"
               />
+              {uploading && (
+                <div className="text-[10.5px] text-[#a6abb5]">파일 업로드 중...</div>
+              )}
+              {uploadError && (
+                <div className="text-[10.5px] text-[#d92d20]">{uploadError}</div>
+              )}
               {newAttachments.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {newAttachments.map((f, i) => (
@@ -228,7 +245,7 @@ export default function TaskDetailPage() {
                       key={i}
                       className="flex items-center gap-1.5 rounded-md border border-[#e3e5e9] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"
                     >
-                      {f}
+                      {f.name}
                       <button
                         onClick={() =>
                           setNewAttachments((prev) => prev.filter((_, idx) => idx !== i))
@@ -247,11 +264,11 @@ export default function TaskDetailPage() {
                     <path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                   </svg>
                   파일 첨부
-                  <input type="file" multiple className="hidden" onChange={handleFilePick} />
+                  <input type="file" multiple className="hidden" onChange={handleFilePick} disabled={uploading} />
                 </label>
                 <button
                   onClick={handleSubmitEntry}
-                  disabled={!newContent.trim()}
+                  disabled={!newContent.trim() || uploading}
                   className="h-[30px] rounded-md bg-[#23262e] px-4 text-[11.5px] font-semibold text-white disabled:opacity-40"
                 >
                   일지 등록
@@ -342,7 +359,14 @@ export default function TaskDetailPage() {
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <path d="M14 2v6h6" />
                     </svg>
-                    <div className="flex-1 truncate text-[11.5px] text-[#1a1d24]">{a.file}</div>
+                    <a
+                      href={a.file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 truncate text-[11.5px] text-[#1a1d24] hover:text-[#3355d6]"
+                    >
+                      {a.file.name}
+                    </a>
                     <div className="text-[10px] text-[#a6abb5]">
                       {formatDateTime(a.date).split(" ")[0]}
                     </div>

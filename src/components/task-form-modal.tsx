@@ -83,7 +83,9 @@ export function TaskFormModal({
 
   const canSubmit = useMemo(() => title.trim().length > 0, [title]);
 
-  function handleSubmit() {
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
     if (!currentUser) return;
     if (!canSubmit) {
       setError("업무 제목을 입력해주세요.");
@@ -98,23 +100,31 @@ export function TaskFormModal({
         createdAt: now,
         children: [],
       }));
-      const id = addTask({
-        title: title.trim(),
-        description: description.trim(),
-        dept,
-        categoryLarge: large,
-        categoryMedium: medium,
-        categorySmall: small,
-        assigneeId,
-        center,
-        priority,
-        status,
-        progress,
-        dueDate,
-        createdBy: currentUser.id,
-        checklist,
-      });
-      onSaved(id);
+      setSubmitting(true);
+      setError("");
+      try {
+        const id = await addTask({
+          title: title.trim(),
+          description: description.trim(),
+          dept,
+          categoryLarge: large,
+          categoryMedium: medium,
+          categorySmall: small,
+          assigneeId,
+          center,
+          priority,
+          status,
+          progress,
+          dueDate,
+          createdBy: currentUser.id,
+          checklist,
+        });
+        onSaved(id);
+      } catch {
+        setError("업무 등록에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      } finally {
+        setSubmitting(false);
+      }
     } else if (task) {
       updateTask(task.id, {
         title: title.trim(),
@@ -368,9 +378,10 @@ export function TaskFormModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="h-[38px] rounded-md bg-[#23262e] px-[18px] text-[13px] font-semibold text-white"
+            disabled={submitting}
+            className="h-[38px] rounded-md bg-[#23262e] px-[18px] text-[13px] font-semibold text-white disabled:opacity-50"
           >
-            저장
+            {submitting ? "저장 중..." : "저장"}
           </button>
         </div>
       </div>

@@ -1,4 +1,8 @@
-import { User, Task, LogEntry, Comment, ChecklistItem } from "./types";
+import { Attachment, User, Task, LogEntry, Comment, ChecklistItem } from "./types";
+
+function att(name: string): Attachment {
+  return { name, url: "#" };
+}
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -277,7 +281,7 @@ export const SEED_LOG_ENTRIES: LogEntry[] = [
     taskId: "t1",
     authorId: "u1",
     content: "업무 등록. 계약 만료일 확인 완료(10월 31일). 기존 계약서 첨부합니다.",
-    attachments: ["부산센터_임차계약서_2023.pdf"],
+    attachments: [att("부산센터_임차계약서_2023.pdf")],
     createdAt: offsetDateTime(-16, 9, 12),
   },
   {
@@ -293,7 +297,7 @@ export const SEED_LOG_ENTRIES: LogEntry[] = [
     taskId: "t1",
     authorId: "u1",
     content: "건물주 미팅 완료. 임차료 인상률 4%로 잠정 합의. 계약서 초안 확인 부탁드립니다.",
-    attachments: ["계약서_초안_v2.docx"],
+    attachments: [att("계약서_초안_v2.docx")],
     createdAt: offsetDateTime(-6, 14, 20),
   },
   {
@@ -301,7 +305,7 @@ export const SEED_LOG_ENTRIES: LogEntry[] = [
     taskId: "t2",
     authorId: "u2",
     content: "업무 등록. 전국 12개 센터에 실사 양식 배포.",
-    attachments: ["3분기_재고실사_양식.xlsx"],
+    attachments: [att("3분기_재고실사_양식.xlsx")],
     createdAt: offsetDateTime(-16, 9, 30),
   },
   {
@@ -317,7 +321,7 @@ export const SEED_LOG_ENTRIES: LogEntry[] = [
     taskId: "t8",
     authorId: "u7",
     content: "업무 등록. 8월 법인카드 명세서 다운로드 완료.",
-    attachments: ["법인카드_명세서_8월.pdf"],
+    attachments: [att("법인카드_명세서_8월.pdf")],
     createdAt: offsetDateTime(-16, 9, 0),
   },
   {
@@ -364,7 +368,7 @@ export const SEED_COMMENTS: Comment[] = [
     targetId: "ci_t12_2",
     authorId: "u1",
     content: "정비소 견적 받았습니다. 부품 수급까지 3일 정도 걸린다고 하네요.",
-    attachments: ["수리견적서.jpg"],
+    attachments: [att("수리견적서.jpg")],
     createdAt: offsetDateTime(-1, 11, 20),
   },
   {
@@ -373,7 +377,7 @@ export const SEED_COMMENTS: Comment[] = [
     targetId: "ci_t12_3",
     authorId: "u4",
     content: "보험사에 접수번호 받아서 서류 제출까지 완료했습니다.",
-    attachments: ["보험접수증.pdf"],
+    attachments: [att("보험접수증.pdf")],
     createdAt: offsetDateTime(-1, 16, 5),
   },
 ];
