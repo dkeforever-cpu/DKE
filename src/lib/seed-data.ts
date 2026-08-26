@@ -22,9 +22,10 @@ function ci(
   label: string,
   progress: number,
   children: ChecklistItem[] = [],
-  dueDate?: string
+  dueDate?: string,
+  createdAt: string = offsetDate(-2)
 ): ChecklistItem {
-  return { id, label, progress, children, dueDate };
+  return { id, label, progress, children, dueDate, createdAt };
 }
 
 export const USERS: User[] = [
@@ -59,10 +60,10 @@ export const SEED_TASKS: Task[] = [
     createdBy: "u1",
     createdAt: offsetDate(-16),
     checklist: [
-      ci("ci_t1_1", "임차 조건 검토 (인상률·기간)", 60, [], offsetDate(-1)),
-      ci("ci_t1_2", "건물주 협의", 40, [], offsetDate(3)),
-      ci("ci_t1_3", "계약서 날인", 0, [], offsetDate(9)),
-      ci("ci_t1_4", "재경팀 결재 상신", 0),
+      ci("ci_t1_1", "임차 조건 검토 (인상률·기간)", 60, [], offsetDate(-1), offsetDate(-16)),
+      ci("ci_t1_2", "건물주 협의", 40, [], offsetDate(3), offsetDate(-14)),
+      ci("ci_t1_3", "계약서 날인", 0, [], offsetDate(9), offsetDate(-14)),
+      ci("ci_t1_4", "재경팀 결재 상신", 0, [], undefined, offsetDate(-2)),
     ],
   },
   {
@@ -252,19 +253,20 @@ export const SEED_TASKS: Task[] = [
     createdBy: "u4",
     createdAt: offsetDate(-3),
     checklist: [
-      ci("ci_t12_1", "사고 사실 확인", 100, [], offsetDate(-2)),
-      ci("ci_t12_2", "사고 수리 진행", 40, [], offsetDate(-1)),
+      ci("ci_t12_1", "사고 사실 확인", 100, [], offsetDate(-2), offsetDate(-3)),
+      ci("ci_t12_2", "사고 수리 진행", 40, [], offsetDate(-1), offsetDate(-3)),
       ci(
         "ci_t12_3",
         "보험 접수 확인",
         20,
         [
-          ci("ci_t12_3_1", "보험사 서류 제출", 50, [], offsetDate(1)),
-          ci("ci_t12_3_2", "심사 결과 대기", 0, [], offsetDate(5)),
+          ci("ci_t12_3_1", "보험사 서류 제출", 50, [], offsetDate(1), offsetDate(-1)),
+          ci("ci_t12_3_2", "심사 결과 대기", 0, [], offsetDate(5), offsetDate(-1)),
         ],
-        offsetDate(4)
+        offsetDate(4),
+        offsetDate(-3)
       ),
-      ci("ci_t12_4", "비용 입금(환입) 확인", 0, [], offsetDate(10)),
+      ci("ci_t12_4", "비용 입금(환입) 확인", 0, [], offsetDate(10), offsetDate(-3)),
     ],
   },
 ];

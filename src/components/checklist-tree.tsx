@@ -311,6 +311,9 @@ function ChecklistNode({
 
       {expanded && (
         <div className="border-b border-[#eef0f2] bg-[#fafafb] px-3 py-3 last:border-0" style={{ paddingLeft: indent + 22 }}>
+          <div className="mb-2 text-[10px] text-[#c7cad0]">
+            등록일 {formatDateShort(item.createdAt)}
+          </div>
           <div className="mb-1.5 text-[10.5px] font-semibold text-[#a6abb5]">댓글</div>
           <CommentList
             comments={itemComments}
