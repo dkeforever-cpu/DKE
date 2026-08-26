@@ -24,16 +24,7 @@ export function TrashIcon() {
   );
 }
 
-export function CommentThread({
-  comments,
-  getUser,
-  canEdit,
-  currentUserId,
-  onAdd,
-  onUpdateComment,
-  onDeleteComment,
-  defaultExpanded,
-}: {
+interface CommentListProps {
   comments: Comment[];
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
@@ -41,39 +32,28 @@ export function CommentThread({
   onAdd: (content: string) => void;
   onUpdateComment: (id: string, content: string) => void;
   onDeleteComment: (id: string) => void;
-  defaultExpanded?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded ?? comments.length > 0);
+}
+
+/** Comment list + reply box, no expand/collapse of its own — the caller controls visibility. */
+export function CommentList({
+  comments,
+  getUser,
+  canEdit,
+  currentUserId,
+  onAdd,
+  onUpdateComment,
+  onDeleteComment,
+}: CommentListProps) {
   const [replyText, setReplyText] = useState("");
 
   function submitReply() {
     if (!replyText.trim()) return;
     onAdd(replyText.trim());
     setReplyText("");
-    setExpanded(true);
-  }
-
-  if (!expanded) {
-    return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="text-[11px] text-[#a6abb5] hover:text-[#5b6068]"
-      >
-        {comments.length === 0 ? "댓글 남기기" : `댓글 ${comments.length}개 보기 ›`}
-      </button>
-    );
   }
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-lg border border-[#eef0f2] bg-[#fafafb] p-3">
-      {comments.length > 0 && (
-        <button
-          onClick={() => setExpanded(false)}
-          className="self-start text-[10.5px] text-[#a6abb5] hover:text-[#5b6068]"
-        >
-          접기 ‹
-        </button>
-      )}
+    <div className="flex flex-col gap-2.5">
       {comments.map((c) => (
         <CommentRow
           key={c.id}
@@ -102,6 +82,51 @@ export function CommentThread({
           등록
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Self-toggling comment section: collapsed shows a "댓글 N개 보기" link. */
+export function CommentThread({
+  comments,
+  getUser,
+  canEdit,
+  currentUserId,
+  onAdd,
+  onUpdateComment,
+  onDeleteComment,
+  defaultExpanded,
+}: CommentListProps & { defaultExpanded?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded ?? comments.length > 0);
+
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className="text-[11px] text-[#a6abb5] hover:text-[#5b6068]"
+      >
+        {comments.length === 0 ? "댓글 남기기" : `댓글 ${comments.length}개 보기 ›`}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5 rounded-lg border border-[#eef0f2] bg-[#fafafb] p-3">
+      <button
+        onClick={() => setExpanded(false)}
+        className="self-start text-[10.5px] text-[#a6abb5] hover:text-[#5b6068]"
+      >
+        접기 ‹
+      </button>
+      <CommentList
+        comments={comments}
+        getUser={getUser}
+        canEdit={canEdit}
+        currentUserId={currentUserId}
+        onAdd={onAdd}
+        onUpdateComment={onUpdateComment}
+        onDeleteComment={onDeleteComment}
+      />
     </div>
   );
 }

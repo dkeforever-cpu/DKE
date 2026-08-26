@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChecklistItem, Comment, User } from "@/lib/types";
 import { flatten } from "@/lib/checklist";
-import { CommentThread } from "@/components/comment-thread";
+import { CommentList } from "@/components/comment-thread";
 
 interface CommentProps {
   comments: Comment[];
@@ -29,6 +29,14 @@ function ChevronIcon({ open }: { open: boolean }) {
       style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 120ms" }}
     >
       <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+function CommentIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a6abb5" strokeWidth="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
@@ -66,6 +74,10 @@ export function ChecklistTree({
             {all.length}개 항목 · 평균 {avg}%
           </span>
         )}
+      </div>
+      <div className="text-[10.5px] text-[#a6abb5]">
+        행 왼쪽의 화살표를 눌러 펼치면 하위 항목과 댓글을 볼 수 있어요 (엑셀 그룹 접기/펼치기와
+        같은 방식).
       </div>
 
       <div className="flex flex-col rounded-lg border border-[#e3e5e9]">
@@ -107,17 +119,17 @@ function ChecklistNode({
   onDelete: (id: string) => void;
   commentProps: CommentProps;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const itemComments = commentProps.comments
+    .filter((c) => c.targetType === "checklist" && c.targetId === item.id)
+    .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+
+  const [expanded, setExpanded] = useState(item.children.length > 0 || itemComments.length > 0);
   const [addingChild, setAddingChild] = useState(false);
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(item.label);
   const hasChildren = item.children.length > 0;
   const done = item.progress >= 100;
   const indent = 12 + depth * 20;
-
-  const itemComments = commentProps.comments
-    .filter((c) => c.targetType === "checklist" && c.targetId === item.id)
-    .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
 
   function saveLabel() {
     if (labelDraft.trim()) onUpdate(item.id, { label: labelDraft.trim() });
@@ -130,16 +142,13 @@ function ChecklistNode({
         className="flex items-center gap-2 border-b border-[#eef0f2] px-3 py-2 last:border-0"
         style={{ paddingLeft: indent }}
       >
-        {hasChildren ? (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="flex h-4 w-4 flex-none items-center justify-center"
-          >
-            <ChevronIcon open={expanded} />
-          </button>
-        ) : (
-          <span className="w-4 flex-none" />
-        )}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          title={expanded ? "접기" : "펼치기 (하위 항목·댓글)"}
+          className="flex h-4 w-4 flex-none items-center justify-center rounded border border-[#d7dbe0] bg-white"
+        >
+          <ChevronIcon open={expanded} />
+        </button>
 
         <button
           onClick={() => onUpdate(item.id, { progress: done ? 0 : 100 })}
@@ -173,6 +182,13 @@ function ChecklistNode({
           >
             {item.label}
           </button>
+        )}
+
+        {!expanded && itemComments.length > 0 && (
+          <span className="flex flex-none items-center gap-1 text-[10.5px] text-[#a6abb5]">
+            <CommentIcon />
+            {itemComments.length}
+          </span>
         )}
 
         <div className="flex w-[110px] flex-none items-center gap-1.5">
@@ -221,18 +237,20 @@ function ChecklistNode({
         </button>
       </div>
 
-      <div className="border-b border-[#eef0f2] px-3 py-2 last:border-0" style={{ paddingLeft: indent + 38 }}>
-        <CommentThread
-          comments={itemComments}
-          getUser={commentProps.getUser}
-          canEdit={commentProps.canEdit}
-          currentUserId={commentProps.currentUserId}
-          onAdd={(content) => commentProps.onAddComment(item.id, content)}
-          onUpdateComment={commentProps.onUpdateComment}
-          onDeleteComment={commentProps.onDeleteComment}
-          defaultExpanded={false}
-        />
-      </div>
+      {expanded && (
+        <div className="border-b border-[#eef0f2] bg-[#fafafb] px-3 py-3 last:border-0" style={{ paddingLeft: indent + 22 }}>
+          <div className="mb-1.5 text-[10.5px] font-semibold text-[#a6abb5]">댓글</div>
+          <CommentList
+            comments={itemComments}
+            getUser={commentProps.getUser}
+            canEdit={commentProps.canEdit}
+            currentUserId={commentProps.currentUserId}
+            onAdd={(content) => commentProps.onAddComment(item.id, content)}
+            onUpdateComment={commentProps.onUpdateComment}
+            onDeleteComment={commentProps.onDeleteComment}
+          />
+        </div>
+      )}
 
       {expanded && hasChildren && (
         <div>
