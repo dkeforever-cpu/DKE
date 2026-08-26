@@ -4,7 +4,6 @@ import { ReactNode, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { CATEGORY_TREE, CENTERS } from "@/lib/categories";
 import { ChecklistItem, Dept, Priority, Status, Task } from "@/lib/types";
-import { todayStr } from "@/lib/format";
 
 const STATUSES: Status[] = ["대기", "진행중", "검토중", "완료"];
 const PRIORITIES: Priority[] = ["높음", "보통", "낮음"];
@@ -91,12 +90,12 @@ export function TaskFormModal({
       return;
     }
     if (mode === "create") {
-      const today = todayStr();
+      const now = new Date().toISOString();
       const checklist: ChecklistItem[] = checklistDraft.map((label, i) => ({
         id: `ci_${Date.now().toString(36)}_${i}`,
         label,
         progress: 0,
-        createdAt: today,
+        createdAt: now,
         children: [],
       }));
       const id = addTask({

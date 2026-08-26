@@ -16,7 +16,6 @@ import {
   USERS,
 } from "./seed-data";
 import { addNode, findNode, flatten, removeNode, updateNode } from "./checklist";
-import { todayStr } from "./format";
 
 const STORAGE_KEY = "dke-task-system-v1";
 const SESSION_KEY = "dke-task-system-current-user";
@@ -40,7 +39,7 @@ function normalizeChecklist(items: ChecklistItem[] | undefined): ChecklistItem[]
   if (!items) return [];
   return items.map((item) => ({
     ...item,
-    createdAt: item.createdAt ?? todayStr(),
+    createdAt: item.createdAt ?? new Date().toISOString(),
     children: normalizeChecklist(item.children),
   }));
 }
@@ -206,7 +205,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         id,
         label,
         progress: 0,
-        createdAt: todayStr(),
+        createdAt: new Date().toISOString(),
         children: [],
       };
       setData((prev) => ({
