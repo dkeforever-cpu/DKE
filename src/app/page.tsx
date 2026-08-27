@@ -8,17 +8,22 @@ import { Sidebar, Selection } from "@/components/sidebar";
 import { TaskTable } from "@/components/task-table";
 import { TaskFormModal } from "@/components/task-form-modal";
 import { CENTERS } from "@/lib/categories";
-import { Dept, Priority, Status } from "@/lib/types";
+import { Priority, Status } from "@/lib/types";
 import { isOverdue } from "@/lib/format";
 import { flatten } from "@/lib/checklist";
 
-type DeptTab = "전체" | Dept;
-
 export default function DashboardPage() {
   const { ready, currentUser } = useRequireAuth();
-  const { tasks, users, logEntries, comments, getUser } = useStore();
+  const { tasks, users, teams, categoriesByTeam, boards, customFields, logEntries, comments, getUser } =
+    useStore();
 
-  const [deptTab, setDeptTab] = useState<DeptTab>("전체");
+  const viewableTeams = useMemo(
+    () => teams.filter((t) => currentUser?.viewTeamIds.includes(t.id)),
+    [teams, currentUser]
+  );
+
+  const [teamTab, setTeamTab] = useState<string>("전체"); // "전체" or a team id
+  const [boardId, setBoardId] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection>({ type: "all" });
   const [centerFilter, setCenterFilter] = useState("전체");
   const [assigneeFilter, setAssigneeFilter] = useState("전체");
@@ -26,6 +31,30 @@ export default function DashboardPage() {
   const [priorityFilter, setPriorityFilter] = useState<"전체" | Priority>("전체");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+
+  const teamBoards = useMemo(
+    () => (teamTab === "전체" ? [] : boards.filter((b) => b.teamId === teamTab)),
+    [boards, teamTab]
+  );
+
+  // boardId holds the last explicitly clicked board; when it doesn't belong
+  // to the currently selected team (e.g. right after switching teams), fall
+  // back to that team's first board instead of syncing state via an effect.
+  const activeBoard = teamBoards.find((b) => b.id === boardId) ?? teamBoards[0] ?? null;
+  const visibleColumns =
+    activeBoard?.visibleColumns ?? [
+      "status",
+      "title",
+      "category",
+      "assignee",
+      "center",
+      "priority",
+      "progress",
+      "createdAt",
+      "dueDate",
+      "attachments",
+      "comments",
+    ];
 
   const attachmentCount = (taskId: string) =>
     logEntries
@@ -43,25 +72,25 @@ export default function DashboardPage() {
     ).length;
   };
 
-  const deptTasks = useMemo(
-    () => (deptTab === "전체" ? tasks : tasks.filter((t) => t.dept === deptTab)),
-    [tasks, deptTab]
+  const teamTasks = useMemo(
+    () => (teamTab === "전체" ? tasks : tasks.filter((t) => t.teamId === teamTab)),
+    [tasks, teamTab]
   );
 
-  const mineCount = deptTasks.filter((t) => t.assigneeId === currentUser?.id).length;
-  const allCount = deptTasks.length;
+  const mineCount = teamTasks.filter((t) => t.assigneeId === currentUser?.id).length;
+  const allCount = teamTasks.length;
   const categoryCounts = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const t of deptTasks) map[t.categoryLarge] = (map[t.categoryLarge] ?? 0) + 1;
+    for (const t of teamTasks) map[t.categoryLarge] = (map[t.categoryLarge] ?? 0) + 1;
     return map;
-  }, [deptTasks]);
+  }, [teamTasks]);
 
   const scoped = useMemo(() => {
-    if (selection.type === "mine") return deptTasks.filter((t) => t.assigneeId === currentUser?.id);
+    if (selection.type === "mine") return teamTasks.filter((t) => t.assigneeId === currentUser?.id);
     if (selection.type === "category")
-      return deptTasks.filter((t) => t.categoryLarge === selection.large);
-    return deptTasks;
-  }, [deptTasks, selection, currentUser]);
+      return teamTasks.filter((t) => t.categoryLarge === selection.large);
+    return teamTasks;
+  }, [teamTasks, selection, currentUser]);
 
   const filtered = useMemo(() => {
     return scoped.filter((t) => {
@@ -86,13 +115,14 @@ export default function DashboardPage() {
     };
   }, [scoped]);
 
-  function handleDeptChange(next: DeptTab) {
-    setDeptTab(next);
+  function handleTeamChange(next: string) {
+    setTeamTab(next);
     setSelection({ type: "all" });
   }
 
   if (!ready || !currentUser) return null;
 
+  const teamName = teams.find((t) => t.id === teamTab)?.name ?? "전체";
   const selectionLabel =
     selection.type === "mine" ? "내 업무" : selection.type === "all" ? "전체 업무" : selection.large;
 
@@ -101,25 +131,40 @@ export default function DashboardPage() {
       <TopBar />
 
       <div className="flex h-8 flex-none items-center gap-0.5 border-b border-[var(--border)] bg-[var(--surface)] px-3">
-        {(["전체", "관리팀", "재경팀"] as DeptTab[]).map((d) => (
+        <button
+          onClick={() => handleTeamChange("전체")}
+          className="h-6 rounded-[3px] px-3 text-[11.5px] font-semibold"
+          style={
+            teamTab === "전체"
+              ? { background: "var(--accent)", color: "var(--accent-fg)" }
+              : { color: "var(--text-muted)" }
+          }
+        >
+          전체
+        </button>
+        {viewableTeams.map((t) => (
           <button
-            key={d}
-            onClick={() => handleDeptChange(d)}
+            key={t.id}
+            onClick={() => handleTeamChange(t.id)}
             className="h-6 rounded-[3px] px-3 text-[11.5px] font-semibold"
             style={
-              deptTab === d
+              teamTab === t.id
                 ? { background: "var(--accent)", color: "var(--accent-fg)" }
                 : { color: "var(--text-muted)" }
             }
           >
-            {d}
+            {t.name}
           </button>
         ))}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
-          dept={deptTab}
+          teamSelected={teamTab !== "전체"}
+          categories={teamTab === "전체" ? [] : categoriesByTeam[teamTab] ?? []}
+          boards={teamBoards}
+          activeBoardId={activeBoard?.id ?? null}
+          onSelectBoard={setBoardId}
           selection={selection}
           onSelect={setSelection}
           mineCount={mineCount}
@@ -129,7 +174,7 @@ export default function DashboardPage() {
 
         <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-2">
           <div className="flex items-center gap-0 border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
-            <SummaryCell label={`${deptTab === "전체" ? "전체" : deptTab} · ${selectionLabel}`} value={summary.total} />
+            <SummaryCell label={`${teamName} · ${selectionLabel}`} value={summary.total} />
             <Divider />
             <SummaryCell label="진행중" value={summary.진행중} color="var(--accent)" />
             <Divider />
@@ -210,6 +255,8 @@ export default function DashboardPage() {
 
           <TaskTable
             tasks={filtered}
+            columns={visibleColumns}
+            customFields={customFields}
             getUser={getUser}
             attachmentCount={attachmentCount}
             commentCount={commentCount}
@@ -220,7 +267,7 @@ export default function DashboardPage() {
       {formOpen && (
         <TaskFormModal
           mode="create"
-          initialDept={deptTab === "전체" ? "관리팀" : deptTab}
+          initialTeamId={teamTab === "전체" ? currentUser.teamId : teamTab}
           onClose={() => setFormOpen(false)}
           onSaved={() => setFormOpen(false)}
         />

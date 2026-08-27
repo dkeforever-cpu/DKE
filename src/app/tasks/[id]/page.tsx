@@ -18,10 +18,12 @@ export default function TaskDetailPage() {
   const { ready, currentUser } = useRequireAuth();
   const {
     tasks,
+    teams,
     logEntries,
     comments,
     getUser,
     canEdit,
+    canEditTask,
     deleteTask,
     addLogEntry,
     updateLogEntry,
@@ -77,6 +79,9 @@ export default function TaskDetailPage() {
   const assignee = getUser(task.assigneeId);
   const creator = getUser(task.createdBy);
   const overdue = isOverdue(task.dueDate, task.status);
+  const teamName = teams.find((t) => t.id === task.teamId)?.name ?? "-";
+  const editable = canEditTask(task);
+  const collaborators = task.collaboratorIds.map((id) => getUser(id)?.name ?? "?");
 
   function handleSubmitEntry() {
     if (!newContent.trim() || !currentUser || !task) return;
@@ -119,7 +124,7 @@ export default function TaskDetailPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <span className="text-[10.5px] text-[var(--text-faint)]">{task.dept}</span>
+        <span className="text-[10.5px] text-[var(--text-faint)]">{teamName}</span>
         <span className="text-[10.5px] text-[var(--text-disabled)]">/</span>
         <span className="text-[10.5px] text-[var(--text-faint)]">{task.categoryLarge}</span>
         <span className="text-[10.5px] text-[var(--text-disabled)]">/</span>
@@ -148,21 +153,23 @@ export default function TaskDetailPage() {
                   {task.title}
                 </div>
               </div>
-              <div className="flex flex-none gap-1.5">
-                <button
-                  onClick={() => setEditOpen(true)}
-                  className="h-6 rounded-[3px] border border-[var(--border-strong)] px-2.5 text-[10.5px] text-[var(--text-muted)]"
-                >
-                  수정
-                </button>
-                <button
-                  onClick={handleDeleteTask}
-                  className="h-6 rounded-[3px] border px-2.5 text-[10.5px]"
-                  style={{ borderColor: "var(--danger-soft-bg)", background: "var(--danger-soft-bg)", color: "var(--danger)" }}
-                >
-                  삭제
-                </button>
-              </div>
+              {editable && (
+                <div className="flex flex-none gap-1.5">
+                  <button
+                    onClick={() => setEditOpen(true)}
+                    className="h-6 rounded-[3px] border border-[var(--border-strong)] px-2.5 text-[10.5px] text-[var(--text-muted)]"
+                  >
+                    수정
+                  </button>
+                  <button
+                    onClick={handleDeleteTask}
+                    className="h-6 rounded-[3px] border px-2.5 text-[10.5px]"
+                    style={{ borderColor: "var(--danger-soft-bg)", background: "var(--danger-soft-bg)", color: "var(--danger)" }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              )}
             </div>
             <div className="h-px bg-[var(--divider)]" />
             <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-[var(--text-secondary)]">
@@ -176,6 +183,7 @@ export default function TaskDetailPage() {
               onAdd={(parentId, label) => addChecklistItem(task.id, parentId, label)}
               onUpdate={(itemId, patch) => updateChecklistItem(task.id, itemId, patch)}
               onDelete={(itemId) => deleteChecklistItem(task.id, itemId)}
+              readOnly={!editable}
               commentProps={{
                 comments,
                 getUser,
@@ -306,7 +314,12 @@ export default function TaskDetailPage() {
             </div>
             <div className="h-px bg-[var(--divider)]" />
             <MetaRow label="담당자" value={assignee?.name ?? "-"} />
+            <MetaRow
+              label="협업자"
+              value={collaborators.length > 0 ? collaborators.join(", ") : "-"}
+            />
             <MetaRow label="관련 센터" value={task.center} />
+            <MetaRow label="업무레벨" value={`Lv.${task.level}`} />
             <div className="flex flex-col gap-0.5">
               <div className="text-[10px] text-[var(--text-faint)]">목표일(마감일)</div>
               {overdue ? (
@@ -362,7 +375,7 @@ export default function TaskDetailPage() {
       {editOpen && (
         <TaskFormModal
           mode="edit"
-          initialDept={task.dept}
+          initialTeamId={task.teamId}
           task={task}
           onClose={() => setEditOpen(false)}
           onSaved={() => setEditOpen(false)}

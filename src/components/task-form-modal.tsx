@@ -2,8 +2,8 @@
 
 import { ReactNode, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { CATEGORY_TREE, CENTERS } from "@/lib/categories";
-import { ChecklistItem, Dept, Priority, Status, Task } from "@/lib/types";
+import { CENTERS } from "@/lib/categories";
+import { ChecklistItem, Priority, Status, Task } from "@/lib/types";
 
 const STATUSES: Status[] = ["대기", "진행중", "검토중", "완료"];
 const PRIORITIES: Priority[] = ["높음", "보통", "낮음"];
@@ -21,38 +21,45 @@ const inputCls =
 
 export function TaskFormModal({
   mode,
-  initialDept,
+  initialTeamId,
   task,
   onClose,
   onSaved,
 }: {
   mode: "create" | "edit";
-  initialDept: Dept;
+  initialTeamId: string;
   task?: Task;
   onClose: () => void;
   onSaved: (taskId: string) => void;
 }) {
-  const { users, currentUser, addTask, updateTask } = useStore();
+  const { users, teams, categoriesByTeam, currentUser, addTask, updateTask } = useStore();
 
-  const [dept, setDept] = useState<Dept>(task?.dept ?? initialDept);
-  const tree = CATEGORY_TREE[dept];
-  const [large, setLarge] = useState(task?.categoryLarge ?? tree[0].name);
+  const creatableTeams = useMemo(
+    () => teams.filter((t) => currentUser?.viewTeamIds.includes(t.id)),
+    [teams, currentUser]
+  );
+
+  const [teamId, setTeamId] = useState(task?.teamId ?? initialTeamId ?? creatableTeams[0]?.id ?? "");
+  const tree = categoriesByTeam[teamId] ?? [];
+  const [large, setLarge] = useState(task?.categoryLarge ?? tree[0]?.name ?? "");
   const largeNode = tree.find((n) => n.name === large) ?? tree[0];
   const [medium, setMedium] = useState(
-    task?.categoryMedium ?? largeNode.children[0].name
+    task?.categoryMedium ?? largeNode?.children[0]?.name ?? ""
   );
   const mediumNode =
-    largeNode.children.find((n) => n.name === medium) ?? largeNode.children[0];
-  const [small, setSmall] = useState(task?.categorySmall ?? mediumNode.children[0]);
+    largeNode?.children.find((n) => n.name === medium) ?? largeNode?.children[0];
+  const [small, setSmall] = useState(task?.categorySmall ?? mediumNode?.children[0]?.name ?? "");
 
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
-  const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? currentUser?.id ?? users[0].id);
+  const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? currentUser?.id ?? users[0]?.id ?? "");
+  const [collaboratorIds, setCollaboratorIds] = useState<string[]>(task?.collaboratorIds ?? []);
   const [center, setCenter] = useState(task?.center ?? CENTERS[0]);
   const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate());
   const [priority, setPriority] = useState<Priority>(task?.priority ?? "보통");
   const [status, setStatus] = useState<Status>(task?.status ?? "대기");
   const [progress, setProgress] = useState(task?.progress ?? 0);
+  const [level, setLevel] = useState(task?.level ?? 1);
   const [checklistDraft, setChecklistDraft] = useState<string[]>([]);
   const [newChecklistLabel, setNewChecklistLabel] = useState("");
   const [error, setError] = useState("");
@@ -63,25 +70,29 @@ export function TaskFormModal({
     setNewChecklistLabel("");
   }
 
-  function handleDeptChange(next: Dept) {
-    setDept(next);
-    const t = CATEGORY_TREE[next];
-    setLarge(t[0].name);
-    setMedium(t[0].children[0].name);
-    setSmall(t[0].children[0].children[0]);
+  function handleTeamChange(next: string) {
+    setTeamId(next);
+    const t = categoriesByTeam[next] ?? [];
+    setLarge(t[0]?.name ?? "");
+    setMedium(t[0]?.children[0]?.name ?? "");
+    setSmall(t[0]?.children[0]?.children[0]?.name ?? "");
   }
 
   function handleLargeChange(name: string) {
     setLarge(name);
-    const node = tree.find((n) => n.name === name)!;
-    setMedium(node.children[0].name);
-    setSmall(node.children[0].children[0]);
+    const node = tree.find((n) => n.name === name);
+    setMedium(node?.children[0]?.name ?? "");
+    setSmall(node?.children[0]?.children[0]?.name ?? "");
   }
 
   function handleMediumChange(name: string) {
     setMedium(name);
-    const node = largeNode.children.find((n) => n.name === name)!;
-    setSmall(node.children[0]);
+    const node = largeNode?.children.find((n) => n.name === name);
+    setSmall(node?.children[0]?.name ?? "");
+  }
+
+  function toggleCollaborator(id: string) {
+    setCollaboratorIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
   const canSubmit = useMemo(() => title.trim().length > 0, [title]);
@@ -104,15 +115,17 @@ export function TaskFormModal({
       const id = addTask({
         title: title.trim(),
         description: description.trim(),
-        dept,
+        teamId,
         categoryLarge: large,
         categoryMedium: medium,
         categorySmall: small,
         assigneeId,
+        collaboratorIds: collaboratorIds.filter((id2) => id2 !== assigneeId),
         center,
         priority,
         status,
         progress,
+        level,
         dueDate,
         createdBy: currentUser.id,
         checklist,
@@ -122,15 +135,17 @@ export function TaskFormModal({
       updateTask(task.id, {
         title: title.trim(),
         description: description.trim(),
-        dept,
+        teamId,
         categoryLarge: large,
         categoryMedium: medium,
         categorySmall: small,
         assigneeId,
+        collaboratorIds: collaboratorIds.filter((id2) => id2 !== assigneeId),
         center,
         priority,
         status,
         progress,
+        level,
         dueDate,
       });
       onSaved(task.id);
@@ -152,20 +167,20 @@ export function TaskFormModal({
         </div>
 
         <div className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
-          <Field label="담당 부서">
-            <div className="flex gap-1.5">
-              {(["관리팀", "재경팀"] as Dept[]).map((d) => (
+          <Field label="담당 팀">
+            <div className="flex flex-wrap gap-1.5">
+              {creatableTeams.map((t) => (
                 <button
-                  key={d}
-                  onClick={() => handleDeptChange(d)}
-                  className="flex-1 rounded-[2px] border px-2.5 py-1.5 text-[11.5px] font-semibold"
+                  key={t.id}
+                  onClick={() => handleTeamChange(t.id)}
+                  className="rounded-[2px] border px-3 py-1.5 text-[11.5px] font-semibold"
                   style={
-                    dept === d
+                    teamId === t.id
                       ? { borderColor: "var(--accent)", background: "var(--accent)", color: "var(--accent-fg)" }
                       : { borderColor: "var(--border-strong)", color: "var(--text-muted)" }
                   }
                 >
-                  {d}
+                  {t.name}
                 </button>
               ))}
             </div>
@@ -193,22 +208,22 @@ export function TaskFormModal({
             <div className="grid grid-cols-3 gap-1.5">
               <select value={large} onChange={(e) => handleLargeChange(e.target.value)} className={inputCls}>
                 {tree.map((n) => (
-                  <option key={n.name} value={n.name}>
+                  <option key={n.id} value={n.name}>
                     {n.name}
                   </option>
                 ))}
               </select>
               <select value={medium} onChange={(e) => handleMediumChange(e.target.value)} className={inputCls}>
-                {largeNode.children.map((n) => (
-                  <option key={n.name} value={n.name}>
+                {(largeNode?.children ?? []).map((n) => (
+                  <option key={n.id} value={n.name}>
                     {n.name}
                   </option>
                 ))}
               </select>
               <select value={small} onChange={(e) => setSmall(e.target.value)} className={inputCls}>
-                {mediumNode.children.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
+                {(mediumNode?.children ?? []).map((n) => (
+                  <option key={n.id} value={n.name}>
+                    {n.name}
                   </option>
                 ))}
               </select>
@@ -224,7 +239,7 @@ export function TaskFormModal({
               >
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name} ({u.dept})
+                    {u.name}
                   </option>
                 ))}
               </select>
@@ -239,6 +254,24 @@ export function TaskFormModal({
               </select>
             </Field>
           </div>
+
+          <Field label="협업자 (복수 선택 가능 — 지정된 사람도 이 업무를 함께 관리할 수 있어요)">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface-alt)] px-2.5 py-2">
+              {users
+                .filter((u) => u.id !== assigneeId)
+                .map((u) => (
+                  <label key={u.id} className="flex items-center gap-1 text-[10.5px] text-[var(--text-secondary)]">
+                    <input
+                      type="checkbox"
+                      checked={collaboratorIds.includes(u.id)}
+                      onChange={() => toggleCollaborator(u.id)}
+                      style={{ accentColor: "var(--accent)" }}
+                    />
+                    {u.name}
+                  </label>
+                ))}
+            </div>
+          </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="목표일(마감일)">
@@ -264,19 +297,30 @@ export function TaskFormModal({
             </Field>
           </div>
 
-          <Field label="진행상태">
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Status)}
-              className={inputCls}
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="진행상태">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status)}
+                className={inputCls}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="업무레벨 (숫자가 낮을수록 더 많은 사람이 조회 가능)">
+              <input
+                type="number"
+                min={1}
+                value={level}
+                onChange={(e) => setLevel(Math.max(1, Number(e.target.value) || 1))}
+                className={inputCls}
+              />
+            </Field>
+          </div>
 
           <Field label={`진행률 (${progress}%)`}>
             <input

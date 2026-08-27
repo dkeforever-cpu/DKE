@@ -16,3 +16,19 @@ export function useRequireAuth() {
 
   return { currentUser, ready };
 }
+
+export function useRequireAdmin() {
+  const { currentUser, ready } = useStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!ready) return;
+    if (!currentUser) {
+      router.replace("/login");
+    } else if (!currentUser.isAdmin) {
+      router.replace("/");
+    }
+  }, [ready, currentUser, router]);
+
+  return { currentUser, ready };
+}

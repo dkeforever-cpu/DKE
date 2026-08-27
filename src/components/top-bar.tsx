@@ -8,10 +8,11 @@ import { Avatar } from "@/components/avatar";
 import { ThemeSettingsModal } from "@/components/theme-settings-modal";
 
 export function TopBar() {
-  const { currentUser, logout } = useStore();
+  const { currentUser, teams, logout } = useStore();
   const { mode, toggleMode } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const teamName = teams.find((t) => t.id === currentUser?.teamId)?.name ?? "-";
 
   function handleLogout() {
     logout();
@@ -33,6 +34,17 @@ export function TopBar() {
 
       {currentUser && (
         <div className="flex items-center gap-3">
+          {currentUser.isAdmin && (
+            <button
+              onClick={() => router.push("/admin")}
+              title="관리자 설정"
+              className="text-[var(--text-faint)] hover:text-[var(--text)]"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20V10M18 20V4M6 20v-4" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={toggleMode}
             title={mode === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"}
@@ -65,7 +77,7 @@ export function TopBar() {
             <div className="text-[11px] font-semibold text-[var(--text)]">
               {currentUser.name}{" "}
               <span className="font-normal text-[var(--text-faint)]">
-                · {currentUser.dept}
+                · {teamName}
                 {currentUser.isAdmin ? " · 관리자" : ""}
               </span>
             </div>

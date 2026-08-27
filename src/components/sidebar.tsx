@@ -1,8 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Dept } from "@/lib/types";
-import { CATEGORY_TREE } from "@/lib/categories";
+import { Board, CategoryLarge } from "@/lib/types";
 
 export type Selection =
   | { type: "mine" }
@@ -14,14 +13,22 @@ export function selectionKey(s: Selection): string {
 }
 
 export function Sidebar({
-  dept,
+  teamSelected,
+  categories,
+  boards,
+  activeBoardId,
+  onSelectBoard,
   selection,
   onSelect,
   mineCount,
   allCount,
   categoryCounts,
 }: {
-  dept: Dept | "전체";
+  teamSelected: boolean;
+  categories: CategoryLarge[];
+  boards: Board[];
+  activeBoardId: string | null;
+  onSelectBoard: (id: string) => void;
   selection: Selection;
   onSelect: (s: Selection) => void;
   mineCount: number;
@@ -29,7 +36,6 @@ export function Sidebar({
   categoryCounts: Record<string, number>;
 }) {
   const currentKey = selectionKey(selection);
-  const categories = dept === "전체" ? [] : CATEGORY_TREE[dept];
 
   return (
     <div className="flex w-[168px] flex-none flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] py-1.5">
@@ -64,27 +70,52 @@ export function Sidebar({
 
       <div className="mx-2.5 my-1.5 h-px bg-[var(--divider)]" />
 
-      {dept === "전체" ? (
+      {!teamSelected ? (
         <div className="mx-2 rounded-[4px] border border-dashed border-[var(--border-strong)] p-2 text-[10px] leading-relaxed text-[var(--text-faintest)]">
-          상단에서 관리팀 또는 재경팀 탭을 선택하면
+          상단에서 팀을 선택하면
           <br />
-          해당 부서의 세부 업무 분류가 표시됩니다.
+          해당 팀의 게시판·세부 업무 분류가 표시됩니다.
         </div>
       ) : (
-        <div className="flex flex-col">
-          <div className="px-3 pb-1 pt-0.5 text-[10px] font-bold tracking-wide text-[var(--text-faintest)]">
-            {dept} 메뉴
+        <>
+          {boards.length > 0 && (
+            <div className="mb-1.5 flex flex-col">
+              <div className="px-3 pb-1 pt-0.5 text-[10px] font-bold tracking-wide text-[var(--text-faintest)]">
+                게시판
+              </div>
+              {boards.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => onSelectBoard(b.id)}
+                  className="flex h-[26px] items-center gap-1.5 px-2.5 text-left text-[11.5px] font-medium"
+                  style={{
+                    background: activeBoardId === b.id ? "var(--accent-soft-bg)" : "transparent",
+                    color: activeBoardId === b.id ? "var(--accent-soft-fg)" : "var(--text-secondary)",
+                    borderLeft: activeBoardId === b.id ? "2px solid var(--accent)" : "2px solid transparent",
+                  }}
+                >
+                  <span className="truncate">{b.name}</span>
+                </button>
+              ))}
+              <div className="mx-2.5 my-1.5 h-px bg-[var(--divider)]" />
+            </div>
+          )}
+
+          <div className="flex flex-col">
+            <div className="px-3 pb-1 pt-0.5 text-[10px] font-bold tracking-wide text-[var(--text-faintest)]">
+              카테고리
+            </div>
+            {categories.map((c) => (
+              <SidebarItem
+                key={c.id}
+                label={c.name}
+                count={categoryCounts[c.name] ?? 0}
+                active={currentKey === `category:${c.name}`}
+                onClick={() => onSelect({ type: "category", large: c.name })}
+              />
+            ))}
           </div>
-          {categories.map((c) => (
-            <SidebarItem
-              key={c.name}
-              label={c.name}
-              count={categoryCounts[c.name] ?? 0}
-              active={currentKey === `category:${c.name}`}
-              onClick={() => onSelect({ type: "category", large: c.name })}
-            />
-          ))}
-        </div>
+        </>
       )}
     </div>
   );

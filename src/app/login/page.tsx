@@ -5,7 +5,7 @@ import { useStore } from "@/lib/store";
 import { Avatar } from "@/components/avatar";
 
 export default function LoginPage() {
-  const { users, login, ready, resetDemoData } = useStore();
+  const { users, teams, login, ready, resetDemoData } = useStore();
   const router = useRouter();
 
   function handleLogin(userId: string) {
@@ -14,9 +14,6 @@ export default function LoginPage() {
   }
 
   if (!ready) return null;
-
-  const mgmt = users.filter((u) => u.dept === "관리팀");
-  const fin = users.filter((u) => u.dept === "재경팀");
 
   return (
     <div className="flex min-h-screen flex-1 items-center justify-center bg-[var(--bg)] p-6">
@@ -32,7 +29,9 @@ export default function LoginPage() {
           <div className="text-center text-[14.5px] font-bold tracking-tight text-[var(--text)]">
             물류센터 업무관리 시스템
           </div>
-          <div className="text-[10.5px] text-[var(--text-faint)]">관리팀 · 재경팀 전용</div>
+          <div className="text-[10.5px] text-[var(--text-faint)]">
+            {teams.map((t) => t.name).join(" · ")} 전용
+          </div>
         </div>
 
         <div className="mb-1.5 text-[11px] font-semibold text-[var(--text-secondary)]">
@@ -44,58 +43,38 @@ export default function LoginPage() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <div>
-            <div className="mb-1.5 text-[9.5px] font-bold tracking-wide text-[var(--text-faintest)]">
-              관리팀
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {mgmt.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => handleLogin(u.id)}
-                  className="flex items-center gap-1.5 border border-[var(--border-strong)] px-2.5 py-1.5 text-left text-[11px] font-medium text-[var(--text)] hover:border-[var(--accent)]"
-                  style={{ background: "var(--surface)" }}
-                >
-                  <Avatar id={u.id} name={u.name} size={19} />
-                  {u.name}
-                  {u.isAdmin && (
-                    <span
-                      className="ml-auto rounded-[3px] px-1 py-[1px] text-[8.5px] font-bold"
-                      style={{ background: "var(--neutral-soft-bg)", color: "var(--neutral-soft-fg)" }}
+          {teams.map((team) => {
+            const members = users.filter((u) => u.teamId === team.id);
+            if (members.length === 0) return null;
+            return (
+              <div key={team.id}>
+                <div className="mb-1.5 text-[9.5px] font-bold tracking-wide text-[var(--text-faintest)]">
+                  {team.name}
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {members.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => handleLogin(u.id)}
+                      className="flex items-center gap-1.5 border border-[var(--border-strong)] px-2.5 py-1.5 text-left text-[11px] font-medium text-[var(--text)] hover:border-[var(--accent)]"
+                      style={{ background: "var(--surface)" }}
                     >
-                      관리자
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="mb-1.5 text-[9.5px] font-bold tracking-wide text-[var(--text-faintest)]">
-              재경팀
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {fin.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => handleLogin(u.id)}
-                  className="flex items-center gap-1.5 border border-[var(--border-strong)] px-2.5 py-1.5 text-left text-[11px] font-medium text-[var(--text)] hover:border-[var(--accent)]"
-                  style={{ background: "var(--surface)" }}
-                >
-                  <Avatar id={u.id} name={u.name} size={19} />
-                  {u.name}
-                  {u.isAdmin && (
-                    <span
-                      className="ml-auto rounded-[3px] px-1 py-[1px] text-[8.5px] font-bold"
-                      style={{ background: "var(--neutral-soft-bg)", color: "var(--neutral-soft-fg)" }}
-                    >
-                      관리자
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+                      <Avatar id={u.id} name={u.name} size={19} />
+                      {u.name}
+                      {u.isAdmin && (
+                        <span
+                          className="ml-auto rounded-[3px] px-1 py-[1px] text-[8.5px] font-bold"
+                          style={{ background: "var(--neutral-soft-bg)", color: "var(--neutral-soft-fg)" }}
+                        >
+                          관리자
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <button

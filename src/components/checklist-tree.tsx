@@ -68,12 +68,14 @@ export function ChecklistTree({
   onUpdate,
   onDelete,
   commentProps,
+  readOnly = false,
 }: {
   items: ChecklistItem[];
   onAdd: (parentId: string | null, label: string) => void;
   onUpdate: (id: string, patch: Partial<Pick<ChecklistItem, "label" | "progress" | "dueDate">>) => void;
   onDelete: (id: string) => void;
   commentProps: CommentProps;
+  readOnly?: boolean;
 }) {
   const all = flatten(items);
   const avg = all.length
@@ -133,10 +135,11 @@ export function ChecklistTree({
               onDelete={onDelete}
               commentProps={commentProps}
               expandSignal={expandSignal}
+              readOnly={readOnly}
             />
           ))
         )}
-        <AddRow depth={0} onConfirm={(label) => onAdd(null, label)} />
+        {!readOnly && <AddRow depth={0} onConfirm={(label) => onAdd(null, label)} />}
       </div>
     </div>
   );
@@ -150,6 +153,7 @@ function ChecklistNode({
   onDelete,
   commentProps,
   expandSignal,
+  readOnly,
 }: {
   item: ChecklistItem;
   depth: number;
@@ -158,6 +162,7 @@ function ChecklistNode({
   onDelete: (id: string) => void;
   commentProps: CommentProps;
   expandSignal: ExpandSignal | null;
+  readOnly: boolean;
 }) {
   const itemComments = commentProps.comments
     .filter((c) => c.targetType === "checklist" && c.targetId === item.id)
@@ -201,7 +206,8 @@ function ChecklistNode({
         </button>
 
         <button
-          onClick={() => onUpdate(item.id, { progress: done ? 0 : 100 })}
+          onClick={() => !readOnly && onUpdate(item.id, { progress: done ? 0 : 100 })}
+          disabled={readOnly}
           title={done ? "완료 취소" : "완료로 표시"}
           className="flex h-[14px] w-[14px] flex-none items-center justify-center rounded-[2px] border"
           style={{
@@ -216,7 +222,7 @@ function ChecklistNode({
           )}
         </button>
 
-        {editingLabel ? (
+        {editingLabel && !readOnly ? (
           <input
             autoFocus
             value={labelDraft}
@@ -227,7 +233,8 @@ function ChecklistNode({
           />
         ) : (
           <button
-            onClick={() => setEditingLabel(true)}
+            onClick={() => !readOnly && setEditingLabel(true)}
+            disabled={readOnly}
             className="flex-1 truncate text-left text-[11px]"
             style={{
               color: done ? "var(--text-faintest)" : "var(--text)",
@@ -245,7 +252,7 @@ function ChecklistNode({
           </span>
         )}
 
-        {editingDue ? (
+        {editingDue && !readOnly ? (
           <input
             type="date"
             autoFocus
@@ -256,7 +263,8 @@ function ChecklistNode({
           />
         ) : (
           <button
-            onClick={() => setEditingDue(true)}
+            onClick={() => !readOnly && setEditingDue(true)}
+            disabled={readOnly}
             title="기한 설정"
             className="flex flex-none items-center gap-1 rounded-[2px] px-1 py-0.5 text-[9.5px]"
             style={{
@@ -282,38 +290,43 @@ function ChecklistNode({
             max={100}
             step={5}
             value={item.progress}
+            disabled={readOnly}
             onChange={(e) => {
               const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
               onUpdate(item.id, { progress: v });
             }}
-            className="h-5 w-[36px] rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-right text-[10px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
+            className="h-5 w-[36px] rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-right text-[10px] text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
           />
           <span className="text-[9.5px] text-[var(--text-faintest)]">%</span>
         </div>
 
-        <button
-          onClick={() => setAddingChild((v) => !v)}
-          title="하위 항목 추가"
-          className="flex-none text-[var(--text-faint)] hover:text-[var(--accent)]"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
-        <button
-          onClick={() => {
-            if (confirm("이 항목을 삭제할까요? 하위 항목도 함께 삭제됩니다.")) onDelete(item.id);
-          }}
-          title="삭제"
-          className="flex-none"
-          style={{ color: "var(--danger-text)" }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18" />
-            <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-          </svg>
-        </button>
+        {!readOnly && (
+          <>
+            <button
+              onClick={() => setAddingChild((v) => !v)}
+              title="하위 항목 추가"
+              className="flex-none text-[var(--text-faint)] hover:text-[var(--accent)]"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("이 항목을 삭제할까요? 하위 항목도 함께 삭제됩니다.")) onDelete(item.id);
+              }}
+              title="삭제"
+              className="flex-none"
+              style={{ color: "var(--danger-text)" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18" />
+                <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              </svg>
+            </button>
+          </>
+        )}
       </div>
 
       {expanded && (
@@ -351,12 +364,13 @@ function ChecklistNode({
               onDelete={onDelete}
               commentProps={commentProps}
               expandSignal={expandSignal}
+              readOnly={readOnly}
             />
           ))}
         </div>
       )}
 
-      {addingChild && (
+      {addingChild && !readOnly && (
         <AddRow
           depth={depth + 1}
           onConfirm={(label) => {
