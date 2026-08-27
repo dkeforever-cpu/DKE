@@ -44,25 +44,25 @@ export function LogEntryItem({
   }
 
   return (
-    <div className="flex gap-3" data-log-entry-id={entry.id}>
-      <div className="flex w-4 flex-none flex-col items-center">
-        <div className="mt-[5px] h-[9px] w-[9px] rounded-full bg-[#3355d6]" />
-        {!isLast && <div className="w-[2px] flex-1 bg-[#eef0f2]" />}
+    <div className="flex gap-2.5" data-log-entry-id={entry.id}>
+      <div className="flex w-3.5 flex-none flex-col items-center">
+        <div className="mt-[4px] h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />
+        {!isLast && <div className="w-px flex-1 bg-[var(--divider)]" />}
       </div>
-      <div className="flex flex-1 flex-col gap-2 pb-4">
+      <div className="flex flex-1 flex-col gap-1.5 pb-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Avatar id={entry.authorId} name={author?.name ?? "?"} size={22} />
-            <span className="text-[12px] font-bold text-[#1a1d24]">
+          <div className="flex items-center gap-1.5">
+            <Avatar id={entry.authorId} name={author?.name ?? "?"} size={19} />
+            <span className="text-[11px] font-bold text-[var(--text)]">
               {author?.name ?? "알 수 없음"}
             </span>
-            <span className="text-[11px] text-[#a6abb5]">
+            <span className="text-[10px] text-[var(--text-faintest)]">
               {formatDateTime(entry.createdAt)}
               {entry.editedAt ? " · 수정됨" : ""}
             </span>
           </div>
           {editable && !editing && (
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <button onClick={() => setEditing(true)} title="수정">
                 <PencilIcon />
               </button>
@@ -79,16 +79,17 @@ export function LogEntryItem({
         </div>
 
         {editing ? (
-          <div className="flex flex-col gap-2 pl-[30px]">
+          <div className="flex flex-col gap-1.5 pl-[26px]">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              className="h-16 resize-none rounded-md border border-[#d7dbe0] px-2.5 py-2 text-[12.5px] outline-none focus:border-[#3355d6]"
+              className="h-14 resize-none rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1.5 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
             />
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <button
                 onClick={saveEdit}
-                className="h-7 rounded-md bg-[#23262e] px-3 text-[11px] font-semibold text-white"
+                className="h-6 rounded-[2px] px-2.5 text-[10px] font-semibold"
+                style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
               >
                 저장
               </button>
@@ -97,24 +98,24 @@ export function LogEntryItem({
                   setDraft(entry.content);
                   setEditing(false);
                 }}
-                className="h-7 rounded-md border border-[#d7dbe0] px-3 text-[11px] text-[#5b6068]"
+                className="h-6 rounded-[2px] border border-[var(--border-strong)] px-2.5 text-[10px] text-[var(--text-muted)]"
               >
                 취소
               </button>
             </div>
           </div>
         ) : (
-          <div className="pl-[30px] text-[12.5px] leading-relaxed text-[#3d4148] whitespace-pre-wrap">
+          <div className="whitespace-pre-wrap pl-[26px] text-[11px] leading-relaxed text-[var(--text-secondary)]">
             {entry.content}
           </div>
         )}
 
         {(entry.attachments ?? []).length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pl-[30px]">
+          <div className="flex flex-wrap gap-1 pl-[26px]">
             {(entry.attachments ?? []).map((f, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] px-2.5 py-1 text-[11px] text-[#5b6068]"
+                className="flex items-center gap-1 rounded-[2px] border border-[var(--divider)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]"
               >
                 <FileIcon />
                 {f}
@@ -123,7 +124,7 @@ export function LogEntryItem({
           </div>
         )}
 
-        <div className="pl-[30px]">
+        <div className="pl-[26px]">
           <CommentThread
             comments={comments}
             getUser={getUser}

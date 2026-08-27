@@ -100,14 +100,17 @@ export default function DashboardPage() {
     <div className="flex min-h-screen flex-col">
       <TopBar />
 
-      <div className="flex h-11 flex-none items-center gap-1 border-b border-[#e3e5e9] bg-white px-5">
+      <div className="flex h-8 flex-none items-center gap-0.5 border-b border-[var(--border)] bg-[var(--surface)] px-3">
         {(["전체", "관리팀", "재경팀"] as DeptTab[]).map((d) => (
           <button
             key={d}
             onClick={() => handleDeptChange(d)}
-            className={`rounded-md px-3.5 py-1.5 text-[12.5px] font-semibold ${
-              deptTab === d ? "bg-[#23262e] text-white" : "text-[#5b6068] hover:bg-[#f5f6f8]"
-            }`}
+            className="h-6 rounded-[3px] px-3 text-[11.5px] font-semibold"
+            style={
+              deptTab === d
+                ? { background: "var(--accent)", color: "var(--accent-fg)" }
+                : { color: "var(--text-muted)" }
+            }
           >
             {d}
           </button>
@@ -124,24 +127,24 @@ export default function DashboardPage() {
           categoryCounts={categoryCounts}
         />
 
-        <div className="flex flex-1 flex-col gap-3 overflow-hidden p-4">
-          <div className="flex items-center gap-0 rounded-lg border border-[#e3e5e9] bg-white px-[18px] py-2.5">
+        <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-2">
+          <div className="flex items-center gap-0 border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
             <SummaryCell label={`${deptTab === "전체" ? "전체" : deptTab} · ${selectionLabel}`} value={summary.total} />
             <Divider />
-            <SummaryCell label="진행중" value={summary.진행중} color="#3355d6" />
+            <SummaryCell label="진행중" value={summary.진행중} color="var(--accent)" />
             <Divider />
-            <SummaryCell label="검토중" value={summary.검토중} color="#b06a00" />
+            <SummaryCell label="검토중" value={summary.검토중} color="var(--warning-text)" />
             <Divider />
-            <SummaryCell label="완료" value={summary.완료} color="#1f8a4c" />
+            <SummaryCell label="완료" value={summary.완료} color="var(--success)" />
             <Divider />
-            <SummaryCell label="마감 연체" value={summary.연체} color="#d92d20" labelColor="#c0392b" />
+            <SummaryCell label="마감 연체" value={summary.연체} color="var(--danger)" labelColor="var(--danger-text)" />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <select
               value={centerFilter}
               onChange={(e) => setCenterFilter(e.target.value)}
-              className="h-[30px] rounded-md border border-[#d7dbe0] bg-white px-2 text-[11.5px] text-[#5b6068]"
+              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
             >
               <option value="전체">센터 전체</option>
               {CENTERS.map((c) => (
@@ -153,7 +156,7 @@ export default function DashboardPage() {
             <select
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="h-[30px] rounded-md border border-[#d7dbe0] bg-white px-2 text-[11.5px] text-[#5b6068]"
+              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
             >
               <option value="전체">담당자 전체</option>
               {users.map((u) => (
@@ -165,7 +168,7 @@ export default function DashboardPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as "전체" | Status)}
-              className="h-[30px] rounded-md border border-[#d7dbe0] bg-white px-2 text-[11.5px] text-[#5b6068]"
+              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
             >
               <option value="전체">상태 전체</option>
               {(["대기", "진행중", "검토중", "완료"] as Status[]).map((s) => (
@@ -177,7 +180,7 @@ export default function DashboardPage() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as "전체" | Priority)}
-              className="h-[30px] rounded-md border border-[#d7dbe0] bg-white px-2 text-[11.5px] text-[#5b6068]"
+              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
             >
               <option value="전체">우선순위 전체</option>
               {(["높음", "보통", "낮음"] as Priority[]).map((p) => (
@@ -190,14 +193,15 @@ export default function DashboardPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="업무 검색"
-              className="h-[30px] w-[200px] rounded-md border border-[#d7dbe0] px-2.5 text-[11.5px] outline-none focus:border-[#3355d6]"
+              className="h-6 w-[180px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
             />
             <div className="flex-1" />
             <button
               onClick={() => setFormOpen(true)}
-              className="flex h-[30px] items-center gap-1.5 rounded-md bg-[#23262e] px-3 text-[11.5px] font-semibold text-white"
+              className="flex h-6 items-center gap-1 rounded-[3px] px-2.5 text-[10.5px] font-semibold"
+              style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
                 <path d="M12 5v14M5 12h14" />
               </svg>
               새 업무
@@ -228,8 +232,8 @@ export default function DashboardPage() {
 function SummaryCell({
   label,
   value,
-  color = "#1a1d24",
-  labelColor = "#8a8f99",
+  color = "var(--text)",
+  labelColor = "var(--text-faint)",
 }: {
   label: string;
   value: number;
@@ -237,11 +241,11 @@ function SummaryCell({
   labelColor?: string;
 }) {
   return (
-    <div className="flex items-baseline gap-1.5 px-5 first:pl-0 last:pr-0">
-      <span className="text-[11px]" style={{ color: labelColor }}>
+    <div className="flex items-baseline gap-1.5 px-3.5 first:pl-0 last:pr-0">
+      <span className="text-[10.5px]" style={{ color: labelColor }}>
         {label}
       </span>
-      <span className="text-[15px] font-bold" style={{ color }}>
+      <span className="text-[13px] font-bold" style={{ color }}>
         {value}
       </span>
     </div>
@@ -249,5 +253,5 @@ function SummaryCell({
 }
 
 function Divider() {
-  return <div className="h-4 w-px bg-[#eef0f2]" />;
+  return <div className="h-3 w-px bg-[var(--divider)]" />;
 }

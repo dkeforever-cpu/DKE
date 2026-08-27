@@ -7,7 +7,7 @@ import { formatDateTime } from "@/lib/format";
 
 export function PencilIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8a8f99" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
     </svg>
@@ -16,7 +16,7 @@ export function PencilIcon() {
 
 export function TrashIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--danger-text)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 6h18" />
       <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -26,7 +26,7 @@ export function TrashIcon() {
 
 export function FileIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b6068" strokeWidth="1.8">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <path d="M14 2v6h6" />
     </svg>
@@ -35,7 +35,7 @@ export function FileIcon() {
 
 function ClipIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5b6068" strokeWidth="1.8">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
       <path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
     </svg>
   );
@@ -83,7 +83,7 @@ export function CommentList({
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2">
       {comments.map((c) => (
         <CommentRow
           key={c.id}
@@ -94,9 +94,9 @@ export function CommentList({
           onDelete={() => onDeleteComment(c.id)}
         />
       ))}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <Avatar id={currentUserId} name="" size={20} />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1.5">
+          <Avatar id={currentUserId} name="" size={18} />
           <input
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
@@ -104,34 +104,35 @@ export function CommentList({
               if (e.key === "Enter") submitReply();
             }}
             placeholder="댓글로 피드백 남기기"
-            className="h-7 flex-1 rounded-md border border-[#d7dbe0] bg-white px-2.5 text-[11.5px] outline-none focus:border-[#3355d6]"
+            className="h-6 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
           />
           <label
             title="파일 첨부"
-            className="flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-md border border-[#d7dbe0] bg-white text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+            className="flex h-6 w-6 flex-none cursor-pointer items-center justify-center rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
             <ClipIcon />
             <input type="file" multiple className="hidden" onChange={handleFilePick} />
           </label>
           <button
             onClick={submitReply}
-            className="h-7 flex-none rounded-md bg-[#23262e] px-2.5 text-[11px] font-semibold text-white"
+            className="h-6 flex-none rounded-[2px] px-2 text-[10px] font-semibold"
+            style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
           >
             등록
           </button>
         </div>
         {replyAttachments.length > 0 && (
-          <div className="ml-7 flex flex-wrap gap-1.5">
+          <div className="ml-6 flex flex-wrap gap-1">
             {replyAttachments.map((f, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 rounded-md border border-[#e3e5e9] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"
+                className="flex items-center gap-1 rounded-[2px] border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] text-[var(--text-muted)]"
               >
                 <FileIcon />
                 {f}
                 <button
                   onClick={() => setReplyAttachments((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="text-[#a6abb5] hover:text-[#d92d20]"
+                  className="text-[var(--text-faintest)] hover:text-[var(--danger)]"
                 >
                   ×
                 </button>
@@ -161,7 +162,7 @@ export function CommentThread({
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="text-[11px] text-[#a6abb5] hover:text-[#5b6068]"
+        className="text-[10px] text-[var(--text-faintest)] hover:text-[var(--text-muted)]"
       >
         {comments.length === 0 ? "댓글 남기기" : `댓글 ${comments.length}개 보기 ›`}
       </button>
@@ -169,10 +170,10 @@ export function CommentThread({
   }
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-lg border border-[#eef0f2] bg-[#fafafb] p-3">
+    <div className="flex flex-col gap-2 border border-[var(--divider)] bg-[var(--surface-alt)] p-2">
       <button
         onClick={() => setExpanded(false)}
-        className="self-start text-[10.5px] text-[#a6abb5] hover:text-[#5b6068]"
+        className="self-start text-[9.5px] text-[var(--text-faintest)] hover:text-[var(--text-muted)]"
       >
         접기 ‹
       </button>
@@ -206,19 +207,19 @@ function CommentRow({
   const [draft, setDraft] = useState(comment.content);
 
   return (
-    <div className="flex gap-2">
-      <Avatar id={comment.authorId} name={author?.name ?? "?"} size={20} />
-      <div className="flex flex-1 flex-col gap-1">
+    <div className="flex gap-1.5">
+      <Avatar id={comment.authorId} name={author?.name ?? "?"} size={18} />
+      <div className="flex flex-1 flex-col gap-0.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-[11.5px] font-bold text-[#1a1d24]">
+          <span className="text-[10.5px] font-bold text-[var(--text)]">
             {author?.name ?? "알 수 없음"}
           </span>
-          <span className="text-[10.5px] text-[#a6abb5]">
+          <span className="text-[9.5px] text-[var(--text-faintest)]">
             {formatDateTime(comment.createdAt)}
             {comment.editedAt ? " · 수정됨" : ""}
           </span>
           {editable && !editing && (
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-1.5">
               <button onClick={() => setEditing(true)} title="수정">
                 <PencilIcon />
               </button>
@@ -234,13 +235,13 @@ function CommentRow({
           )}
         </div>
         {editing ? (
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              className="h-7 rounded-md border border-[#d7dbe0] bg-white px-2 text-[12px] outline-none focus:border-[#3355d6]"
+              className="h-6 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
             />
-            <div className="flex gap-1.5">
+            <div className="flex gap-1">
               <button
                 onClick={() => {
                   if (draft.trim()) {
@@ -248,7 +249,8 @@ function CommentRow({
                     setEditing(false);
                   }
                 }}
-                className="h-6 rounded bg-[#23262e] px-2 text-[10.5px] font-semibold text-white"
+                className="h-5 rounded-[2px] px-1.5 text-[9.5px] font-semibold"
+                style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
               >
                 저장
               </button>
@@ -257,21 +259,21 @@ function CommentRow({
                   setDraft(comment.content);
                   setEditing(false);
                 }}
-                className="h-6 rounded border border-[#d7dbe0] px-2 text-[10.5px] text-[#5b6068]"
+                className="h-5 rounded-[2px] border border-[var(--border-strong)] px-1.5 text-[9.5px] text-[var(--text-muted)]"
               >
                 취소
               </button>
             </div>
           </div>
         ) : (
-          <div className="text-[12px] leading-relaxed text-[#3d4148]">{comment.content}</div>
+          <div className="text-[10.5px] leading-relaxed text-[var(--text-secondary)]">{comment.content}</div>
         )}
         {(comment.attachments ?? []).length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {(comment.attachments ?? []).map((f, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"
+                className="flex items-center gap-1 rounded-[2px] border border-[var(--divider)] bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] text-[var(--text-muted)]"
               >
                 <FileIcon />
                 {f}

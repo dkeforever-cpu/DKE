@@ -24,12 +24,12 @@ interface ExpandSignal {
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
-      width="11"
-      height="11"
+      width="10"
+      height="10"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#8a8f99"
-      strokeWidth="2.4"
+      stroke="var(--text-faint)"
+      strokeWidth="2.6"
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 120ms" }}
@@ -41,15 +41,15 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 function CommentIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a6abb5" strokeWidth="2">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-faintest)" strokeWidth="2">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
 
-function CalendarIcon({ color = "#a6abb5" }: { color?: string }) {
+function CalendarIcon({ color = "var(--text-faintest)" }: { color?: string }) {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2">
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4" />
     </svg>
@@ -57,9 +57,9 @@ function CalendarIcon({ color = "#a6abb5" }: { color?: string }) {
 }
 
 function progressColor(v: number) {
-  if (v >= 100) return "#1f8a4c";
-  if (v === 0) return "#c7cad0";
-  return "#3355d6";
+  if (v >= 100) return "var(--success)";
+  if (v === 0) return "var(--text-disabled)";
+  return "var(--accent)";
 }
 
 export function ChecklistTree({
@@ -83,11 +83,11 @@ export function ChecklistTree({
   const [expandSignal, setExpandSignal] = useState<ExpandSignal | null>(null);
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
-        <div className="text-[13.5px] font-bold text-[#1a1d24]">필요 업무</div>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <div className="text-[12px] font-bold text-[var(--text)]">필요 업무</div>
         {all.length > 0 && (
-          <span className="text-[11px] text-[#a6abb5]">
+          <span className="text-[10px] text-[var(--text-faintest)]">
             {all.length}개 항목 · 평균 {avg}%
           </span>
         )}
@@ -97,7 +97,7 @@ export function ChecklistTree({
               onClick={() =>
                 setExpandSignal((prev) => ({ expand: true, token: (prev?.token ?? 0) + 1 }))
               }
-              className="rounded border border-[#d7dbe0] px-2 py-1 text-[10.5px] text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+              className="h-5 rounded-[3px] border border-[var(--border-strong)] px-1.5 text-[9.5px] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               전체 펴기
             </button>
@@ -105,21 +105,21 @@ export function ChecklistTree({
               onClick={() =>
                 setExpandSignal((prev) => ({ expand: false, token: (prev?.token ?? 0) + 1 }))
               }
-              className="rounded border border-[#d7dbe0] px-2 py-1 text-[10.5px] text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+              className="h-5 rounded-[3px] border border-[var(--border-strong)] px-1.5 text-[9.5px] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               전체 접기
             </button>
           </div>
         )}
       </div>
-      <div className="text-[10.5px] text-[#a6abb5]">
+      <div className="text-[9.5px] text-[var(--text-faintest)]">
         행 왼쪽의 화살표를 눌러 펼치면 하위 항목과 댓글을 볼 수 있어요 (엑셀 그룹 접기/펼치기와
         같은 방식).
       </div>
 
-      <div className="flex flex-col rounded-lg border border-[#e3e5e9]">
+      <div className="flex flex-col border border-[var(--border)]">
         {items.length === 0 ? (
-          <div className="px-3.5 py-3 text-[11.5px] text-[#a6abb5]">
+          <div className="px-2.5 py-2 text-[10.5px] text-[var(--text-faintest)]">
             등록된 필요 업무가 없습니다. 아래에서 항목을 추가해보세요.
           </div>
         ) : (
@@ -178,7 +178,7 @@ function ChecklistNode({
   const [editingDue, setEditingDue] = useState(false);
   const hasChildren = item.children.length > 0;
   const done = item.progress >= 100;
-  const indent = 12 + depth * 20;
+  const indent = 10 + depth * 18;
   const overdue = !!item.dueDate && !done && daysOverdue(item.dueDate) > 0;
 
   function saveLabel() {
@@ -189,13 +189,13 @@ function ChecklistNode({
   return (
     <div>
       <div
-        className="flex items-center gap-2 border-b border-[#eef0f2] px-3 py-2 last:border-0"
-        style={{ paddingLeft: indent }}
+        className="flex h-7 items-center gap-1.5 border-b px-2.5"
+        style={{ paddingLeft: indent, borderColor: "var(--divider)" }}
       >
         <button
           onClick={() => setExpanded((v) => !v)}
           title={expanded ? "접기" : "펼치기 (하위 항목·댓글)"}
-          className="flex h-4 w-4 flex-none items-center justify-center rounded border border-[#d7dbe0] bg-white"
+          className="flex h-3.5 w-3.5 flex-none items-center justify-center rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)]"
         >
           <ChevronIcon open={expanded} />
         </button>
@@ -203,12 +203,14 @@ function ChecklistNode({
         <button
           onClick={() => onUpdate(item.id, { progress: done ? 0 : 100 })}
           title={done ? "완료 취소" : "완료로 표시"}
-          className={`flex h-[16px] w-[16px] flex-none items-center justify-center rounded border ${
-            done ? "border-[#1f8a4c] bg-[#1f8a4c]" : "border-[#d7dbe0] bg-white"
-          }`}
+          className="flex h-[14px] w-[14px] flex-none items-center justify-center rounded-[2px] border"
+          style={{
+            borderColor: done ? "var(--success)" : "var(--border-strong)",
+            background: done ? "var(--success)" : "var(--surface)",
+          }}
         >
           {done && (
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 6L9 17l-5-5" />
             </svg>
           )}
@@ -221,21 +223,23 @@ function ChecklistNode({
             onChange={(e) => setLabelDraft(e.target.value)}
             onBlur={saveLabel}
             onKeyDown={(e) => e.key === "Enter" && saveLabel()}
-            className="h-6 flex-1 rounded border border-[#d7dbe0] px-1.5 text-[12px] outline-none focus:border-[#3355d6]"
+            className="h-5 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
           />
         ) : (
           <button
             onClick={() => setEditingLabel(true)}
-            className={`flex-1 truncate text-left text-[12.5px] ${
-              done ? "text-[#a6abb5] line-through" : "text-[#1a1d24]"
-            }`}
+            className="flex-1 truncate text-left text-[11px]"
+            style={{
+              color: done ? "var(--text-faintest)" : "var(--text)",
+              textDecoration: done ? "line-through" : "none",
+            }}
           >
             {item.label}
           </button>
         )}
 
         {!expanded && itemComments.length > 0 && (
-          <span className="flex flex-none items-center gap-1 text-[10.5px] text-[#a6abb5]">
+          <span className="flex flex-none items-center gap-1 text-[9.5px] text-[var(--text-faintest)]">
             <CommentIcon />
             {itemComments.length}
           </span>
@@ -248,23 +252,25 @@ function ChecklistNode({
             value={item.dueDate ?? ""}
             onChange={(e) => onUpdate(item.id, { dueDate: e.target.value || undefined })}
             onBlur={() => setEditingDue(false)}
-            className="h-6 w-[122px] flex-none rounded border border-[#d7dbe0] px-1 text-[11px] outline-none focus:border-[#3355d6]"
+            className="h-5 w-[110px] flex-none rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-[10px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
           />
         ) : (
           <button
             onClick={() => setEditingDue(true)}
             title="기한 설정"
-            className={`flex flex-none items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] ${
-              overdue ? "font-bold text-[#d92d20]" : item.dueDate ? "text-[#5b6068]" : "text-[#c7cad0]"
-            }`}
+            className="flex flex-none items-center gap-1 rounded-[2px] px-1 py-0.5 text-[9.5px]"
+            style={{
+              fontWeight: overdue ? 700 : 400,
+              color: overdue ? "var(--danger)" : item.dueDate ? "var(--text-muted)" : "var(--text-disabled)",
+            }}
           >
-            <CalendarIcon color={overdue ? "#d92d20" : item.dueDate ? "#8a8f99" : "#c7cad0"} />
+            <CalendarIcon color={overdue ? "var(--danger)" : item.dueDate ? "var(--text-faint)" : "var(--text-disabled)"} />
             {item.dueDate ? formatDateShort(item.dueDate) : "기한"}
           </button>
         )}
 
-        <div className="flex w-[110px] flex-none items-center gap-1.5">
-          <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-[#eceef1]">
+        <div className="flex w-[96px] flex-none items-center gap-1">
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
             <div
               className="h-full rounded-full"
               style={{ width: `${item.progress}%`, background: progressColor(item.progress) }}
@@ -280,17 +286,17 @@ function ChecklistNode({
               const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
               onUpdate(item.id, { progress: v });
             }}
-            className="h-6 w-[42px] rounded border border-[#d7dbe0] px-1 text-right text-[11px] outline-none focus:border-[#3355d6]"
+            className="h-5 w-[36px] rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-right text-[10px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
           />
-          <span className="text-[10.5px] text-[#a6abb5]">%</span>
+          <span className="text-[9.5px] text-[var(--text-faintest)]">%</span>
         </div>
 
         <button
           onClick={() => setAddingChild((v) => !v)}
           title="하위 항목 추가"
-          className="flex-none text-[#8a8f99] hover:text-[#3355d6]"
+          className="flex-none text-[var(--text-faint)] hover:text-[var(--accent)]"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
         </button>
@@ -299,9 +305,10 @@ function ChecklistNode({
             if (confirm("이 항목을 삭제할까요? 하위 항목도 함께 삭제됩니다.")) onDelete(item.id);
           }}
           title="삭제"
-          className="flex-none text-[#c0392b]"
+          className="flex-none"
+          style={{ color: "var(--danger-text)" }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 6h18" />
             <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -310,11 +317,14 @@ function ChecklistNode({
       </div>
 
       {expanded && (
-        <div className="border-b border-[#eef0f2] bg-[#fafafb] px-3 py-3 last:border-0" style={{ paddingLeft: indent + 22 }}>
-          <div className="mb-2 text-[10px] text-[#c7cad0]">
+        <div
+          className="border-b bg-[var(--surface-alt)] px-2.5 py-2"
+          style={{ paddingLeft: indent + 20, borderColor: "var(--divider)" }}
+        >
+          <div className="mb-1.5 text-[9px] text-[var(--text-disabled)]">
             등록일 {formatDateTime(item.createdAt)}
           </div>
-          <div className="mb-1.5 text-[10.5px] font-semibold text-[#a6abb5]">댓글</div>
+          <div className="mb-1 text-[9.5px] font-semibold text-[var(--text-faintest)]">댓글</div>
           <CommentList
             comments={itemComments}
             getUser={commentProps.getUser}
@@ -381,11 +391,11 @@ function AddRow({
 
   return (
     <div
-      className="flex items-center gap-2 border-b border-[#eef0f2] px-3 py-2 last:border-0"
-      style={{ paddingLeft: 12 + depth * 20 }}
+      className="flex h-7 items-center gap-1.5 border-b px-2.5"
+      style={{ paddingLeft: 10 + depth * 18, borderColor: "var(--divider)" }}
     >
-      <span className="w-4 flex-none" />
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a6abb5" strokeWidth="2" strokeLinecap="round" className="flex-none">
+      <span className="w-3.5 flex-none" />
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-faintest)" strokeWidth="2" strokeLinecap="round" className="flex-none">
         <path d="M12 5v14M5 12h14" />
       </svg>
       <input
@@ -396,16 +406,17 @@ function AddRow({
           if (e.key === "Escape") onCancel?.();
         }}
         placeholder="필요 업무 항목 입력 후 Enter"
-        className="h-6 flex-1 rounded border border-[#d7dbe0] px-1.5 text-[12px] outline-none focus:border-[#3355d6]"
+        className="h-5 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
       />
       <button
         onClick={confirm}
-        className="flex-none rounded bg-[#23262e] px-2 py-0.5 text-[10.5px] font-semibold text-white"
+        className="flex-none rounded-[2px] px-1.5 py-0.5 text-[9.5px] font-semibold"
+        style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
       >
         추가
       </button>
       {onCancel && (
-        <button onClick={onCancel} className="flex-none text-[10.5px] text-[#a6abb5]">
+        <button onClick={onCancel} className="flex-none text-[9.5px] text-[var(--text-faintest)]">
           취소
         </button>
       )}

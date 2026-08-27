@@ -16,6 +16,9 @@ function defaultDueDate() {
   ).padStart(2, "0")}`;
 }
 
+const inputCls =
+  "h-7 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[11.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]";
+
 export function TaskFormModal({
   mode,
   initialDept,
@@ -136,30 +139,31 @@ export function TaskFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-      <div className="flex max-h-[88vh] w-full max-w-[560px] flex-col rounded-[10px] border border-[#d7dbe0] bg-white">
-        <div className="flex items-center justify-between border-b border-[#eef0f2] px-6 py-5">
-          <div className="text-[15px] font-bold text-[#1a1d24]">
+      <div className="flex max-h-[88vh] w-full max-w-[500px] flex-col border border-[var(--border-strong)] bg-[var(--surface)]">
+        <div className="flex items-center justify-between border-b border-[var(--divider)] px-5 py-3.5">
+          <div className="text-[13px] font-bold text-[var(--text)]">
             {mode === "create" ? "새 업무 등록" : "업무 수정"}
           </div>
-          <button onClick={onClose} className="text-[#8a8f99] hover:text-[#1a1d24]">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <button onClick={onClose} className="text-[var(--text-faint)] hover:text-[var(--text)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 overflow-y-auto px-6 py-5">
+        <div className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
           <Field label="담당 부서">
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {(["관리팀", "재경팀"] as Dept[]).map((d) => (
                 <button
                   key={d}
                   onClick={() => handleDeptChange(d)}
-                  className={`flex-1 rounded-md border px-3 py-2 text-[12.5px] font-semibold ${
+                  className="flex-1 rounded-[2px] border px-2.5 py-1.5 text-[11.5px] font-semibold"
+                  style={
                     dept === d
-                      ? "border-[#23262e] bg-[#23262e] text-white"
-                      : "border-[#d7dbe0] text-[#5b6068]"
-                  }`}
+                      ? { borderColor: "var(--accent)", background: "var(--accent)", color: "var(--accent-fg)" }
+                      : { borderColor: "var(--border-strong)", color: "var(--text-muted)" }
+                  }
                 >
                   {d}
                 </button>
@@ -172,7 +176,7 @@ export function TaskFormModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 부산센터 임차 계약 갱신 검토"
-              className="h-[38px] rounded-md border border-[#d7dbe0] px-3 text-[13px] outline-none focus:border-[#3355d6]"
+              className={inputCls}
             />
           </Field>
 
@@ -181,39 +185,27 @@ export function TaskFormModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="업무 배경과 목적을 입력하세요"
-              className="h-16 resize-none rounded-md border border-[#d7dbe0] px-3 py-2 text-[13px] outline-none focus:border-[#3355d6]"
+              className="h-14 resize-none rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1.5 text-[11.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
             />
           </Field>
 
           <Field label="업무 분류 (대분류 · 중분류 · 소분류)">
-            <div className="grid grid-cols-3 gap-2">
-              <select
-                value={large}
-                onChange={(e) => handleLargeChange(e.target.value)}
-                className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[12px] outline-none"
-              >
+            <div className="grid grid-cols-3 gap-1.5">
+              <select value={large} onChange={(e) => handleLargeChange(e.target.value)} className={inputCls}>
                 {tree.map((n) => (
                   <option key={n.name} value={n.name}>
                     {n.name}
                   </option>
                 ))}
               </select>
-              <select
-                value={medium}
-                onChange={(e) => handleMediumChange(e.target.value)}
-                className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[12px] outline-none"
-              >
+              <select value={medium} onChange={(e) => handleMediumChange(e.target.value)} className={inputCls}>
                 {largeNode.children.map((n) => (
                   <option key={n.name} value={n.name}>
                     {n.name}
                   </option>
                 ))}
               </select>
-              <select
-                value={small}
-                onChange={(e) => setSmall(e.target.value)}
-                className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[12px] outline-none"
-              >
+              <select value={small} onChange={(e) => setSmall(e.target.value)} className={inputCls}>
                 {mediumNode.children.map((n) => (
                   <option key={n} value={n}>
                     {n}
@@ -223,12 +215,12 @@ export function TaskFormModal({
             </div>
           </Field>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="담당자">
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[13px] outline-none"
+                className={inputCls}
               >
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -238,11 +230,7 @@ export function TaskFormModal({
               </select>
             </Field>
             <Field label="관련 센터">
-              <select
-                value={center}
-                onChange={(e) => setCenter(e.target.value)}
-                className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[13px] outline-none"
-              >
+              <select value={center} onChange={(e) => setCenter(e.target.value)} className={inputCls}>
                 {CENTERS.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -252,20 +240,20 @@ export function TaskFormModal({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="목표일(마감일)">
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[13px] outline-none"
+                className={inputCls}
               />
             </Field>
             <Field label="우선순위">
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
-                className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[13px] outline-none"
+                className={inputCls}
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
@@ -280,7 +268,7 @@ export function TaskFormModal({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as Status)}
-              className="h-[38px] rounded-md border border-[#d7dbe0] px-2 text-[13px] outline-none"
+              className={inputCls}
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -298,7 +286,7 @@ export function TaskFormModal({
               step={5}
               value={progress}
               onChange={(e) => setProgress(Number(e.target.value))}
-              className="accent-[#3355d6]"
+              style={{ accentColor: "var(--accent)" }}
             />
           </Field>
 
@@ -308,20 +296,20 @@ export function TaskFormModal({
                 {checklistDraft.map((label, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-2 rounded-md border border-[#eef0f2] bg-[#fafafb] px-2.5 py-1.5"
+                    className="flex items-center gap-2 border border-[var(--divider)] bg-[var(--surface-alt)] px-2 py-1"
                   >
-                    <span className="flex-1 text-[12px] text-[#3d4148]">{label}</span>
+                    <span className="flex-1 text-[11px] text-[var(--text-secondary)]">{label}</span>
                     <button
                       onClick={() =>
                         setChecklistDraft((prev) => prev.filter((_, idx) => idx !== i))
                       }
-                      className="text-[#a6abb5] hover:text-[#d92d20]"
+                      className="text-[var(--text-faintest)] hover:text-[var(--danger)]"
                     >
                       ×
                     </button>
                   </div>
                 ))}
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <input
                     value={newChecklistLabel}
                     onChange={(e) => setNewChecklistLabel(e.target.value)}
@@ -332,16 +320,16 @@ export function TaskFormModal({
                       }
                     }}
                     placeholder="예: 사고 사실 확인"
-                    className="h-8 flex-1 rounded-md border border-[#d7dbe0] px-2.5 text-[12px] outline-none focus:border-[#3355d6]"
+                    className="h-6 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
                   />
                   <button
                     onClick={addChecklistDraftItem}
-                    className="h-8 rounded-md border border-[#d7dbe0] px-2.5 text-[11.5px] font-semibold text-[#5b6068]"
+                    className="h-6 rounded-[2px] border border-[var(--border-strong)] px-2 text-[10.5px] font-semibold text-[var(--text-muted)]"
                   >
                     추가
                   </button>
                 </div>
-                <div className="text-[10.5px] text-[#a6abb5]">
+                <div className="text-[9.5px] text-[var(--text-faintest)]">
                   업무를 세부 항목으로 나눠 각각 진척도를 관리하고 싶을 때 사용하세요. 등록 후
                   상세 화면에서 하위 항목을 더 추가하거나 트리 형태로 펼쳐볼 수 있습니다.
                 </div>
@@ -350,25 +338,26 @@ export function TaskFormModal({
           )}
 
           {mode === "create" && (
-            <div className="text-[10.5px] text-[#a6abb5]">
+            <div className="text-[9.5px] text-[var(--text-faintest)]">
               등록 이후 진행 내용은 업무 상세 화면의 &lsquo;진행 일지&rsquo;에서 계속
               기록합니다.
             </div>
           )}
 
-          {error && <div className="text-[11.5px] text-[#d92d20]">{error}</div>}
+          {error && <div className="text-[10.5px]" style={{ color: "var(--danger)" }}>{error}</div>}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[#eef0f2] px-6 py-4">
+        <div className="flex justify-end gap-1.5 border-t border-[var(--divider)] px-5 py-3">
           <button
             onClick={onClose}
-            className="h-[38px] rounded-md border border-[#d7dbe0] px-4 text-[13px] text-[#5b6068]"
+            className="h-7 rounded-[2px] border border-[var(--border-strong)] px-3 text-[11.5px] text-[var(--text-muted)]"
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
-            className="h-[38px] rounded-md bg-[#23262e] px-[18px] text-[13px] font-semibold text-white"
+            className="h-7 rounded-[2px] px-3.5 text-[11.5px] font-semibold"
+            style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
           >
             저장
           </button>
@@ -380,8 +369,8 @@ export function TaskFormModal({
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-semibold text-[#565b66]">{label}</label>
+    <div className="flex flex-col gap-1">
+      <label className="text-[10.5px] font-semibold text-[var(--text-muted)]">{label}</label>
       {children}
     </div>
   );

@@ -32,15 +32,15 @@ export function Sidebar({
   const categories = dept === "전체" ? [] : CATEGORY_TREE[dept];
 
   return (
-    <div className="flex w-[216px] flex-none flex-col gap-4 overflow-y-auto border-r border-[#e3e5e9] bg-white p-3">
-      <div className="flex flex-col gap-0.5">
+    <div className="flex w-[168px] flex-none flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] py-1.5">
+      <div className="flex flex-col">
         <SidebarItem
           label="내 업무"
           count={mineCount}
           active={currentKey === "mine"}
           onClick={() => onSelect({ type: "mine" })}
           icon={
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
             </svg>
@@ -52,7 +52,7 @@ export function Sidebar({
           active={currentKey === "all"}
           onClick={() => onSelect({ type: "all" })}
           icon={
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="3" y="3" width="7" height="7" rx="1" />
               <rect x="14" y="3" width="7" height="7" rx="1" />
               <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -62,17 +62,17 @@ export function Sidebar({
         />
       </div>
 
-      <div className="h-px bg-[#eef0f2]" />
+      <div className="mx-2.5 my-1.5 h-px bg-[var(--divider)]" />
 
       {dept === "전체" ? (
-        <div className="rounded-md border border-dashed border-[#d7dbe0] p-2.5 text-[10.5px] leading-relaxed text-[#a6abb5]">
+        <div className="mx-2 rounded-[4px] border border-dashed border-[var(--border-strong)] p-2 text-[10px] leading-relaxed text-[var(--text-faintest)]">
           상단에서 관리팀 또는 재경팀 탭을 선택하면
           <br />
           해당 부서의 세부 업무 분류가 표시됩니다.
         </div>
       ) : (
-        <div className="flex flex-col gap-0.5">
-          <div className="px-2.5 pb-1.5 pt-0.5 text-[10.5px] font-bold tracking-wide text-[#a6abb5]">
+        <div className="flex flex-col">
+          <div className="px-3 pb-1 pt-0.5 text-[10px] font-bold tracking-wide text-[var(--text-faintest)]">
             {dept} 메뉴
           </div>
           {categories.map((c) => (
@@ -106,13 +106,19 @@ function SidebarItem({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12.5px] font-semibold ${
-        active ? "bg-[#e7edff] text-[#3355d6]" : "text-[#3d4148] hover:bg-[#f5f6f8]"
-      }`}
+      className="flex h-[26px] items-center gap-1.5 px-2.5 text-left text-[11.5px] font-medium"
+      style={{
+        background: active ? "var(--accent-soft-bg)" : "transparent",
+        color: active ? "var(--accent-soft-fg)" : "var(--text-secondary)",
+        borderLeft: active ? "2px solid var(--accent)" : "2px solid transparent",
+      }}
     >
-      {icon && <span className={active ? "text-[#3355d6]" : "text-[#5b6068]"}>{icon}</span>}
+      {icon && <span className="flex-none">{icon}</span>}
       <span className="truncate">{label}</span>
-      <span className={`ml-auto text-[10.5px] ${active ? "text-[#3355d6]" : "text-[#a6abb5]"}`}>
+      <span
+        className="ml-auto text-[10px]"
+        style={{ color: active ? "var(--accent-soft-fg)" : "var(--text-faintest)" }}
+      >
         {count}
       </span>
     </button>
