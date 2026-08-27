@@ -19,11 +19,6 @@ export interface ChecklistItem {
   children: ChecklistItem[];
 }
 
-export interface Attachment {
-  name: string;
-  url: string; // Google Drive "anyone with the link" view URL
-}
-
 export interface Task {
   id: string;
   title: string;
@@ -48,7 +43,7 @@ export interface LogEntry {
   taskId: string;
   authorId: string;
   content: string;
-  attachments: Attachment[];
+  attachments: string[];
   createdAt: string; // ISO datetime
   editedAt?: string;
 }
@@ -61,7 +56,7 @@ export interface Comment {
   targetId: string; // LogEntry.id or ChecklistItem.id
   authorId: string;
   content: string;
-  attachments: Attachment[];
+  attachments: string[];
   createdAt: string; // ISO datetime
   editedAt?: string;
 }

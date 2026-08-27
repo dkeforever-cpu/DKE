@@ -1,10 +1,9 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { Attachment, Comment, User } from "@/lib/types";
+import { Comment, User } from "@/lib/types";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
-import { uploadAttachments } from "@/lib/upload";
 
 export function PencilIcon() {
   return (
@@ -47,7 +46,7 @@ interface CommentListProps {
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
   currentUserId: string;
-  onAdd: (content: string, attachments: Attachment[]) => void;
+  onAdd: (content: string, attachments: string[]) => void;
   onUpdateComment: (id: string, content: string) => void;
   onDeleteComment: (id: string) => void;
 }
@@ -63,9 +62,7 @@ export function CommentList({
   onDeleteComment,
 }: CommentListProps) {
   const [replyText, setReplyText] = useState("");
-  const [replyAttachments, setReplyAttachments] = useState<Attachment[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [replyAttachments, setReplyAttachments] = useState<string[]>([]);
 
   function submitReply() {
     if (!replyText.trim()) return;
@@ -74,21 +71,15 @@ export function CommentList({
     setReplyAttachments([]);
   }
 
-  async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
+  function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
-    // Snapshot the files before clearing the input — e.target.files is a
-    // live FileList, so resetting e.target.value would empty it before the
-    // async upload below gets a chance to read it.
-    const picked = Array.from(files);
+    if (!files) return;
+    // Snapshot the names before clearing the input — e.target.files is a live
+    // FileList, so resetting e.target.value would empty it before a deferred
+    // functional setState update gets a chance to read it.
+    const names = Array.from(files).map((f) => f.name);
     e.target.value = "";
-    setUploading(true);
-    setUploadError("");
-    const uploaded = await uploadAttachments(picked, (name, message) =>
-      setUploadError(`${name}: ${message}`)
-    );
-    setReplyAttachments((prev) => [...prev, ...uploaded]);
-    setUploading(false);
+    setReplyAttachments((prev) => [...prev, ...names]);
   }
 
   return (
@@ -120,7 +111,7 @@ export function CommentList({
             className="flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-md border border-[#d7dbe0] bg-white text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
           >
             <ClipIcon />
-            <input type="file" multiple className="hidden" onChange={handleFilePick} disabled={uploading} />
+            <input type="file" multiple className="hidden" onChange={handleFilePick} />
           </label>
           <button
             onClick={submitReply}
@@ -129,12 +120,6 @@ export function CommentList({
             등록
           </button>
         </div>
-        {uploading && (
-          <div className="ml-7 text-[10.5px] text-[#a6abb5]">파일 업로드 중...</div>
-        )}
-        {uploadError && (
-          <div className="ml-7 text-[10.5px] text-[#d92d20]">{uploadError}</div>
-        )}
         {replyAttachments.length > 0 && (
           <div className="ml-7 flex flex-wrap gap-1.5">
             {replyAttachments.map((f, i) => (
@@ -143,7 +128,7 @@ export function CommentList({
                 className="flex items-center gap-1.5 rounded-md border border-[#e3e5e9] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"
               >
                 <FileIcon />
-                {f.name}
+                {f}
                 <button
                   onClick={() => setReplyAttachments((prev) => prev.filter((_, idx) => idx !== i))}
                   className="text-[#a6abb5] hover:text-[#d92d20]"
@@ -284,16 +269,13 @@ function CommentRow({
         {(comment.attachments ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {(comment.attachments ?? []).map((f, i) => (
-              <a
+              <div
                 key={i}
-                href={f.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] bg-white px-2 py-1 text-[10.5px] text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+                className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] bg-white px-2 py-1 text-[10.5px] text-[#5b6068]"
               >
                 <FileIcon />
-                {f.name}
-              </a>
+                {f}
+              </div>
             ))}
           </div>
         )}

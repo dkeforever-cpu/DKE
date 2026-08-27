@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Attachment, Comment, LogEntry, User } from "@/lib/types";
+import { Comment, LogEntry, User } from "@/lib/types";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
 import { CommentThread, FileIcon, PencilIcon, TrashIcon } from "@/components/comment-thread";
@@ -27,7 +27,7 @@ export function LogEntryItem({
   currentUserId: string;
   onUpdateEntry: (id: string, content: string) => void;
   onDeleteEntry: (id: string) => void;
-  onAddComment: (content: string, attachments: Attachment[]) => void;
+  onAddComment: (content: string, attachments: string[]) => void;
   onUpdateComment: (id: string, content: string) => void;
   onDeleteComment: (id: string) => void;
 }) {
@@ -112,16 +112,13 @@ export function LogEntryItem({
         {(entry.attachments ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1.5 pl-[30px]">
             {(entry.attachments ?? []).map((f, i) => (
-              <a
+              <div
                 key={i}
-                href={f.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] px-2.5 py-1 text-[11px] text-[#5b6068] hover:border-[#3355d6] hover:text-[#3355d6]"
+                className="flex items-center gap-1.5 rounded-md border border-[#eef0f2] px-2.5 py-1 text-[11px] text-[#5b6068]"
               >
                 <FileIcon />
-                {f.name}
-              </a>
+                {f}
+              </div>
             ))}
           </div>
         )}

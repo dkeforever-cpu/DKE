@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Attachment, ChecklistItem, Comment, User } from "@/lib/types";
+import { ChecklistItem, Comment, User } from "@/lib/types";
 import { flatten } from "@/lib/checklist";
 import { CommentList } from "@/components/comment-thread";
 import { daysOverdue, formatDateShort, formatDateTime } from "@/lib/format";
@@ -11,7 +11,7 @@ interface CommentProps {
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
   currentUserId: string;
-  onAddComment: (itemId: string, content: string, attachments: Attachment[]) => void;
+  onAddComment: (itemId: string, content: string, attachments: string[]) => void;
   onUpdateComment: (commentId: string, content: string) => void;
   onDeleteComment: (commentId: string) => void;
 }
