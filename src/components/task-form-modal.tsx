@@ -154,8 +154,8 @@ export function TaskFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-      <div className="flex max-h-[88vh] w-full max-w-[500px] flex-col border border-[var(--border-strong)] bg-[var(--surface)]">
-        <div className="flex items-center justify-between border-b border-[var(--divider)] px-5 py-3.5">
+      <div className="flex max-h-[88vh] w-full max-w-[500px] flex-col overflow-hidden border border-[var(--border-strong)] bg-[var(--surface)]">
+        <div className="flex flex-none items-center justify-between border-b border-[var(--divider)] px-5 py-3.5">
           <div className="text-[13px] font-bold text-[var(--text)]">
             {mode === "create" ? "새 업무 등록" : "업무 수정"}
           </div>
@@ -166,7 +166,7 @@ export function TaskFormModal({
           </button>
         </div>
 
-        <div className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
           <Field label="담당 팀">
             <div className="flex flex-wrap gap-1.5">
               {creatableTeams.map((t) => (
@@ -391,7 +391,7 @@ export function TaskFormModal({
           {error && <div className="text-[10.5px]" style={{ color: "var(--danger)" }}>{error}</div>}
         </div>
 
-        <div className="flex justify-end gap-1.5 border-t border-[var(--divider)] px-5 py-3">
+        <div className="flex flex-none justify-end gap-1.5 border-t border-[var(--divider)] px-5 py-3">
           <button
             onClick={onClose}
             className="h-7 rounded-[2px] border border-[var(--border-strong)] px-3 text-[11.5px] text-[var(--text-muted)]"

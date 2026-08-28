@@ -14,8 +14,8 @@ export function ThemeSettingsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-      <div className="w-full max-w-[420px] rounded-[6px] border border-[var(--border-strong)] bg-[var(--surface)]">
-        <div className="flex items-center justify-between border-b border-[var(--divider)] px-5 py-3.5">
+      <div className="flex max-h-[88vh] w-full max-w-[420px] flex-col overflow-hidden rounded-[6px] border border-[var(--border-strong)] bg-[var(--surface)]">
+        <div className="flex flex-none items-center justify-between border-b border-[var(--divider)] px-5 py-3.5">
           <div className="text-[13.5px] font-bold text-[var(--text)]">화면 설정</div>
           <button onClick={onClose} className="text-[var(--text-faint)] hover:text-[var(--text)]">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -24,7 +24,7 @@ export function ThemeSettingsModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 px-5 py-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
           <div className="flex flex-col gap-2">
             <div className="text-[11px] font-semibold text-[var(--text-muted)]">메뉴 강조색</div>
             <div className="flex flex-wrap gap-1.5">
@@ -120,7 +120,7 @@ export function ThemeSettingsModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="flex justify-end border-t border-[var(--divider)] px-5 py-3">
+        <div className="flex flex-none justify-end border-t border-[var(--divider)] px-5 py-3">
           <button
             onClick={onClose}
             className="rounded-[4px] bg-[var(--accent)] px-4 py-[7px] text-[12px] font-semibold text-[var(--accent-fg)] hover:bg-[var(--accent-hover)]"
