@@ -205,23 +205,6 @@ function ChecklistNode({
           <ChevronIcon open={expanded} />
         </button>
 
-        <button
-          onClick={() => !readOnly && onUpdate(item.id, { progress: done ? 0 : 100 })}
-          disabled={readOnly}
-          title={done ? "완료 취소" : "완료로 표시"}
-          className="flex h-[14px] w-[14px] flex-none items-center justify-center rounded-[2px] border"
-          style={{
-            borderColor: done ? "var(--success)" : "var(--border-strong)",
-            background: done ? "var(--success)" : "var(--surface)",
-          }}
-        >
-          {done && (
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-          )}
-        </button>
-
         {editingLabel && !readOnly ? (
           <input
             autoFocus
