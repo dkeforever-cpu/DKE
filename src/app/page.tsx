@@ -174,7 +174,7 @@ export default function DashboardPage() {
       </div>
 
       <MobileTaskList
-        className="flex md:hidden"
+        className="dashboard-mobile-pane"
         tasks={filtered}
         getUser={getUser}
         selection={selection}
@@ -195,7 +195,7 @@ export default function DashboardPage() {
         onOpenNewTask={() => setFormOpen(true)}
       />
 
-      <div className="hidden flex-1 overflow-hidden md:flex">
+      <div className="dashboard-desktop-pane flex-1 overflow-hidden">
         <Sidebar
           teamSelected={teamTab !== "전체"}
           categories={teamTab === "전체" ? [] : categoriesByTeam[teamTab] ?? []}

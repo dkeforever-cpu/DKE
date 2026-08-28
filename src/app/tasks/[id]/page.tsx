@@ -131,8 +131,8 @@ export default function TaskDetailPage() {
         <span className="text-[10.5px] font-semibold text-[var(--text)]">업무 상세</span>
       </div>
 
-      <div className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[1.7fr_1fr] lg:overflow-hidden">
-        <div className="flex flex-col gap-2 lg:overflow-y-auto lg:pr-1">
+      <div className="detail-grid grid flex-1 gap-2 p-2">
+        <div className="flex flex-col gap-2 overflow-y-auto pr-1">
           <div className="flex flex-col gap-2 border border-[var(--border)] bg-[var(--surface)] p-3.5">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-1.5">
@@ -306,7 +306,7 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 lg:overflow-y-auto lg:pr-1">
+        <div className="flex flex-col gap-2 overflow-y-auto pr-1">
           <div className="flex flex-col gap-3 border border-[var(--border)] bg-[var(--surface)] p-3">
             <div className="flex flex-col gap-1">
               <div className="text-[10px] text-[var(--text-faint)]">진행률</div>

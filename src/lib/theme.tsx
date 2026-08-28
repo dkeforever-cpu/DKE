@@ -5,14 +5,16 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 const THEME_KEY = "dke-theme-v1";
 
 export type ThemeMode = "light" | "dark";
+export type ViewMode = "auto" | "mobile" | "desktop";
 
 export interface ThemeState {
   accent: string;
   mode: ThemeMode;
   scale: number; // percent, 80-130
+  viewMode: ViewMode;
 }
 
-const DEFAULT_THEME: ThemeState = { accent: "#3355d6", mode: "light", scale: 100 };
+const DEFAULT_THEME: ThemeState = { accent: "#3355d6", mode: "light", scale: 100, viewMode: "auto" };
 
 export const ACCENT_PRESETS: { name: string; value: string }[] = [
   { name: "블루", value: "#3355d6" },
@@ -30,6 +32,7 @@ interface ThemeContextValue extends ThemeState {
   setMode: (mode: ThemeMode) => void;
   toggleMode: () => void;
   setScale: (scale: number) => void;
+  setViewMode: (viewMode: ViewMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -63,6 +66,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.style.setProperty("--accent", theme.accent);
     document.documentElement.setAttribute("data-theme", theme.mode);
+    document.documentElement.setAttribute("data-view", theme.viewMode);
     document.body.style.zoom = String(theme.scale / 100);
     if (loaded) {
       window.localStorage.setItem(THEME_KEY, JSON.stringify(theme));
@@ -85,8 +89,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme((t) => ({ ...t, scale }));
   }, []);
 
+  const setViewMode = useCallback((viewMode: ViewMode) => {
+    setTheme((t) => ({ ...t, viewMode }));
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ ...theme, setAccent, setMode, toggleMode, setScale }}>
+    <ThemeContext.Provider
+      value={{ ...theme, setAccent, setMode, toggleMode, setScale, setViewMode }}
+    >
       {children}
     </ThemeContext.Provider>
   );

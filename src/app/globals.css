@@ -93,3 +93,55 @@ input, textarea, select, button {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
+
+/* ---------------------------------------------------------------------
+ * Mobile/desktop view switching. Defaults to following the real
+ * viewport width, but can be pinned either way via the top bar toggle
+ * (data-view on <html>) — some high-DPI phones report an inflated CSS
+ * viewport width that makes width-only detection unreliable, so an
+ * explicit override is needed rather than relying on breakpoints alone.
+ * ------------------------------------------------------------------- */
+.dashboard-desktop-pane {
+  display: none;
+}
+.dashboard-mobile-pane {
+  display: flex;
+}
+.detail-grid {
+  grid-template-columns: 1fr;
+  overflow-y: auto;
+}
+@media (min-width: 768px) {
+  .dashboard-desktop-pane {
+    display: flex;
+  }
+  .dashboard-mobile-pane {
+    display: none;
+  }
+  .detail-grid {
+    grid-template-columns: 1.7fr 1fr;
+    overflow: hidden;
+  }
+}
+
+:root[data-view="mobile"] .dashboard-desktop-pane {
+  display: none !important;
+}
+:root[data-view="mobile"] .dashboard-mobile-pane {
+  display: flex !important;
+}
+:root[data-view="mobile"] .detail-grid {
+  grid-template-columns: 1fr !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+:root[data-view="desktop"] .dashboard-desktop-pane {
+  display: flex !important;
+}
+:root[data-view="desktop"] .dashboard-mobile-pane {
+  display: none !important;
+}
+:root[data-view="desktop"] .detail-grid {
+  grid-template-columns: 1.7fr 1fr !important;
+  overflow: hidden !important;
+}
