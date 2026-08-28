@@ -93,16 +93,30 @@ export default function DashboardPage() {
   }, [teamTasks, selection, currentUser]);
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return scoped.filter((t) => {
       if (centerFilter !== "전체" && t.center !== centerFilter) return false;
       if (assigneeFilter !== "전체" && t.assigneeId !== assigneeFilter) return false;
       if (statusFilter !== "전체" && t.status !== statusFilter) return false;
       if (priorityFilter !== "전체" && t.priority !== priorityFilter) return false;
-      if (search.trim() && !t.title.toLowerCase().includes(search.trim().toLowerCase()))
-        return false;
+      if (q) {
+        const haystack = [
+          t.title,
+          t.description,
+          t.categoryLarge,
+          t.categoryMedium,
+          t.categorySmall,
+          t.center,
+          getUser(t.assigneeId)?.name ?? "",
+          ...t.collaboratorIds.map((id) => getUser(id)?.name ?? ""),
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       return true;
     });
-  }, [scoped, centerFilter, assigneeFilter, statusFilter, priorityFilter, search]);
+  }, [scoped, centerFilter, assigneeFilter, statusFilter, priorityFilter, search, getUser]);
 
   const summary = useMemo(() => {
     const base = scoped;
@@ -237,7 +251,7 @@ export default function DashboardPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="업무 검색"
+              placeholder="업무명·설명·카테고리·담당자·센터 검색"
               className="h-6 w-[180px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
             />
             <div className="flex-1" />
