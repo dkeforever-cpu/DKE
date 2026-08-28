@@ -7,10 +7,10 @@ import { taskColor, buildMonthGrid, parseDateStr, toDateStr } from "@/lib/calend
 import { todayStr } from "@/lib/format";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const MAX_START_ROWS = 3;
+const MAX_ROWS_PER_DAY = 4;
 const ITEM_H = 15;
 
-type Role = "start" | "due" | "progress";
+type Role = "start" | "due";
 
 interface DayItem {
   task: Task;
@@ -23,15 +23,17 @@ interface Range {
   end: Date;
 }
 
+// Only the start day and the due day are shown — the days in between add no
+// information beyond "still going" and were cluttering the grid once many
+// people each had several tasks running at once.
 function itemsForDay(day: Date, ranges: Range[]): DayItem[] {
   const t = day.getTime();
   const list: DayItem[] = [];
   for (const r of ranges) {
-    if (t < r.start.getTime() || t > r.end.getTime()) continue;
-    const role: Role = t === r.start.getTime() ? "start" : t === r.end.getTime() ? "due" : "progress";
-    list.push({ task: r.task, role });
+    if (t === r.start.getTime()) list.push({ task: r.task, role: "start" });
+    else if (t === r.end.getTime()) list.push({ task: r.task, role: "due" });
   }
-  const priority: Record<Role, number> = { start: 0, due: 1, progress: 2 };
+  const priority: Record<Role, number> = { start: 0, due: 1 };
   list.sort((a, b) => priority[a.role] - priority[b.role] || a.task.dueDate.localeCompare(b.task.dueDate));
   return list;
 }
@@ -113,10 +115,8 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
               const inMonth = d.getMonth() === cursor.getMonth();
               const isToday = toDateStr(d) === today;
               const dayItems = itemsForDay(d, ranges);
-              const starts = dayItems.filter((i) => i.role === "start");
-              const others = dayItems.filter((i) => i.role !== "start");
-              const visibleStarts = starts.slice(0, MAX_START_ROWS);
-              const startOverflow = starts.length - visibleStarts.length;
+              const visible = dayItems.slice(0, MAX_ROWS_PER_DAY);
+              const overflow = dayItems.length - visible.length;
               return (
                 <div
                   key={d.toISOString()}
@@ -133,21 +133,15 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                     {d.getDate()}
                   </span>
 
-                  {visibleStarts.map(({ task }) => (
-                    <StartChip key={task.id} task={task} onOpen={() => openTask(task.id)} />
-                  ))}
-                  {startOverflow > 0 && (
-                    <div className="text-[9px] font-semibold text-[var(--text-faint)]">
-                      +{startOverflow}개 시작
-                    </div>
+                  {visible.map(({ task, role }) =>
+                    role === "start" ? (
+                      <StartChip key={task.id} task={task} onOpen={() => openTask(task.id)} />
+                    ) : (
+                      <DueChip key={task.id} task={task} onOpen={() => openTask(task.id)} />
+                    )
                   )}
-
-                  {others.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-x-[3px] gap-y-[1px]">
-                      {others.map(({ task, role }) => (
-                        <MiniBadge key={`${task.id}-${role}`} task={task} role={role} onOpen={() => openTask(task.id)} />
-                      ))}
-                    </div>
+                  {overflow > 0 && (
+                    <div className="text-[9px] font-semibold text-[var(--text-faint)]">+{overflow}개 더</div>
                   )}
                 </div>
               );
@@ -173,32 +167,17 @@ function StartChip({ task, onOpen }: { task: Task; onOpen: () => void }) {
   );
 }
 
-// Progress/due days omit the title entirely — with many people each running
-// several tasks, one full-width row per task per day would blow up the row
-// count, so these render as compact same-color glyphs that wrap inline.
-function MiniBadge({ task, role, onOpen }: { task: Task; role: Role; onOpen: () => void }) {
+function DueChip({ task, onOpen }: { task: Task; onOpen: () => void }) {
   const color = taskColor(task);
-  if (role === "due") {
-    return (
-      <button
-        onClick={onOpen}
-        title={`${task.title} (마감)`}
-        className="flex flex-none items-center gap-[1px] text-[9px] font-bold leading-none"
-        style={{ color }}
-      >
-        <span>■</span>
-        <span>마감</span>
-      </button>
-    );
-  }
   return (
     <button
       onClick={onOpen}
-      title={task.title}
-      className="flex-none text-[11px] font-bold leading-none"
-      style={{ color }}
+      title={`${task.title} (마감)`}
+      className="flex items-center gap-1 overflow-hidden border-l-2 pl-1 text-left text-[10px]"
+      style={{ borderColor: color, height: ITEM_H }}
     >
-      ▶
+      <span className="flex-none font-bold leading-none" style={{ color }}>■마감</span>
+      <span className="truncate text-[var(--text-secondary)]">{task.title}</span>
     </button>
   );
 }
