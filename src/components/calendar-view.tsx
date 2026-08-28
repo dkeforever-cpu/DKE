@@ -7,7 +7,7 @@ import { taskColor, buildMonthGrid, parseDateStr, toDateStr } from "@/lib/calend
 import { todayStr } from "@/lib/format";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const MAX_ITEMS_PER_DAY = 4;
+const MAX_START_ROWS = 3;
 const ITEM_H = 15;
 
 type Role = "start" | "due" | "progress";
@@ -113,8 +113,10 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
               const inMonth = d.getMonth() === cursor.getMonth();
               const isToday = toDateStr(d) === today;
               const dayItems = itemsForDay(d, ranges);
-              const visible = dayItems.slice(0, MAX_ITEMS_PER_DAY);
-              const overflow = dayItems.length - visible.length;
+              const starts = dayItems.filter((i) => i.role === "start");
+              const others = dayItems.filter((i) => i.role !== "start");
+              const visibleStarts = starts.slice(0, MAX_START_ROWS);
+              const startOverflow = starts.length - visibleStarts.length;
               return (
                 <div
                   key={d.toISOString()}
@@ -131,12 +133,21 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                     {d.getDate()}
                   </span>
 
-                  {visible.map(({ task, role }) => (
-                    <CalendarItemRow key={task.id} task={task} role={role} onOpen={() => openTask(task.id)} />
+                  {visibleStarts.map(({ task }) => (
+                    <StartChip key={task.id} task={task} onOpen={() => openTask(task.id)} />
                   ))}
+                  {startOverflow > 0 && (
+                    <div className="text-[9px] font-semibold text-[var(--text-faint)]">
+                      +{startOverflow}개 시작
+                    </div>
+                  )}
 
-                  {overflow > 0 && (
-                    <div className="text-[9px] font-semibold text-[var(--text-faint)]">+{overflow}개 더</div>
+                  {others.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-x-[3px] gap-y-[1px]">
+                      {others.map(({ task, role }) => (
+                        <MiniBadge key={`${task.id}-${role}`} task={task} role={role} onOpen={() => openTask(task.id)} />
+                      ))}
+                    </div>
                   )}
                 </div>
               );
@@ -148,46 +159,46 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
   );
 }
 
-function CalendarItemRow({ task, role, onOpen }: { task: Task; role: Role; onOpen: () => void }) {
+function StartChip({ task, onOpen }: { task: Task; onOpen: () => void }) {
   const color = taskColor(task);
+  return (
+    <button
+      onClick={onOpen}
+      title={task.title}
+      className="flex items-center overflow-hidden rounded-[2px] px-1 text-left text-[10px] font-semibold text-white"
+      style={{ background: color, height: ITEM_H }}
+    >
+      <span className="truncate">{task.title}</span>
+    </button>
+  );
+}
 
-  if (role === "start") {
-    return (
-      <button
-        onClick={onOpen}
-        title={task.title}
-        className="flex items-center overflow-hidden rounded-[2px] px-1 text-left text-[10px] font-semibold text-white"
-        style={{ background: color, height: ITEM_H }}
-      >
-        <span className="truncate">{task.title}</span>
-      </button>
-    );
-  }
-
+// Progress/due days omit the title entirely — with many people each running
+// several tasks, one full-width row per task per day would blow up the row
+// count, so these render as compact same-color glyphs that wrap inline.
+function MiniBadge({ task, role, onOpen }: { task: Task; role: Role; onOpen: () => void }) {
+  const color = taskColor(task);
   if (role === "due") {
     return (
       <button
         onClick={onOpen}
         title={`${task.title} (마감)`}
-        className="flex items-center gap-1 overflow-hidden text-left text-[10px]"
-        style={{ height: ITEM_H }}
+        className="flex flex-none items-center gap-[1px] text-[9px] font-bold leading-none"
+        style={{ color }}
       >
-        <span className="flex-none leading-none" style={{ color }}>■</span>
-        <span className="flex-none font-bold leading-none" style={{ color }}>마감</span>
-        <span className="truncate text-[var(--text-faint)]">{task.title}</span>
+        <span>■</span>
+        <span>마감</span>
       </button>
     );
   }
-
   return (
     <button
       onClick={onOpen}
       title={task.title}
-      className="flex items-center gap-1 overflow-hidden text-left text-[10px]"
-      style={{ height: ITEM_H }}
+      className="flex-none text-[11px] font-bold leading-none"
+      style={{ color }}
     >
-      <span className="flex-none leading-none" style={{ color }}>▶</span>
-      <span className="truncate text-[var(--text-faint)]">{task.title}</span>
+      ▶
     </button>
   );
 }
