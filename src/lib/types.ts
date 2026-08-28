@@ -44,6 +44,7 @@ export interface Task {
   createdAt: string; // YYYY-MM-DD
   checklist?: ChecklistItem[];
   customFields?: Record<string, string>;
+  color?: string; // hex, used for the calendar bar; auto-assigned from a palette when unset
 }
 
 export interface LogEntry {

@@ -4,6 +4,7 @@ import { ReactNode, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { CENTERS } from "@/lib/categories";
 import { ChecklistItem, Priority, Status, Task } from "@/lib/types";
+import { CALENDAR_PALETTE, taskColor } from "@/lib/calendar";
 
 const STATUSES: Status[] = ["대기", "진행중", "검토중", "완료"];
 const PRIORITIES: Priority[] = ["높음", "보통", "낮음"];
@@ -60,6 +61,7 @@ export function TaskFormModal({
   const [status, setStatus] = useState<Status>(task?.status ?? "대기");
   const [progress, setProgress] = useState(task?.progress ?? 0);
   const [level, setLevel] = useState(task?.level ?? 1);
+  const [color, setColor] = useState<string | undefined>(task?.color);
   const [checklistDraft, setChecklistDraft] = useState<string[]>([]);
   const [newChecklistLabel, setNewChecklistLabel] = useState("");
   const [error, setError] = useState("");
@@ -129,6 +131,7 @@ export function TaskFormModal({
         dueDate,
         createdBy: currentUser.id,
         checklist,
+        color,
       });
       onSaved(id);
     } else if (task) {
@@ -147,6 +150,7 @@ export function TaskFormModal({
         progress,
         level,
         dueDate,
+        color,
       });
       onSaved(task.id);
     }
@@ -296,6 +300,47 @@ export function TaskFormModal({
               </select>
             </Field>
           </div>
+
+          <Field label="캘린더 색상 (미지정 시 자동 배정)">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setColor(undefined)}
+                title="자동"
+                className="flex h-6 items-center rounded-[3px] border px-2 text-[10px] font-semibold"
+                style={
+                  color === undefined
+                    ? { borderColor: "var(--accent)", background: "var(--accent-soft-bg)", color: "var(--accent-soft-fg)" }
+                    : { borderColor: "var(--border-strong)", color: "var(--text-muted)" }
+                }
+              >
+                자동
+              </button>
+              {CALENDAR_PALETTE.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  title={c}
+                  className="h-6 w-6 flex-none rounded-full border"
+                  style={{
+                    background: c,
+                    borderColor: color === c ? "var(--text)" : "transparent",
+                    boxShadow: color === c ? "0 0 0 1px var(--text)" : "none",
+                  }}
+                />
+              ))}
+              {task && (
+                <span className="ml-1 flex items-center gap-1 text-[10px] text-[var(--text-faintest)]">
+                  <span
+                    className="h-2.5 w-2.5 flex-none rounded-full"
+                    style={{ background: color ?? taskColor(task) }}
+                  />
+                  {color === undefined ? "자동 배정된 색상 미리보기" : ""}
+                </span>
+              )}
+            </div>
+          </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="진행상태">

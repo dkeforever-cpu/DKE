@@ -7,6 +7,7 @@ import { Priority, Status, Task, User } from "@/lib/types";
 import { StatusBadge, PriorityLabel } from "@/components/badges";
 import { formatDateShort, daysOverdue, isOverdue } from "@/lib/format";
 import { Selection, selectionKey } from "@/components/sidebar";
+import { CalendarView } from "@/components/calendar-view";
 
 const STATUSES: Status[] = ["대기", "진행중", "검토중", "완료"];
 const PRIORITIES: Priority[] = ["높음", "보통", "낮음"];
@@ -54,6 +55,7 @@ export function MobileTaskList({
 }) {
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const currentKey = selectionKey(selection);
   const activeExtraFilters = [centerFilter, assigneeFilter, priorityFilter].filter(
     (v) => v !== "전체"
@@ -94,6 +96,21 @@ export function MobileTaskList({
             placeholder="업무 검색"
             className="h-8 flex-1 rounded-[4px] border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 text-[12.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
           />
+          <button
+            onClick={() => setShowCalendar((v) => !v)}
+            title="캘린더 보기"
+            className="flex h-8 w-8 flex-none items-center justify-center rounded-[4px] border text-[var(--text-muted)]"
+            style={
+              showCalendar
+                ? { borderColor: "var(--accent)", background: "var(--accent-soft-bg)", color: "var(--accent-soft-fg)" }
+                : { borderColor: "var(--border-strong)" }
+            }
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4.5" width="18" height="16" rx="1.5" />
+              <path d="M3 9.5h18M8 3v3M16 3v3" />
+            </svg>
+          </button>
           <button
             onClick={() => setFiltersOpen((v) => !v)}
             className="relative flex h-8 w-8 flex-none items-center justify-center rounded-[4px] border border-[var(--border-strong)] text-[var(--text-muted)]"
@@ -171,6 +188,11 @@ export function MobileTaskList({
         )}
       </div>
 
+      {showCalendar ? (
+        <div className="flex flex-1 flex-col overflow-hidden p-1.5">
+          <CalendarView tasks={tasks} />
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto">
         {tasks.length === 0 ? (
           <div className="flex h-32 items-center justify-center text-[12px] text-[var(--text-faintest)]">
@@ -227,6 +249,7 @@ export function MobileTaskList({
           })
         )}
       </div>
+      )}
 
       <button
         onClick={onOpenNewTask}

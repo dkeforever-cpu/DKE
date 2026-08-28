@@ -23,6 +23,8 @@ export function Sidebar({
   mineCount,
   allCount,
   categoryCounts,
+  calendarActive,
+  onOpenCalendar,
 }: {
   teamSelected: boolean;
   categories: CategoryLarge[];
@@ -34,6 +36,8 @@ export function Sidebar({
   mineCount: number;
   allCount: number;
   categoryCounts: Record<string, number>;
+  calendarActive: boolean;
+  onOpenCalendar: () => void;
 }) {
   const currentKey = selectionKey(selection);
 
@@ -43,7 +47,7 @@ export function Sidebar({
         <SidebarItem
           label="내 업무"
           count={mineCount}
-          active={currentKey === "mine"}
+          active={!calendarActive && currentKey === "mine"}
           onClick={() => onSelect({ type: "mine" })}
           icon={
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -55,7 +59,7 @@ export function Sidebar({
         <SidebarItem
           label="전체 업무"
           count={allCount}
-          active={currentKey === "all"}
+          active={!calendarActive && currentKey === "all"}
           onClick={() => onSelect({ type: "all" })}
           icon={
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -63,6 +67,17 @@ export function Sidebar({
               <rect x="14" y="3" width="7" height="7" rx="1" />
               <rect x="3" y="14" width="7" height="7" rx="1" />
               <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          }
+        />
+        <SidebarItem
+          label="캘린더"
+          active={calendarActive}
+          onClick={onOpenCalendar}
+          icon={
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="3" y="4.5" width="18" height="16" rx="1.5" />
+              <path d="M3 9.5h18M8 3v3M16 3v3" />
             </svg>
           }
         />
@@ -129,7 +144,7 @@ function SidebarItem({
   icon,
 }: {
   label: string;
-  count: number;
+  count?: number;
   active: boolean;
   onClick: () => void;
   icon?: ReactNode;
@@ -146,12 +161,14 @@ function SidebarItem({
     >
       {icon && <span className="flex-none">{icon}</span>}
       <span className="truncate">{label}</span>
-      <span
-        className="ml-auto text-[10px]"
-        style={{ color: active ? "var(--accent-soft-fg)" : "var(--text-faintest)" }}
-      >
-        {count}
-      </span>
+      {count !== undefined && (
+        <span
+          className="ml-auto text-[10px]"
+          style={{ color: active ? "var(--accent-soft-fg)" : "var(--text-faintest)" }}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }

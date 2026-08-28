@@ -6,6 +6,7 @@ import { useRequireAuth } from "@/lib/use-require-auth";
 import { TopBar } from "@/components/top-bar";
 import { Sidebar, Selection } from "@/components/sidebar";
 import { TaskTable } from "@/components/task-table";
+import { CalendarView } from "@/components/calendar-view";
 import { MobileTaskList } from "@/components/mobile-task-list";
 import { TaskFormModal } from "@/components/task-form-modal";
 import { CENTERS } from "@/lib/categories";
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [teamTab, setTeamTab] = useState<string>("전체"); // "전체" or a team id
   const [boardId, setBoardId] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection>({ type: "all" });
+  const [view, setView] = useState<"list" | "calendar">("list");
   const [centerFilter, setCenterFilter] = useState("전체");
   const [assigneeFilter, setAssigneeFilter] = useState("전체");
   const [statusFilter, setStatusFilter] = useState<"전체" | Status>("전체");
@@ -135,6 +137,16 @@ export default function DashboardPage() {
     setSelection({ type: "all" });
   }
 
+  function handleSelect(s: Selection) {
+    setView("list");
+    setSelection(s);
+  }
+
+  function handleSelectBoard(id: string) {
+    setView("list");
+    setBoardId(id);
+  }
+
   if (!ready || !currentUser) return null;
 
   const teamName = teams.find((t) => t.id === teamTab)?.name ?? "전체";
@@ -201,12 +213,14 @@ export default function DashboardPage() {
           categories={teamTab === "전체" ? [] : categoriesByTeam[teamTab] ?? []}
           boards={teamBoards}
           activeBoardId={activeBoard?.id ?? null}
-          onSelectBoard={setBoardId}
+          onSelectBoard={handleSelectBoard}
           selection={selection}
-          onSelect={setSelection}
+          onSelect={handleSelect}
           mineCount={mineCount}
           allCount={allCount}
           categoryCounts={categoryCounts}
+          calendarActive={view === "calendar"}
+          onOpenCalendar={() => setView("calendar")}
         />
 
         <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-2">
@@ -290,14 +304,18 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          <TaskTable
-            tasks={filtered}
-            columns={visibleColumns}
-            customFields={customFields}
-            getUser={getUser}
-            attachmentCount={attachmentCount}
-            commentCount={commentCount}
-          />
+          {view === "calendar" ? (
+            <CalendarView tasks={filtered} />
+          ) : (
+            <TaskTable
+              tasks={filtered}
+              columns={visibleColumns}
+              customFields={customFields}
+              getUser={getUser}
+              attachmentCount={attachmentCount}
+              commentCount={commentCount}
+            />
+          )}
         </div>
       </div>
 
