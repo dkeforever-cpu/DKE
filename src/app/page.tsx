@@ -6,6 +6,7 @@ import { useRequireAuth } from "@/lib/use-require-auth";
 import { TopBar } from "@/components/top-bar";
 import { Sidebar, Selection } from "@/components/sidebar";
 import { TaskTable } from "@/components/task-table";
+import { MobileTaskList } from "@/components/mobile-task-list";
 import { TaskFormModal } from "@/components/task-form-modal";
 import { CENTERS } from "@/lib/categories";
 import { Priority, Status } from "@/lib/types";
@@ -172,7 +173,29 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <MobileTaskList
+        className="flex md:hidden"
+        tasks={filtered}
+        getUser={getUser}
+        selection={selection}
+        onSelectionChange={setSelection}
+        mineCount={mineCount}
+        allCount={allCount}
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        centerFilter={centerFilter}
+        onCenterFilterChange={setCenterFilter}
+        assigneeFilter={assigneeFilter}
+        onAssigneeFilterChange={setAssigneeFilter}
+        priorityFilter={priorityFilter}
+        onPriorityFilterChange={setPriorityFilter}
+        users={users}
+        onOpenNewTask={() => setFormOpen(true)}
+      />
+
+      <div className="hidden flex-1 overflow-hidden md:flex">
         <Sidebar
           teamSelected={teamTab !== "전체"}
           categories={teamTab === "전체" ? [] : categoriesByTeam[teamTab] ?? []}
