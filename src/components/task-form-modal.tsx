@@ -318,15 +318,15 @@ export function TaskFormModal({
               </button>
               {CALENDAR_PALETTE.map((c) => (
                 <button
-                  key={c}
+                  key={c.value}
                   type="button"
-                  onClick={() => setColor(c)}
-                  title={c}
+                  onClick={() => setColor(c.value)}
+                  title={c.name}
                   className="h-6 w-6 flex-none rounded-full border"
                   style={{
-                    background: c,
-                    borderColor: color === c ? "var(--text)" : "transparent",
-                    boxShadow: color === c ? "0 0 0 1px var(--text)" : "none",
+                    background: c.value,
+                    borderColor: color === c.value ? "var(--text)" : "transparent",
+                    boxShadow: color === c.value ? "0 0 0 1px var(--text)" : "none",
                   }}
                 />
               ))}
