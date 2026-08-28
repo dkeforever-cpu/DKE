@@ -277,27 +277,21 @@ function ChecklistNode({
           </button>
         )}
 
-        <div className="flex w-[96px] flex-none items-center gap-1">
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${item.progress}%`, background: progressColor(item.progress) }}
-            />
-          </div>
+        <div className="flex w-[110px] flex-none items-center gap-1.5">
           <input
-            type="number"
+            type="range"
             min={0}
             max={100}
             step={5}
             value={item.progress}
             disabled={readOnly}
-            onChange={(e) => {
-              const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
-              onUpdate(item.id, { progress: v });
-            }}
-            className="h-5 w-[36px] rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-right text-[10px] text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
+            onChange={(e) => onUpdate(item.id, { progress: Number(e.target.value) })}
+            style={{ accentColor: progressColor(item.progress) }}
+            className="h-1 flex-1 disabled:opacity-60"
           />
-          <span className="text-[9.5px] text-[var(--text-faintest)]">%</span>
+          <span className="w-7 flex-none text-right text-[9.5px] text-[var(--text-faintest)]">
+            {item.progress}%
+          </span>
         </div>
 
         {!readOnly && (
