@@ -3,56 +3,37 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Task } from "@/lib/types";
-import { taskColor } from "@/lib/calendar";
-import { buildMonthGrid, parseDateStr, toDateStr } from "@/lib/calendar";
+import { taskColor, buildMonthGrid, parseDateStr, toDateStr } from "@/lib/calendar";
 import { todayStr } from "@/lib/format";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const MAX_LANES = 4;
-const BAR_H = 16;
-const BAR_GAP = 2;
-const HEADER_H = 20;
+const MAX_ITEMS_PER_DAY = 4;
+const ITEM_H = 15;
 
-interface Segment {
+type Role = "start" | "due" | "progress";
+
+interface DayItem {
   task: Task;
-  colStart: number; // 0-6
-  colEnd: number; // 0-6, inclusive
-  lane: number;
+  role: Role;
 }
 
-function buildWeekSegments(days: Date[], items: { task: Task; start: Date; end: Date }[]) {
-  const rowStart = days[0];
-  const rowEnd = days[6];
-  const raw: { task: Task; colStart: number; colEnd: number }[] = [];
-  for (const it of items) {
-    if (it.end < rowStart || it.start > rowEnd) continue;
-    const segStart = it.start < rowStart ? rowStart : it.start;
-    const segEnd = it.end > rowEnd ? rowEnd : it.end;
-    const colStart = Math.round((segStart.getTime() - rowStart.getTime()) / 86400000);
-    const colEnd = Math.round((segEnd.getTime() - rowStart.getTime()) / 86400000);
-    raw.push({ task: it.task, colStart, colEnd });
-  }
-  raw.sort((a, b) => a.colStart - b.colStart || a.colEnd - b.colEnd);
+interface Range {
+  task: Task;
+  start: Date;
+  end: Date;
+}
 
-  const laneEnds: number[] = [];
-  const segments: Segment[] = [];
-  let overflow = 0;
-  for (const r of raw) {
-    let lane = laneEnds.findIndex((end) => end < r.colStart);
-    if (lane === -1) {
-      if (laneEnds.length >= MAX_LANES) {
-        overflow++;
-        continue;
-      }
-      lane = laneEnds.length;
-      laneEnds.push(r.colEnd);
-    } else {
-      laneEnds[lane] = r.colEnd;
-    }
-    segments.push({ ...r, lane });
+function itemsForDay(day: Date, ranges: Range[]): DayItem[] {
+  const t = day.getTime();
+  const list: DayItem[] = [];
+  for (const r of ranges) {
+    if (t < r.start.getTime() || t > r.end.getTime()) continue;
+    const role: Role = t === r.start.getTime() ? "start" : t === r.end.getTime() ? "due" : "progress";
+    list.push({ task: r.task, role });
   }
-  const laneCount = Math.min(laneEnds.length, MAX_LANES);
-  return { segments, laneCount, overflow };
+  const priority: Record<Role, number> = { start: 0, due: 1, progress: 2 };
+  list.sort((a, b) => priority[a.role] - priority[b.role] || a.task.dueDate.localeCompare(b.task.dueDate));
+  return list;
 }
 
 export function CalendarView({ tasks }: { tasks: Task[] }) {
@@ -65,7 +46,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
   const weeks = useMemo(() => buildMonthGrid(cursor), [cursor]);
   const today = todayStr();
 
-  const items = useMemo(
+  const ranges = useMemo<Range[]>(
     () =>
       tasks
         .filter((t) => t.status !== "완료")
@@ -77,6 +58,10 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
         }),
     [tasks]
   );
+
+  function openTask(id: string) {
+    router.push(`/tasks/${id}`);
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden border border-[var(--border)] bg-[var(--surface)]">
@@ -122,63 +107,87 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {weeks.map((days, wi) => {
-          const { segments, laneCount, overflow } = buildWeekSegments(days, items);
-          const rowHeight = HEADER_H + Math.max(1, laneCount) * (BAR_H + BAR_GAP) + 4;
-          return (
-            <div
-              key={wi}
-              className="relative grid grid-cols-7 border-b border-[var(--divider)]"
-              style={{ minHeight: rowHeight }}
-            >
-              {days.map((d) => {
-                const inMonth = d.getMonth() === cursor.getMonth();
-                const isToday = toDateStr(d) === today;
-                return (
-                  <div key={d.toISOString()} className="border-r border-[var(--divider)] px-1 pt-1 last:border-r-0">
-                    <span
-                      className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold"
-                      style={{
-                        color: !inMonth ? "var(--text-disabled)" : isToday ? "var(--accent-fg)" : "var(--text-secondary)",
-                        background: isToday ? "var(--accent)" : "transparent",
-                      }}
-                    >
-                      {d.getDate()}
-                    </span>
-                  </div>
-                );
-              })}
-
-              {segments.map((seg) => (
-                <button
-                  key={`${seg.task.id}-${seg.colStart}`}
-                  onClick={() => router.push(`/tasks/${seg.task.id}`)}
-                  title={seg.task.title}
-                  className="absolute flex items-center overflow-hidden rounded-[3px] px-1.5 text-left text-[10px] font-semibold text-white"
-                  style={{
-                    left: `calc(${(seg.colStart / 7) * 100}% + 2px)`,
-                    width: `calc(${((seg.colEnd - seg.colStart + 1) / 7) * 100}% - 4px)`,
-                    top: HEADER_H + seg.lane * (BAR_H + BAR_GAP),
-                    height: BAR_H,
-                    background: taskColor(seg.task),
-                  }}
-                >
-                  <span className="truncate">{seg.task.title}</span>
-                </button>
-              ))}
-
-              {overflow > 0 && (
+        {weeks.map((days, wi) => (
+          <div key={wi} className="grid grid-cols-7 border-b border-[var(--divider)]">
+            {days.map((d) => {
+              const inMonth = d.getMonth() === cursor.getMonth();
+              const isToday = toDateStr(d) === today;
+              const dayItems = itemsForDay(d, ranges);
+              const visible = dayItems.slice(0, MAX_ITEMS_PER_DAY);
+              const overflow = dayItems.length - visible.length;
+              return (
                 <div
-                  className="absolute right-1 text-[9px] font-semibold text-[var(--text-faint)]"
-                  style={{ top: HEADER_H + MAX_LANES * (BAR_H + BAR_GAP) }}
+                  key={d.toISOString()}
+                  className="flex flex-col gap-[1px] border-r border-[var(--divider)] px-1 pb-1 pt-1 last:border-r-0"
+                  style={{ minHeight: 46 }}
                 >
-                  +{overflow}개 더
+                  <span
+                    className="mb-[1px] inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold"
+                    style={{
+                      color: !inMonth ? "var(--text-disabled)" : isToday ? "var(--accent-fg)" : "var(--text-secondary)",
+                      background: isToday ? "var(--accent)" : "transparent",
+                    }}
+                  >
+                    {d.getDate()}
+                  </span>
+
+                  {visible.map(({ task, role }) => (
+                    <CalendarItemRow key={task.id} task={task} role={role} onOpen={() => openTask(task.id)} />
+                  ))}
+
+                  {overflow > 0 && (
+                    <div className="text-[9px] font-semibold text-[var(--text-faint)]">+{overflow}개 더</div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
+  );
+}
+
+function CalendarItemRow({ task, role, onOpen }: { task: Task; role: Role; onOpen: () => void }) {
+  const color = taskColor(task);
+
+  if (role === "start") {
+    return (
+      <button
+        onClick={onOpen}
+        title={task.title}
+        className="flex items-center overflow-hidden rounded-[2px] px-1 text-left text-[10px] font-semibold text-white"
+        style={{ background: color, height: ITEM_H }}
+      >
+        <span className="truncate">{task.title}</span>
+      </button>
+    );
+  }
+
+  if (role === "due") {
+    return (
+      <button
+        onClick={onOpen}
+        title={`${task.title} (마감)`}
+        className="flex items-center gap-1 overflow-hidden text-left text-[10px]"
+        style={{ height: ITEM_H }}
+      >
+        <span className="flex-none leading-none" style={{ color }}>■</span>
+        <span className="flex-none font-bold leading-none" style={{ color }}>마감</span>
+        <span className="truncate text-[var(--text-faint)]">{task.title}</span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={onOpen}
+      title={task.title}
+      className="flex items-center gap-1 overflow-hidden text-left text-[10px]"
+      style={{ height: ITEM_H }}
+    >
+      <span className="flex-none leading-none" style={{ color }}>▶</span>
+      <span className="truncate text-[var(--text-faint)]">{task.title}</span>
+    </button>
   );
 }
