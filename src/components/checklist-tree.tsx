@@ -229,13 +229,13 @@ function ChecklistNode({
             onChange={(e) => setLabelDraft(e.target.value)}
             onBlur={saveLabel}
             onKeyDown={(e) => e.key === "Enter" && saveLabel()}
-            className="h-5 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
+            className="h-5 min-w-0 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
           />
         ) : (
           <button
             onClick={() => !readOnly && setEditingLabel(true)}
             disabled={readOnly}
-            className="flex-1 truncate text-left text-[11px]"
+            className="min-w-0 flex-1 truncate text-left text-[11px]"
             style={{
               color: done ? "var(--text-faintest)" : "var(--text)",
               textDecoration: done ? "line-through" : "none",
@@ -287,7 +287,7 @@ function ChecklistNode({
             disabled={readOnly}
             onChange={(e) => onUpdate(item.id, { progress: Number(e.target.value) })}
             style={{ accentColor: progressColor(item.progress) }}
-            className="h-1 flex-1 disabled:opacity-60"
+            className="h-1 w-14 min-w-0 flex-none disabled:opacity-60"
           />
           <span className="w-7 flex-none text-right text-[9.5px] text-[var(--text-faintest)]">
             {item.progress}%
