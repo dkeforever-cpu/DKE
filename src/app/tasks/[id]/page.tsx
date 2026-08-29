@@ -4,7 +4,7 @@ import { ChangeEvent, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { useRequireAuth } from "@/lib/use-require-auth";
-import { TopBar } from "@/components/top-bar";
+import { AppShell } from "@/components/app-shell";
 import { Avatar } from "@/components/avatar";
 import { StatusBadge, PriorityLabel, ProgressBar } from "@/components/badges";
 import { LogEntryItem } from "@/components/log-entry-item";
@@ -60,8 +60,7 @@ export default function TaskDetailPage() {
 
   if (!task) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <TopBar />
+      <AppShell>
         <div className="flex flex-1 flex-col items-center justify-center gap-3">
           <div className="text-[12px] text-[var(--text-faint)]">업무를 찾을 수 없습니다.</div>
           <button
@@ -72,7 +71,7 @@ export default function TaskDetailPage() {
             대시보드로 돌아가기
           </button>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
@@ -115,9 +114,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <TopBar />
-
+    <AppShell>
       <div className="flex h-8 flex-none items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-4">
         <button onClick={() => router.push("/")} className="text-[var(--text-muted)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -392,7 +389,7 @@ export default function TaskDetailPage() {
           onSaved={() => setEditOpen(false)}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
 

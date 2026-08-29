@@ -25,6 +25,7 @@ export function Sidebar({
   categoryCounts,
   calendarActive,
   onOpenCalendar,
+  onCollapse,
 }: {
   teamSelected: boolean;
   categories: CategoryLarge[];
@@ -38,11 +39,24 @@ export function Sidebar({
   categoryCounts: Record<string, number>;
   calendarActive: boolean;
   onOpenCalendar: () => void;
+  onCollapse: () => void;
 }) {
   const currentKey = selectionKey(selection);
 
   return (
     <div className="flex w-[168px] flex-none flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] py-1.5">
+      <div className="mb-1 flex items-center justify-end px-1.5">
+        <button
+          onClick={onCollapse}
+          title="메뉴 접기"
+          className="flex h-5 w-5 items-center justify-center rounded-[3px] text-[var(--text-faint)] hover:bg-[var(--surface-alt)] hover:text-[var(--text)]"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 6l-6 6 6 6" />
+            <path d="M6 4v16" />
+          </svg>
+        </button>
+      </div>
       <div className="flex flex-col">
         <SidebarItem
           label="내 업무"

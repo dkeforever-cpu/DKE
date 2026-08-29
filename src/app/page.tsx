@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { useRequireAuth } from "@/lib/use-require-auth";
-import { TopBar } from "@/components/top-bar";
-import { Sidebar, Selection } from "@/components/sidebar";
+import { useDashboardState } from "@/lib/dashboard-state";
+import { AppShell } from "@/components/app-shell";
 import { TaskTable } from "@/components/task-table";
 import { CalendarView } from "@/components/calendar-view";
 import { MobileTaskList } from "@/components/mobile-task-list";
@@ -16,18 +16,14 @@ import { flatten } from "@/lib/checklist";
 
 export default function DashboardPage() {
   const { ready, currentUser } = useRequireAuth();
-  const { tasks, users, teams, categoriesByTeam, boards, customFields, logEntries, comments, getUser } =
-    useStore();
+  const { tasks, users, teams, boards, customFields, logEntries, comments, getUser } = useStore();
 
   const viewableTeams = useMemo(
     () => teams.filter((t) => currentUser?.viewTeamIds.includes(t.id)),
     [teams, currentUser]
   );
 
-  const [teamTab, setTeamTab] = useState<string>("전체"); // "전체" or a team id
-  const [boardId, setBoardId] = useState<string | null>(null);
-  const [selection, setSelection] = useState<Selection>({ type: "all" });
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const { teamTab, setTeamTab, boardId, selection, setSelection, view } = useDashboardState();
   const [centerFilter, setCenterFilter] = useState("전체");
   const [assigneeFilter, setAssigneeFilter] = useState("전체");
   const [statusFilter, setStatusFilter] = useState<"전체" | Status>("전체");
@@ -82,11 +78,6 @@ export default function DashboardPage() {
 
   const mineCount = teamTasks.filter((t) => t.assigneeId === currentUser?.id).length;
   const allCount = teamTasks.length;
-  const categoryCounts = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const t of teamTasks) map[t.categoryLarge] = (map[t.categoryLarge] ?? 0) + 1;
-    return map;
-  }, [teamTasks]);
 
   const scoped = useMemo(() => {
     if (selection.type === "mine") return teamTasks.filter((t) => t.assigneeId === currentUser?.id);
@@ -137,16 +128,6 @@ export default function DashboardPage() {
     setSelection({ type: "all" });
   }
 
-  function handleSelect(s: Selection) {
-    setView("list");
-    setSelection(s);
-  }
-
-  function handleSelectBoard(id: string) {
-    setView("list");
-    setBoardId(id);
-  }
-
   if (!ready || !currentUser) return null;
 
   const teamName = teams.find((t) => t.id === teamTab)?.name ?? "전체";
@@ -154,9 +135,7 @@ export default function DashboardPage() {
     selection.type === "mine" ? "내 업무" : selection.type === "all" ? "전체 업무" : selection.large;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <TopBar />
-
+    <AppShell>
       <div className="flex h-8 flex-none items-center gap-0.5 border-b border-[var(--border)] bg-[var(--surface)] px-3">
         <button
           onClick={() => handleTeamChange("전체")}
@@ -207,116 +186,99 @@ export default function DashboardPage() {
         onOpenNewTask={() => setFormOpen(true)}
       />
 
-      <div className="dashboard-desktop-pane flex-1 overflow-hidden">
-        <Sidebar
-          teamSelected={teamTab !== "전체"}
-          categories={teamTab === "전체" ? [] : categoriesByTeam[teamTab] ?? []}
-          boards={teamBoards}
-          activeBoardId={activeBoard?.id ?? null}
-          onSelectBoard={handleSelectBoard}
-          selection={selection}
-          onSelect={handleSelect}
-          mineCount={mineCount}
-          allCount={allCount}
-          categoryCounts={categoryCounts}
-          calendarActive={view === "calendar"}
-          onOpenCalendar={() => setView("calendar")}
-        />
-
-        <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-2">
-          <div className="flex items-center gap-0 border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
-            <SummaryCell label={`${teamName} · ${selectionLabel}`} value={summary.total} />
-            <Divider />
-            <SummaryCell label="진행중" value={summary.진행중} color="var(--accent)" />
-            <Divider />
-            <SummaryCell label="검토중" value={summary.검토중} color="var(--warning-text)" />
-            <Divider />
-            <SummaryCell label="완료" value={summary.완료} color="var(--success)" />
-            <Divider />
-            <SummaryCell label="마감 연체" value={summary.연체} color="var(--danger)" labelColor="var(--danger-text)" />
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <select
-              value={centerFilter}
-              onChange={(e) => setCenterFilter(e.target.value)}
-              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
-            >
-              <option value="전체">센터 전체</option>
-              {CENTERS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <select
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
-            >
-              <option value="전체">담당자 전체</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as "전체" | Status)}
-              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
-            >
-              <option value="전체">상태 전체</option>
-              {(["대기", "진행중", "검토중", "완료"] as Status[]).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value as "전체" | Priority)}
-              className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
-            >
-              <option value="전체">우선순위 전체</option>
-              {(["높음", "보통", "낮음"] as Priority[]).map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="업무명·설명·카테고리·담당자·센터 검색"
-              className="h-6 w-[180px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
-            />
-            <div className="flex-1" />
-            <button
-              onClick={() => setFormOpen(true)}
-              className="flex h-6 items-center gap-1 rounded-[3px] px-2.5 text-[10.5px] font-semibold"
-              style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              새 업무
-            </button>
-          </div>
-
-          {view === "calendar" ? (
-            <CalendarView tasks={filtered} />
-          ) : (
-            <TaskTable
-              tasks={filtered}
-              columns={visibleColumns}
-              customFields={customFields}
-              getUser={getUser}
-              attachmentCount={attachmentCount}
-              commentCount={commentCount}
-            />
-          )}
+      <div className="dashboard-desktop-pane flex-1 flex-col gap-1.5 overflow-hidden p-2">
+        <div className="flex items-center gap-0 border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
+          <SummaryCell label={`${teamName} · ${selectionLabel}`} value={summary.total} />
+          <Divider />
+          <SummaryCell label="진행중" value={summary.진행중} color="var(--accent)" />
+          <Divider />
+          <SummaryCell label="검토중" value={summary.검토중} color="var(--warning-text)" />
+          <Divider />
+          <SummaryCell label="완료" value={summary.완료} color="var(--success)" />
+          <Divider />
+          <SummaryCell label="마감 연체" value={summary.연체} color="var(--danger)" labelColor="var(--danger-text)" />
         </div>
+
+        <div className="flex items-center gap-1.5">
+          <select
+            value={centerFilter}
+            onChange={(e) => setCenterFilter(e.target.value)}
+            className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
+          >
+            <option value="전체">센터 전체</option>
+            {CENTERS.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <select
+            value={assigneeFilter}
+            onChange={(e) => setAssigneeFilter(e.target.value)}
+            className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
+          >
+            <option value="전체">담당자 전체</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "전체" | Status)}
+            className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
+          >
+            <option value="전체">상태 전체</option>
+            {(["대기", "진행중", "검토중", "완료"] as Status[]).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value as "전체" | Priority)}
+            className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
+          >
+            <option value="전체">우선순위 전체</option>
+            {(["높음", "보통", "낮음"] as Priority[]).map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="업무명·설명·카테고리·담당자·센터 검색"
+            className="h-6 w-[180px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
+          />
+          <div className="flex-1" />
+          <button
+            onClick={() => setFormOpen(true)}
+            className="flex h-6 items-center gap-1 rounded-[3px] px-2.5 text-[10.5px] font-semibold"
+            style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            새 업무
+          </button>
+        </div>
+
+        {view === "calendar" ? (
+          <CalendarView tasks={filtered} />
+        ) : (
+          <TaskTable
+            tasks={filtered}
+            columns={visibleColumns}
+            customFields={customFields}
+            getUser={getUser}
+            attachmentCount={attachmentCount}
+            commentCount={commentCount}
+          />
+        )}
       </div>
 
       {formOpen && (
@@ -327,7 +289,7 @@ export default function DashboardPage() {
           onSaved={() => setFormOpen(false)}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
 
