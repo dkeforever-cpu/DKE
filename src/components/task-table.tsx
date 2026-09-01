@@ -6,7 +6,7 @@ import { CustomFieldDef, Task, User } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { StatusBadge, PriorityLabel, ProgressBar } from "@/components/badges";
-import { formatDateShort, formatDateFull, daysOverdue, isOverdue } from "@/lib/format";
+import { formatDateShort, formatDateFull, daysOverdue, isOverdue, assigneeDisplay } from "@/lib/format";
 
 type SortKey =
   | "status"
@@ -56,15 +56,10 @@ const BUILTIN_COLUMN_DEFS: ColumnDef[] = [
     width: "100px",
     sortKey: "assignee",
     render: (t, { getUser }) => {
-      const assignee = getUser(t.assigneeId)?.name ?? "-";
-      const creator = getUser(t.createdBy)?.name;
-      const distinct = creator && t.createdBy !== t.assigneeId;
+      const { label, title } = assigneeDisplay(t, getUser);
       return (
-        <div
-          className="truncate text-[var(--text-muted)]"
-          title={distinct ? `담당자: ${assignee} / 지정자: ${creator}` : `담당자: ${assignee}`}
-        >
-          {distinct ? `${assignee}/${creator}` : assignee}
+        <div className="truncate text-[var(--text-muted)]" title={title}>
+          {label}
         </div>
       );
     },

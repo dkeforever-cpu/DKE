@@ -19,6 +19,7 @@ export default function ResourceDetailPage() {
   const { confirm } = useConfirmDialog();
   const [downloading, setDownloading] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<{ file: string; message: string } | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<{ file: string; message: string } | null>(null);
 
   if (!ready || !currentUser) return null;
 
@@ -44,12 +45,20 @@ export default function ResourceDetailPage() {
   const uploader = getUser(resource.uploadedBy);
   const canDelete = currentUser.id === resource.uploadedBy || currentUser.isAdmin;
 
-  async function handleDownload(fileName: string, base64: string) {
+  async function handleDownload(fileName: string, base64: string, mimeType: string) {
     setDownloading(fileName);
     setDownloadError(null);
-    const result = await downloadResourceFile(fileName, base64);
+    setDownloadNotice(null);
+    const result = await downloadResourceFile(fileName, base64, mimeType);
     setDownloading(null);
-    if (!result.ok) setDownloadError({ file: fileName, message: result.message });
+    if (!result.ok) {
+      setDownloadError({ file: fileName, message: result.message });
+    } else if (result.wrapped) {
+      setDownloadNotice({
+        file: fileName,
+        message: `이 형식은 바로 저장할 수 없어 도우미 파일(${fileName}.html)로 받았습니다. 받은 파일을 열어 '지금 다운로드'를 누르면 실제 파일이 저장됩니다.`,
+      });
+    }
   }
 
   async function handleDelete() {
@@ -128,7 +137,7 @@ export default function ResourceDetailPage() {
                         {(f.size / 1024).toFixed(0)}KB
                       </span>
                       <button
-                        onClick={() => handleDownload(f.name, f.base64)}
+                        onClick={() => handleDownload(f.name, f.base64, f.mimeType)}
                         disabled={downloading === f.name}
                         className="flex-none rounded-[2px] px-2 py-0.5 text-[10px] font-semibold disabled:opacity-50"
                         style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
@@ -139,6 +148,11 @@ export default function ResourceDetailPage() {
                     {downloadError?.file === f.name && (
                       <div className="px-1 text-[9.5px]" style={{ color: "var(--danger)" }}>
                         {downloadError.message}
+                      </div>
+                    )}
+                    {downloadNotice?.file === f.name && (
+                      <div className="px-1 text-[9.5px]" style={{ color: "var(--accent)" }}>
+                        {downloadNotice.message}
                       </div>
                     )}
                   </div>

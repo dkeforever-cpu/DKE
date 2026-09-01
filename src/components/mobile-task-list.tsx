@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CENTERS } from "@/lib/categories";
 import { Priority, Status, Task, User } from "@/lib/types";
 import { StatusBadge, PriorityLabel } from "@/components/badges";
-import { formatDateShort, daysOverdue, isOverdue } from "@/lib/format";
+import { formatDateShort, daysOverdue, isOverdue, assigneeDisplay } from "@/lib/format";
 import { Selection, selectionKey } from "@/components/sidebar";
 import { CalendarView } from "@/components/calendar-view";
 
@@ -200,12 +200,7 @@ export function MobileTaskList({
           </div>
         ) : (
           tasks.map((t) => {
-            const assignee = getUser(t.assigneeId);
-            const creator = getUser(t.createdBy);
-            const distinctCreator = creator && t.createdBy !== t.assigneeId;
-            const assigneeLabel = distinctCreator
-              ? `${assignee?.name ?? "-"}/${creator.name}`
-              : assignee?.name ?? "-";
+            const { label: assigneeLabel, title: assigneeTitle } = assigneeDisplay(t, getUser);
             const overdue = isOverdue(t.dueDate, t.status);
             return (
               <button
@@ -233,10 +228,7 @@ export function MobileTaskList({
                 <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
                   <span className="truncate">{t.categoryLarge}</span>
                   <span className="text-[var(--text-disabled)]">·</span>
-                  <span
-                    className="flex-none truncate"
-                    title={distinctCreator ? `담당자: ${assignee?.name ?? "-"} / 지정자: ${creator.name}` : undefined}
-                  >
+                  <span className="flex-none truncate" title={assigneeTitle}>
                     {assigneeLabel}
                   </span>
                   <span className="text-[var(--text-disabled)]">·</span>
