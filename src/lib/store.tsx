@@ -32,14 +32,15 @@ import {
   SEED_TEAMS,
   USERS,
 } from "./seed-data";
-import { seedCategoriesByTeam } from "./categories";
-import { addNode, findNode, flatten, removeNode, updateNode } from "./checklist";
+import { CENTERS as SEED_CENTERS, seedCategoriesByTeam } from "./categories";
+import { addNode, computeProgress, deriveStatus, findNode, flatten, removeNode, updateNode } from "./checklist";
 
 const STORAGE_KEY = "dke-task-system-v2";
 const SESSION_KEY = "dke-task-system-current-user";
 
 interface StoreData {
   teams: Team[];
+  centers: string[];
   categoriesByTeam: Record<string, CategoryLarge[]>;
   boards: Board[];
   customFields: CustomFieldDef[];
@@ -80,6 +81,8 @@ function normalize(data: Partial<StoreData>): StoreData {
       ? data.teams
       : SEED_TEAMS;
   const teamIds = new Set(teams.map((t) => t.id));
+
+  const centers = data.centers && data.centers.length > 0 ? data.centers : SEED_CENTERS;
 
   const users = legacyUsers.map((u) => {
     const teamId = u.teamId ?? u.dept ?? teams[0]?.id ?? "";
@@ -158,13 +161,14 @@ function normalize(data: Partial<StoreData>): StoreData {
     if (u.viewTeamIds.length === 0 && teams[0]) u.viewTeamIds = [teams[0].id];
   });
 
-  return { teams, categoriesByTeam, boards, customFields, users, tasks, logEntries, comments, resources };
+  return { teams, centers, categoriesByTeam, boards, customFields, users, tasks, logEntries, comments, resources };
 }
 
 function loadData(): StoreData {
   if (typeof window === "undefined") {
     return {
       teams: SEED_TEAMS,
+      centers: SEED_CENTERS,
       categoriesByTeam: SEED_CATEGORIES_BY_TEAM,
       boards: SEED_BOARDS,
       customFields: SEED_CUSTOM_FIELDS,
@@ -183,6 +187,7 @@ function loadData(): StoreData {
   }
   const seeded: StoreData = {
     teams: SEED_TEAMS,
+    centers: SEED_CENTERS,
     categoriesByTeam: SEED_CATEGORIES_BY_TEAM,
     boards: SEED_BOARDS,
     customFields: SEED_CUSTOM_FIELDS,
@@ -203,6 +208,7 @@ function loadCurrentUserId(): string | null {
 
 interface StoreContextValue {
   teams: Team[];
+  centers: string[];
   categoriesByTeam: Record<string, CategoryLarge[]>;
   boards: Board[];
   customFields: CustomFieldDef[];
@@ -218,7 +224,7 @@ interface StoreContextValue {
   login: (userId: string) => void;
   logout: () => void;
 
-  addTask: (input: Omit<Task, "id" | "createdAt">) => string;
+  addTask: (input: Omit<Task, "id" | "createdAt" | "progress">) => string;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
 
@@ -250,6 +256,10 @@ interface StoreContextValue {
   addTeam: (name: string) => void;
   renameTeam: (id: string, name: string) => void;
   deleteTeam: (id: string) => boolean;
+
+  addCenter: (name: string) => void;
+  renameCenter: (oldName: string, newName: string) => void;
+  deleteCenter: (name: string) => boolean;
 
   addCategoryLarge: (teamId: string, name: string) => void;
   renameCategoryLarge: (teamId: string, id: string, name: string) => void;
@@ -288,6 +298,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<StoreData>({
     teams: [],
+    centers: [],
     categoriesByTeam: {},
     boards: [],
     customFields: [],
@@ -342,13 +353,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [data.tasks, canViewTask]
   );
 
-  const addTask = useCallback((input: Omit<Task, "id" | "createdAt">) => {
+  const addTask = useCallback((input: Omit<Task, "id" | "createdAt" | "progress">) => {
     const id = genId("t");
     const today = new Date();
     const createdAt = `${today.getFullYear()}-${String(
       today.getMonth() + 1
     ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const task: Task = { ...input, id, createdAt };
+    const progress = computeProgress(input.checklist ?? []);
+    const status = progress === 100 ? "완료" : input.status;
+    const task: Task = { ...input, id, createdAt, progress, status };
     setData((prev) => ({ ...prev, tasks: [task, ...prev.tasks] }));
 
     const logId = genId("l");
@@ -391,11 +404,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       };
       setData((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((t) =>
-          t.id === taskId
-            ? { ...t, checklist: addNode(t.checklist ?? [], parentId, node) }
-            : t
-        ),
+        tasks: prev.tasks.map((t) => {
+          if (t.id !== taskId) return t;
+          const checklist = addNode(t.checklist ?? [], parentId, node);
+          const progress = computeProgress(checklist);
+          return { ...t, checklist, progress, status: deriveStatus(progress, t.status) };
+        }),
       }));
       return id;
     },
@@ -410,11 +424,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     ) => {
       setData((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((t) =>
-          t.id === taskId
-            ? { ...t, checklist: updateNode(t.checklist ?? [], itemId, patch) }
-            : t
-        ),
+        tasks: prev.tasks.map((t) => {
+          if (t.id !== taskId) return t;
+          const checklist = updateNode(t.checklist ?? [], itemId, patch);
+          const progress = computeProgress(checklist);
+          return { ...t, checklist, progress, status: deriveStatus(progress, t.status) };
+        }),
       }));
     },
     []
@@ -429,9 +444,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       );
       return {
         ...prev,
-        tasks: prev.tasks.map((t) =>
-          t.id === taskId ? { ...t, checklist: removeNode(t.checklist ?? [], itemId) } : t
-        ),
+        tasks: prev.tasks.map((t) => {
+          if (t.id !== taskId) return t;
+          const checklist = removeNode(t.checklist ?? [], itemId);
+          const progress = computeProgress(checklist);
+          return { ...t, checklist, progress, status: deriveStatus(progress, t.status) };
+        }),
         comments: prev.comments.filter(
           (c) => !(c.targetType === "checklist" && removedIds.has(c.targetId))
         ),
@@ -566,6 +584,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return true;
     },
     [data.tasks, data.users]
+  );
+
+  // --- Admin: centers ---
+
+  const addCenter = useCallback((name: string) => {
+    setData((prev) => (prev.centers.includes(name) ? prev : { ...prev, centers: [...prev.centers, name] }));
+  }, []);
+
+  const renameCenter = useCallback((oldName: string, newName: string) => {
+    setData((prev) => ({
+      ...prev,
+      centers: prev.centers.map((c) => (c === oldName ? newName : c)),
+      tasks: prev.tasks.map((t) => (t.center === oldName ? { ...t, center: newName } : t)),
+    }));
+  }, []);
+
+  const deleteCenter = useCallback(
+    (name: string) => {
+      const inUse = data.tasks.some((t) => t.center === name);
+      if (inUse) return false;
+      setData((prev) => ({ ...prev, centers: prev.centers.filter((c) => c !== name) }));
+      return true;
+    },
+    [data.tasks]
   );
 
   // --- Admin: categories ---
@@ -779,6 +821,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const resetDemoData = useCallback(() => {
     const seeded: StoreData = {
       teams: SEED_TEAMS,
+      centers: SEED_CENTERS,
       categoriesByTeam: SEED_CATEGORIES_BY_TEAM,
       boards: SEED_BOARDS,
       customFields: SEED_CUSTOM_FIELDS,
@@ -794,6 +837,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value: StoreContextValue = {
     teams: data.teams,
+    centers: data.centers,
     categoriesByTeam: data.categoriesByTeam,
     boards: data.boards,
     customFields: data.customFields,
@@ -828,6 +872,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addTeam,
     renameTeam,
     deleteTeam,
+    addCenter,
+    renameCenter,
+    deleteCenter,
     addCategoryLarge,
     renameCategoryLarge,
     deleteCategoryLarge,

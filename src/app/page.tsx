@@ -9,14 +9,13 @@ import { TaskTable } from "@/components/task-table";
 import { CalendarView } from "@/components/calendar-view";
 import { MobileTaskList } from "@/components/mobile-task-list";
 import { TaskFormModal } from "@/components/task-form-modal";
-import { CENTERS } from "@/lib/categories";
 import { Priority, Status } from "@/lib/types";
 import { isOverdue } from "@/lib/format";
 import { flatten } from "@/lib/checklist";
 
 export default function DashboardPage() {
   const { ready, currentUser } = useRequireAuth();
-  const { tasks, users, teams, boards, customFields, logEntries, comments, getUser } = useStore();
+  const { tasks, users, teams, centers, boards, customFields, logEntries, comments, getUser } = useStore();
 
   const viewableTeams = useMemo(
     () => teams.filter((t) => currentUser?.viewTeamIds.includes(t.id)),
@@ -183,6 +182,7 @@ export default function DashboardPage() {
         priorityFilter={priorityFilter}
         onPriorityFilterChange={setPriorityFilter}
         users={users}
+        centers={centers}
         onOpenNewTask={() => setFormOpen(true)}
       />
 
@@ -206,7 +206,7 @@ export default function DashboardPage() {
             className="h-6 border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text-muted)]"
           >
             <option value="전체">센터 전체</option>
-            {CENTERS.map((c) => (
+            {centers.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRequireAdmin } from "@/lib/use-require-auth";
 import { TopBar } from "@/components/top-bar";
 import { TeamsSection } from "@/components/admin/teams-section";
+import { CentersSection } from "@/components/admin/centers-section";
 import { CategoriesSection } from "@/components/admin/categories-section";
 import { BoardsSection } from "@/components/admin/boards-section";
 import { UsersSection } from "@/components/admin/users-section";
@@ -12,6 +13,7 @@ import { DatabaseSection } from "@/components/admin/database-section";
 
 const TABS = [
   { key: "teams", label: "팀 관리" },
+  { key: "centers", label: "센터 관리" },
   { key: "categories", label: "카테고리 관리" },
   { key: "boards", label: "게시판/열 관리" },
   { key: "users", label: "사용자 권한 관리" },
@@ -64,6 +66,7 @@ export default function AdminPage() {
               {TABS.find((t) => t.key === tab)?.label}
             </div>
             {tab === "teams" && <TeamsSection />}
+            {tab === "centers" && <CentersSection />}
             {tab === "categories" && <CategoriesSection />}
             {tab === "boards" && <BoardsSection />}
             {tab === "users" && <UsersSection />}

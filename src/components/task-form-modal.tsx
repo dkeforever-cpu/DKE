@@ -2,7 +2,6 @@
 
 import { ReactNode, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { CENTERS } from "@/lib/categories";
 import { ChecklistItem, Priority, Status, Task } from "@/lib/types";
 import { CALENDAR_PALETTE, taskColor } from "@/lib/calendar";
 import { FloatingWindow } from "@/components/floating-window";
@@ -34,7 +33,7 @@ export function TaskFormModal({
   onClose: () => void;
   onSaved: (taskId: string) => void;
 }) {
-  const { users, teams, categoriesByTeam, currentUser, addTask, updateTask } = useStore();
+  const { users, teams, centers, categoriesByTeam, currentUser, addTask, updateTask } = useStore();
 
   const creatableTeams = useMemo(
     () => teams.filter((t) => currentUser?.viewTeamIds.includes(t.id)),
@@ -56,11 +55,10 @@ export function TaskFormModal({
   const [description, setDescription] = useState(task?.description ?? "");
   const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? currentUser?.id ?? users[0]?.id ?? "");
   const [collaboratorIds, setCollaboratorIds] = useState<string[]>(task?.collaboratorIds ?? []);
-  const [center, setCenter] = useState(task?.center ?? CENTERS[0]);
+  const [center, setCenter] = useState(task?.center ?? centers[0]);
   const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate());
   const [priority, setPriority] = useState<Priority>(task?.priority ?? "보통");
   const [status, setStatus] = useState<Status>(task?.status ?? "대기");
-  const [progress, setProgress] = useState(task?.progress ?? 0);
   const [level, setLevel] = useState(task?.level ?? 1);
   const [color, setColor] = useState<string | undefined>(task?.color);
   const [checklistDraft, setChecklistDraft] = useState<string[]>([]);
@@ -127,7 +125,6 @@ export function TaskFormModal({
         center,
         priority,
         status,
-        progress,
         level,
         dueDate,
         createdBy: currentUser.id,
@@ -148,7 +145,6 @@ export function TaskFormModal({
         center,
         priority,
         status,
-        progress,
         level,
         dueDate,
         color,
@@ -260,7 +256,7 @@ export function TaskFormModal({
         </Field>
         <Field label="관련 센터">
           <select value={center} onChange={(e) => setCenter(e.target.value)} className={inputCls}>
-            {CENTERS.map((c) => (
+            {centers.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -377,17 +373,10 @@ export function TaskFormModal({
         </Field>
       </div>
 
-      <Field label={`진행률 (${progress}%)`}>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={5}
-          value={progress}
-          onChange={(e) => setProgress(Number(e.target.value))}
-          style={{ accentColor: "var(--accent)" }}
-        />
-      </Field>
+      <div className="text-[9.5px] text-[var(--text-faintest)]">
+        진행률은 직접 입력하지 않아요. 아래 &lsquo;필요 업무&rsquo; 항목들의 진행률 평균으로 자동
+        계산되며, 100%가 되면 상태가 자동으로 &lsquo;완료&rsquo;로 바뀝니다.
+      </div>
 
       {mode === "create" && (
         <Field label="필요 업무 (선택)">

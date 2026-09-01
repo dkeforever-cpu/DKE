@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CENTERS } from "@/lib/categories";
 import { Priority, Status, Task, User } from "@/lib/types";
 import { StatusBadge, PriorityLabel } from "@/components/badges";
 import { formatDateShort, daysOverdue, isOverdue, assigneeDisplay } from "@/lib/format";
@@ -31,6 +30,7 @@ export function MobileTaskList({
   priorityFilter,
   onPriorityFilterChange,
   users,
+  centers,
   onOpenNewTask,
 }: {
   className?: string;
@@ -51,6 +51,7 @@ export function MobileTaskList({
   priorityFilter: "전체" | Priority;
   onPriorityFilterChange: (v: "전체" | Priority) => void;
   users: User[];
+  centers: string[];
   onOpenNewTask: () => void;
 }) {
   const router = useRouter();
@@ -154,7 +155,7 @@ export function MobileTaskList({
               className="h-8 rounded-[4px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[12px] text-[var(--text-muted)]"
             >
               <option value="전체">센터 전체</option>
-              {CENTERS.map((c) => (
+              {centers.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
