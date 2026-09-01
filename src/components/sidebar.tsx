@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Board, CategoryLarge } from "@/lib/types";
 
 export type Selection =
@@ -42,6 +43,9 @@ export function Sidebar({
   onCollapse: () => void;
 }) {
   const currentKey = selectionKey(selection);
+  const router = useRouter();
+  const pathname = usePathname();
+  const onDashboard = pathname === "/";
 
   return (
     <div className="flex w-[168px] flex-none flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] py-1.5">
@@ -61,7 +65,7 @@ export function Sidebar({
         <SidebarItem
           label="내 업무"
           count={mineCount}
-          active={!calendarActive && currentKey === "mine"}
+          active={onDashboard && !calendarActive && currentKey === "mine"}
           onClick={() => onSelect({ type: "mine" })}
           icon={
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -73,7 +77,7 @@ export function Sidebar({
         <SidebarItem
           label="전체 업무"
           count={allCount}
-          active={!calendarActive && currentKey === "all"}
+          active={onDashboard && !calendarActive && currentKey === "all"}
           onClick={() => onSelect({ type: "all" })}
           icon={
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -86,12 +90,38 @@ export function Sidebar({
         />
         <SidebarItem
           label="캘린더"
-          active={calendarActive}
+          active={onDashboard && calendarActive}
           onClick={onOpenCalendar}
           icon={
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="3" y="4.5" width="18" height="16" rx="1.5" />
               <path d="M3 9.5h18M8 3v3M16 3v3" />
+            </svg>
+          }
+        />
+      </div>
+
+      <div className="mx-2.5 my-1.5 h-px bg-[var(--divider)]" />
+
+      <div className="flex flex-col">
+        <SidebarItem
+          label="프로그램 사용설명서"
+          active={pathname === "/guide"}
+          onClick={() => router.push("/guide")}
+          icon={
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          }
+        />
+        <SidebarItem
+          label="자료실"
+          active={pathname === "/resources"}
+          onClick={() => router.push("/resources")}
+          icon={
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
             </svg>
           }
         />
@@ -139,7 +169,7 @@ export function Sidebar({
                 key={c.id}
                 label={c.name}
                 count={categoryCounts[c.name] ?? 0}
-                active={currentKey === `category:${c.name}`}
+                active={onDashboard && currentKey === `category:${c.name}`}
                 onClick={() => onSelect({ type: "category", large: c.name })}
               />
             ))}

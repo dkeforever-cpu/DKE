@@ -70,6 +70,18 @@ export interface Comment {
   editedAt?: string;
 }
 
+// --- 자료실: user-uploaded reference documents (e.g. self-authored work manuals) ---
+
+export interface ResourceDoc {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  files: string[]; // file names only — no real storage backend to hold bytes
+  uploadedBy: string;
+  createdAt: string; // ISO datetime
+}
+
 // --- Admin-editable category taxonomy (was a hardcoded const, now per-team data) ---
 
 export interface CategorySmall {

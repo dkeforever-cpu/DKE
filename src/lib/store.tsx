@@ -15,6 +15,7 @@ import {
   Comment,
   CustomFieldDef,
   LogEntry,
+  ResourceDoc,
   Task,
   Team,
   User,
@@ -45,6 +46,7 @@ interface StoreData {
   tasks: Task[];
   logEntries: LogEntry[];
   comments: Comment[];
+  resources: ResourceDoc[];
 }
 
 function genId(prefix: string): string {
@@ -132,6 +134,8 @@ function normalize(data: Partial<StoreData>): StoreData {
     };
   });
 
+  const resources = (data.resources ?? []).map((r) => ({ ...r, files: r.files ?? [] }));
+
   // Drop references to teams that no longer exist (shouldn't normally
   // happen since deleteTeam blocks when still referenced, but keeps the
   // UI from crashing if storage is edited by hand).
@@ -141,7 +145,7 @@ function normalize(data: Partial<StoreData>): StoreData {
     if (u.viewTeamIds.length === 0 && teams[0]) u.viewTeamIds = [teams[0].id];
   });
 
-  return { teams, categoriesByTeam, boards, customFields, users, tasks, logEntries, comments };
+  return { teams, categoriesByTeam, boards, customFields, users, tasks, logEntries, comments, resources };
 }
 
 function loadData(): StoreData {
@@ -155,6 +159,7 @@ function loadData(): StoreData {
       tasks: SEED_TASKS,
       logEntries: SEED_LOG_ENTRIES,
       comments: SEED_COMMENTS,
+      resources: [],
     };
   }
   try {
@@ -172,6 +177,7 @@ function loadData(): StoreData {
     tasks: SEED_TASKS,
     logEntries: SEED_LOG_ENTRIES,
     comments: SEED_COMMENTS,
+    resources: [],
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
   return seeded;
@@ -192,6 +198,7 @@ interface StoreContextValue {
   tasks: Task[]; // tasks visible to currentUser (team + level permission applied)
   logEntries: LogEntry[];
   comments: Comment[];
+  resources: ResourceDoc[];
   currentUser: User | null;
   ready: boolean;
 
@@ -217,6 +224,9 @@ interface StoreContextValue {
   addComment: (input: Omit<Comment, "id" | "createdAt">) => string;
   updateComment: (id: string, content: string) => void;
   deleteComment: (id: string) => void;
+
+  addResource: (input: Omit<ResourceDoc, "id" | "createdAt">) => string;
+  deleteResource: (id: string) => void;
 
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
@@ -272,6 +282,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     tasks: [],
     logEntries: [],
     comments: [],
+    resources: [],
   });
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -463,6 +474,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       comments: prev.comments.filter((c) => c.id !== id),
     }));
+  }, []);
+
+  const addResource = useCallback((input: Omit<ResourceDoc, "id" | "createdAt">) => {
+    const id = genId("r");
+    const resource: ResourceDoc = { ...input, id, createdAt: new Date().toISOString() };
+    setData((prev) => ({ ...prev, resources: [resource, ...prev.resources] }));
+    return id;
+  }, []);
+
+  const deleteResource = useCallback((id: string) => {
+    setData((prev) => ({ ...prev, resources: prev.resources.filter((r) => r.id !== id) }));
   }, []);
 
   const getUser = useCallback((id: string) => data.users.find((u) => u.id === id), [data.users]);
@@ -751,6 +773,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       tasks: SEED_TASKS,
       logEntries: SEED_LOG_ENTRIES,
       comments: SEED_COMMENTS,
+      resources: [],
     };
     setData(seeded);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
@@ -766,6 +789,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     tasks: visibleTasks,
     logEntries: data.logEntries,
     comments: data.comments,
+    resources: data.resources,
     currentUser,
     ready,
     login,
@@ -782,6 +806,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addComment,
     updateComment,
     deleteComment,
+    addResource,
+    deleteResource,
     getUser,
     canEdit,
     canEditTask,
