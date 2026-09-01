@@ -53,11 +53,21 @@ const BUILTIN_COLUMN_DEFS: ColumnDef[] = [
   {
     key: "assignee",
     label: "담당자",
-    width: "62px",
+    width: "100px",
     sortKey: "assignee",
-    render: (t, { getUser }) => (
-      <div className="truncate text-[var(--text-muted)]">{getUser(t.assigneeId)?.name ?? "-"}</div>
-    ),
+    render: (t, { getUser }) => {
+      const assignee = getUser(t.assigneeId)?.name ?? "-";
+      const creator = getUser(t.createdBy)?.name;
+      const distinct = creator && t.createdBy !== t.assigneeId;
+      return (
+        <div
+          className="truncate text-[var(--text-muted)]"
+          title={distinct ? `담당자: ${assignee} / 지정자: ${creator}` : `담당자: ${assignee}`}
+        >
+          {distinct ? `${assignee}/${creator}` : assignee}
+        </div>
+      );
+    },
   },
   {
     key: "collaborators",

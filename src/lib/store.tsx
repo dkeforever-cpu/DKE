@@ -16,6 +16,7 @@ import {
   CustomFieldDef,
   LogEntry,
   ResourceDoc,
+  ResourceFile,
   Task,
   Team,
   User,
@@ -134,7 +135,19 @@ function normalize(data: Partial<StoreData>): StoreData {
     };
   });
 
-  const resources = (data.resources ?? []).map((r) => ({ ...r, files: r.files ?? [] }));
+  // Older builds stored files as bare name strings with no real bytes; keep
+  // those visible (with an empty base64) rather than crashing on old data.
+  const legacyResources = (data.resources ?? []) as (ResourceDoc & {
+    files: (string | ResourceFile)[];
+  })[];
+  const resources = legacyResources.map((r) => ({
+    ...r,
+    files: r.files.map((f) =>
+      typeof f === "string"
+        ? { name: f, base64: "", mimeType: "", size: 0 }
+        : { name: f.name, base64: f.base64 ?? "", mimeType: f.mimeType ?? "", size: f.size ?? 0 }
+    ),
+  }));
 
   // Drop references to teams that no longer exist (shouldn't normally
   // happen since deleteTeam blocks when still referenced, but keeps the

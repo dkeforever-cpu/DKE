@@ -72,12 +72,19 @@ export interface Comment {
 
 // --- 자료실: user-uploaded reference documents (e.g. self-authored work manuals) ---
 
+export interface ResourceFile {
+  name: string;
+  base64: string; // raw base64 (no "data:...;base64," prefix) — decoded back to bytes for real downloads
+  mimeType: string;
+  size: number; // bytes
+}
+
 export interface ResourceDoc {
   id: string;
   title: string;
   description: string;
   category: string;
-  files: string[]; // file names only — no real storage backend to hold bytes
+  files: ResourceFile[];
   uploadedBy: string;
   createdAt: string; // ISO datetime
 }

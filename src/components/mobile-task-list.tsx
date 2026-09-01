@@ -201,6 +201,11 @@ export function MobileTaskList({
         ) : (
           tasks.map((t) => {
             const assignee = getUser(t.assigneeId);
+            const creator = getUser(t.createdBy);
+            const distinctCreator = creator && t.createdBy !== t.assigneeId;
+            const assigneeLabel = distinctCreator
+              ? `${assignee?.name ?? "-"}/${creator.name}`
+              : assignee?.name ?? "-";
             const overdue = isOverdue(t.dueDate, t.status);
             return (
               <button
@@ -228,7 +233,12 @@ export function MobileTaskList({
                 <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
                   <span className="truncate">{t.categoryLarge}</span>
                   <span className="text-[var(--text-disabled)]">·</span>
-                  <span className="flex-none">{assignee?.name ?? "-"}</span>
+                  <span
+                    className="flex-none truncate"
+                    title={distinctCreator ? `담당자: ${assignee?.name ?? "-"} / 지정자: ${creator.name}` : undefined}
+                  >
+                    {assigneeLabel}
+                  </span>
                   <span className="text-[var(--text-disabled)]">·</span>
                   <span className="flex-none">{t.center}</span>
                 </div>
