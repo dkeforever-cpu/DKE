@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { BUILTIN_COLUMNS, CustomFieldType } from "@/lib/types";
 
 export function BoardsSection() {
   const { teams, boards, customFields, addBoard, updateBoard, deleteBoard, addCustomField, deleteCustomField } =
     useStore();
+  const { confirm } = useConfirmDialog();
   const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
   const activeTeamId = teams.some((t) => t.id === teamId) ? teamId : teams[0]?.id ?? "";
   const teamBoards = boards.filter((b) => b.teamId === activeTeamId);
@@ -81,8 +83,8 @@ export function BoardsSection() {
             <div className="flex items-center gap-2 border-b border-[var(--divider)] bg-[var(--surface-alt)] px-2.5 py-1.5">
               <BoardNameEditor name={board.name} onRename={(name) => updateBoard(board.id, { name })} />
               <button
-                onClick={() => {
-                  if (confirm(`'${board.name}' 게시판을 삭제할까요?`)) deleteBoard(board.id);
+                onClick={async () => {
+                  if (await confirm(`'${board.name}' 게시판을 삭제할까요?`)) deleteBoard(board.id);
                 }}
                 className="ml-auto h-6 rounded-[2px] border px-2 text-[10px]"
                 style={{ borderColor: "var(--danger-soft-bg)", color: "var(--danger)" }}
@@ -143,8 +145,8 @@ export function BoardsSection() {
                 {f.options && f.options.length > 0 ? ` (${f.options.join(", ")})` : ""}
               </span>
               <button
-                onClick={() => {
-                  if (confirm(`'${f.label}' 필드를 삭제할까요?`)) deleteCustomField(f.id);
+                onClick={async () => {
+                  if (await confirm(`'${f.label}' 필드를 삭제할까요?`)) deleteCustomField(f.id);
                 }}
                 className="ml-auto text-[10px]"
                 style={{ color: "var(--danger-text)" }}

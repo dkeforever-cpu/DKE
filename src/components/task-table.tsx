@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CustomFieldDef, Task, User } from "@/lib/types";
 import { useStore } from "@/lib/store";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { StatusBadge, PriorityLabel, ProgressBar } from "@/components/badges";
 import { formatDateShort, formatDateFull, daysOverdue, isOverdue } from "@/lib/format";
 
@@ -170,6 +171,7 @@ export function TaskTable({
 }) {
   const router = useRouter();
   const { deleteTask } = useStore();
+  const { confirm } = useConfirmDialog();
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -264,9 +266,9 @@ export function TaskTable({
     });
   }
 
-  function handleBulkDelete() {
+  async function handleBulkDelete() {
     if (selected.size === 0) return;
-    if (!confirm(`선택한 ${selected.size}건의 업무를 삭제할까요? 진행 일지와 댓글도 함께 삭제됩니다.`))
+    if (!(await confirm(`선택한 ${selected.size}건의 업무를 삭제할까요? 진행 일지와 댓글도 함께 삭제됩니다.`)))
       return;
     selected.forEach((id) => deleteTask(id));
     setSelected(new Set());

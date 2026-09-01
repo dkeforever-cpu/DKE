@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 
 export function CategoriesSection() {
   const { teams, categoriesByTeam } = useStore();
@@ -81,6 +82,7 @@ function AddLargeRow({ teamId }: { teamId: string }) {
 
 function LargeRow({ teamId, large }: { teamId: string; large: { id: string; name: string; children: { id: string; name: string; children: { id: string; name: string }[] }[] } }) {
   const { renameCategoryLarge, deleteCategoryLarge, addCategoryMedium } = useStore();
+  const { confirm } = useConfirmDialog();
   const [expanded, setExpanded] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(large.name);
@@ -126,8 +128,8 @@ function LargeRow({ teamId, large }: { teamId: string; large: { id: string; name
           </svg>
         </button>
         <button
-          onClick={() => {
-            if (confirm(`'${large.name}' 대분류를 삭제할까요? 하위 항목도 함께 삭제됩니다.`))
+          onClick={async () => {
+            if (await confirm(`'${large.name}' 대분류를 삭제할까요? 하위 항목도 함께 삭제됩니다.`))
               deleteCategoryLarge(teamId, large.id);
           }}
           style={{ color: "var(--danger-text)" }}
@@ -177,6 +179,7 @@ function MediumRow({
 }) {
   const { renameCategoryMedium, deleteCategoryMedium, addCategorySmall, renameCategorySmall, deleteCategorySmall } =
     useStore();
+  const { confirm } = useConfirmDialog();
   const [expanded, setExpanded] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(medium.name);
@@ -222,8 +225,8 @@ function MediumRow({
           </svg>
         </button>
         <button
-          onClick={() => {
-            if (confirm(`'${medium.name}' 중분류를 삭제할까요? 하위 항목도 함께 삭제됩니다.`))
+          onClick={async () => {
+            if (await confirm(`'${medium.name}' 중분류를 삭제할까요? 하위 항목도 함께 삭제됩니다.`))
               deleteCategoryMedium(teamId, largeId, medium.id);
           }}
           style={{ color: "var(--danger-text)" }}
@@ -247,8 +250,8 @@ function MediumRow({
               />
               <span className="text-[9px] text-[var(--text-faintest)]">소분류</span>
               <button
-                onClick={() => {
-                  if (confirm(`'${small.name}' 소분류를 삭제할까요?`))
+                onClick={async () => {
+                  if (await confirm(`'${small.name}' 소분류를 삭제할까요?`))
                     deleteCategorySmall(teamId, largeId, medium.id, small.id);
                 }}
                 style={{ color: "var(--danger-text)" }}

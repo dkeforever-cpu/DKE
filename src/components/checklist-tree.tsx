@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChecklistItem, Comment, User } from "@/lib/types";
 import { flatten } from "@/lib/checklist";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { CommentList } from "@/components/comment-thread";
 import { daysOverdue, formatDateShort, formatDateTime } from "@/lib/format";
 
@@ -168,6 +169,7 @@ function ChecklistNode({
     .filter((c) => c.targetType === "checklist" && c.targetId === item.id)
     .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
 
+  const { confirm } = useConfirmDialog();
   const [expanded, setExpanded] = useState(item.children.length > 0 || itemComments.length > 0);
   const [addingChild, setAddingChild] = useState(false);
 
@@ -289,8 +291,8 @@ function ChecklistNode({
               </svg>
             </button>
             <button
-              onClick={() => {
-                if (confirm("이 항목을 삭제할까요? 하위 항목도 함께 삭제됩니다.")) onDelete(item.id);
+              onClick={async () => {
+                if (await confirm("이 항목을 삭제할까요? 하위 항목도 함께 삭제됩니다.")) onDelete(item.id);
               }}
               title="삭제"
               className="flex-none"

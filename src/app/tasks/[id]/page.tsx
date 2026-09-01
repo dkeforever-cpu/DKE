@@ -4,6 +4,7 @@ import { ChangeEvent, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { useRequireAuth } from "@/lib/use-require-auth";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { AppShell } from "@/components/app-shell";
 import { Avatar } from "@/components/avatar";
 import { StatusBadge, PriorityLabel, ProgressBar } from "@/components/badges";
@@ -35,6 +36,7 @@ export default function TaskDetailPage() {
     updateChecklistItem,
     deleteChecklistItem,
   } = useStore();
+  const { confirm } = useConfirmDialog();
 
   const [editOpen, setEditOpen] = useState(false);
   const [newContent, setNewContent] = useState("");
@@ -105,9 +107,9 @@ export default function TaskDetailPage() {
     setNewAttachments((prev) => [...prev, ...names]);
   }
 
-  function handleDeleteTask() {
+  async function handleDeleteTask() {
     if (!task) return;
-    if (confirm("이 업무를 삭제할까요? 진행 일지와 댓글도 함께 삭제됩니다.")) {
+    if (await confirm("이 업무를 삭제할까요? 진행 일지와 댓글도 함께 삭제됩니다.")) {
       deleteTask(task.id);
       router.push("/");
     }

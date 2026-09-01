@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Comment, LogEntry, User } from "@/lib/types";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
 import { CommentThread, FileIcon, PencilIcon, TrashIcon } from "@/components/comment-thread";
@@ -34,6 +35,7 @@ export function LogEntryItem({
   const author = getUser(entry.authorId);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(entry.content);
+  const { confirm } = useConfirmDialog();
 
   const editable = canEdit(entry.authorId);
 
@@ -67,8 +69,8 @@ export function LogEntryItem({
                 <PencilIcon />
               </button>
               <button
-                onClick={() => {
-                  if (confirm("이 일지를 삭제할까요?")) onDeleteEntry(entry.id);
+                onClick={async () => {
+                  if (await confirm("이 일지를 삭제할까요?")) onDeleteEntry(entry.id);
                 }}
                 title="삭제"
               >

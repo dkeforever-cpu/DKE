@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 
 export function TeamsSection() {
   const { teams, addTeam, renameTeam, deleteTeam } = useStore();
+  const { confirm, alertUser } = useConfirmDialog();
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -15,11 +17,11 @@ export function TeamsSection() {
     setNewName("");
   }
 
-  function handleDelete(id: string, name: string) {
-    if (!confirm(`'${name}' 팀을 삭제할까요?`)) return;
+  async function handleDelete(id: string, name: string) {
+    if (!(await confirm(`'${name}' 팀을 삭제할까요?`))) return;
     const ok = deleteTeam(id);
     if (!ok) {
-      alert("이 팀에 속한 업무 또는 사용자가 있어 삭제할 수 없습니다. 먼저 재배정해주세요.");
+      await alertUser("이 팀에 속한 업무 또는 사용자가 있어 삭제할 수 없습니다. 먼저 재배정해주세요.");
     }
   }
 

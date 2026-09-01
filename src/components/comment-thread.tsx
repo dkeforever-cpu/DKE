@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useState } from "react";
 import { Comment, User } from "@/lib/types";
+import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
 
@@ -205,6 +206,7 @@ function CommentRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(comment.content);
+  const { confirm } = useConfirmDialog();
 
   return (
     <div className="flex gap-1.5">
@@ -224,8 +226,8 @@ function CommentRow({
                 <PencilIcon />
               </button>
               <button
-                onClick={() => {
-                  if (confirm("이 댓글을 삭제할까요?")) onDelete();
+                onClick={async () => {
+                  if (await confirm("이 댓글을 삭제할까요?")) onDelete();
                 }}
                 title="삭제"
               >
