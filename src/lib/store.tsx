@@ -284,10 +284,12 @@ interface StoreContextValue {
   addCustomField: (label: string, type: CustomFieldDef["type"], options?: string[]) => void;
   deleteCustomField: (id: string) => void;
 
+  addUser: (name: string, teamId: string) => void;
   updateUser: (
     id: string,
     patch: Partial<Pick<User, "teamId" | "viewTeamIds" | "level" | "isAdmin">>
   ) => void;
+  deleteUser: (id: string) => boolean;
 
   resetDemoData: () => void;
 }
@@ -808,6 +810,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // --- Admin: users ---
 
+  const addUser = useCallback((name: string, teamId: string) => {
+    const id = genId("u");
+    setData((prev) => ({
+      ...prev,
+      users: [...prev.users, { id, name, teamId, viewTeamIds: [teamId], level: 1, isAdmin: false }],
+    }));
+  }, []);
+
   const updateUser = useCallback(
     (id: string, patch: Partial<Pick<User, "teamId" | "viewTeamIds" | "level" | "isAdmin">>) => {
       setData((prev) => ({
@@ -816,6 +826,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
     },
     []
+  );
+
+  const deleteUser = useCallback(
+    (id: string) => {
+      if (currentUser?.id === id) return false; // can't delete the account you're logged in as
+      const referenced =
+        data.tasks.some(
+          (t) => t.assigneeId === id || t.createdBy === id || t.collaboratorIds.includes(id)
+        ) ||
+        data.logEntries.some((l) => l.authorId === id) ||
+        data.comments.some((c) => c.authorId === id) ||
+        data.resources.some((r) => r.uploadedBy === id);
+      if (referenced) return false;
+      const target = data.users.find((u) => u.id === id);
+      const remainingAdmins = data.users.filter((u) => u.isAdmin && u.id !== id).length;
+      if (target?.isAdmin && remainingAdmins === 0) return false; // keep at least one admin
+      setData((prev) => ({ ...prev, users: prev.users.filter((u) => u.id !== id) }));
+      return true;
+    },
+    [data.tasks, data.logEntries, data.comments, data.resources, data.users, currentUser]
   );
 
   const resetDemoData = useCallback(() => {
@@ -889,7 +919,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteBoard,
     addCustomField,
     deleteCustomField,
+    addUser,
     updateUser,
+    deleteUser,
     resetDemoData,
   };
 
