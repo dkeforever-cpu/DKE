@@ -43,6 +43,14 @@ export function FloatingWindow({
   const [pos, setPos] = useState<Pos | null>(null);
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeState = useRef<{ startX: number; startY: number; origW: number; origH: number } | null>(null);
+  const sizeRef = useRef(size);
+  const posRef = useRef(pos);
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
 
   useEffect(() => {
     const w = Math.min(defaultWidth, window.innerWidth - EDGE_MARGIN * 2);
@@ -52,6 +60,26 @@ export function FloatingWindow({
     setPos({ x: (window.innerWidth - w) / 2, y: (window.innerHeight - h) / 2 });
     // Only center once, on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A size/position picked for the viewport at open time can leave the
+  // footer buttons off-screen once the viewport later shrinks (browser
+  // resize, split-screen, zoom). Re-clamp on every resize so the window
+  // — and its footer — stays fully visible.
+  useEffect(() => {
+    function handleResize() {
+      const prevPos = posRef.current;
+      if (!prevPos) return;
+      const w = Math.min(sizeRef.current.width, window.innerWidth - EDGE_MARGIN * 2);
+      const h = Math.min(sizeRef.current.height, window.innerHeight - EDGE_MARGIN * 2);
+      setSize({ width: w, height: h });
+      setPos({
+        x: Math.max(0, Math.min(prevPos.x, window.innerWidth - w)),
+        y: Math.max(0, Math.min(prevPos.y, window.innerHeight - h)),
+      });
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   function handleDragStart(e: React.PointerEvent) {
@@ -104,7 +132,15 @@ export function FloatingWindow({
       {pos && (
         <div
           className="fixed flex flex-col overflow-hidden border border-[var(--border-strong)] bg-[var(--surface)]"
-          style={{ left: pos.x, top: pos.y, width: size.width, height: size.height, boxShadow: "var(--shadow-menu)" }}
+          style={{
+            left: pos.x,
+            top: pos.y,
+            width: size.width,
+            height: size.height,
+            maxWidth: `calc(100vw - ${EDGE_MARGIN * 2}px)`,
+            maxHeight: `calc(100vh - ${EDGE_MARGIN * 2}px)`,
+            boxShadow: "var(--shadow-menu)",
+          }}
         >
           <div
             onPointerDown={handleDragStart}
