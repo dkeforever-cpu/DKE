@@ -11,6 +11,11 @@ import {
   BUILTIN_COLUMNS,
 } from "./types";
 import { seedCategoriesByTeam } from "./categories";
+import {
+  MGMT_SUPPORT_CATEGORIES,
+  MGMT_SUPPORT_TASKS,
+  MGMT_SUPPORT_USERS,
+} from "./seed-data-mgmt-support";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -45,7 +50,11 @@ export const SEED_TEAMS: Team[] = [
   { id: "재경팀", name: "재경팀" },
 ];
 
-export const SEED_CATEGORIES_BY_TEAM: Record<string, CategoryLarge[]> = seedCategoriesByTeam();
+export const SEED_CATEGORIES_BY_TEAM: Record<string, CategoryLarge[]> = (() => {
+  const base = seedCategoriesByTeam();
+  base.관리팀 = [...base.관리팀, ...MGMT_SUPPORT_CATEGORIES];
+  return base;
+})();
 
 export const SEED_CUSTOM_FIELDS: CustomFieldDef[] = [];
 
@@ -67,6 +76,7 @@ export const USERS: User[] = [
   { id: "u8", name: "최수민", teamId: "재경팀", viewTeamIds: ["재경팀"], level: 1, isAdmin: false },
   { id: "u9", name: "노현우", teamId: "재경팀", viewTeamIds: ["재경팀"], level: 1, isAdmin: false },
   { id: "u10", name: "임소연", teamId: "재경팀", viewTeamIds: ["재경팀"], level: 1, isAdmin: false },
+  ...MGMT_SUPPORT_USERS,
 ];
 
 export const SEED_TASKS: Task[] = [
@@ -321,6 +331,7 @@ export const SEED_TASKS: Task[] = [
       ci("ci_t12_4", "비용 입금(환입) 확인", 0, [], offsetDate(10), offsetDateTime(-3, 9, 35)),
     ],
   },
+  ...MGMT_SUPPORT_TASKS,
 ];
 
 export const SEED_LOG_ENTRIES: LogEntry[] = [
