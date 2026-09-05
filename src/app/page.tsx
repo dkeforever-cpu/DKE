@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const activeBoard = teamBoards.find((b) => b.id === boardId) ?? teamBoards[0] ?? null;
   const visibleColumns =
     activeBoard?.visibleColumns ?? [
+      "taskNumber",
       "status",
       "title",
       "category",

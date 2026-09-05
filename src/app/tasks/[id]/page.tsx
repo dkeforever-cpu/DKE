@@ -141,6 +141,8 @@ export default function TaskDetailPage() {
                   {task.categoryMedium}
                   <span className="text-[var(--text-disabled)]">›</span>
                   {task.categorySmall}
+                  <span className="text-[var(--text-disabled)]">·</span>
+                  <span title="업무번호">{task.taskNumber}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <StatusBadge status={task.status} />

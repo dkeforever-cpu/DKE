@@ -34,6 +34,7 @@ import {
 } from "./seed-data";
 import { CENTERS as SEED_CENTERS, seedCategoriesByTeam } from "./categories";
 import { addNode, computeProgress, deriveStatus, findNode, flatten, removeNode, updateNode } from "./checklist";
+import { generateTaskNumber } from "./format";
 
 const STORAGE_KEY = "dke-task-system-v2";
 const SESSION_KEY = "dke-task-system-current-user";
@@ -224,7 +225,7 @@ interface StoreContextValue {
   login: (userId: string) => void;
   logout: () => void;
 
-  addTask: (input: Omit<Task, "id" | "createdAt" | "progress">) => string;
+  addTask: (input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber">) => string;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
 
@@ -355,7 +356,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [data.tasks, canViewTask]
   );
 
-  const addTask = useCallback((input: Omit<Task, "id" | "createdAt" | "progress">) => {
+  const addTask = useCallback((input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber">) => {
     const id = genId("t");
     const today = new Date();
     const createdAt = `${today.getFullYear()}-${String(
@@ -363,7 +364,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const progress = computeProgress(input.checklist ?? []);
     const status = progress === 100 ? "완료" : input.status;
-    const task: Task = { ...input, id, createdAt, progress, status };
+    const taskNumber = generateTaskNumber(input.categoryLarge, createdAt, data.tasks);
+    const task: Task = { ...input, id, createdAt, progress, status, taskNumber };
     setData((prev) => ({ ...prev, tasks: [task, ...prev.tasks] }));
 
     const logId = genId("l");
@@ -377,7 +379,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
     setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
     return id;
-  }, []);
+  }, [data.tasks]);
 
   const updateTask = useCallback((id: string, patch: Partial<Task>) => {
     setData((prev) => ({

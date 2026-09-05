@@ -203,6 +203,11 @@ export function TaskFormModal({
           placeholder="예: 부산센터 임차 계약 갱신 검토"
           className={inputCls}
         />
+        {task && (
+          <div className="mt-1 text-[9.5px] text-[var(--text-faintest)]">
+            업무번호 {task.taskNumber} (자동 생성, 변경 불가)
+          </div>
+        )}
       </Field>
 
       <Field label="업무 설명">

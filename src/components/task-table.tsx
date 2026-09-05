@@ -9,6 +9,7 @@ import { StatusBadge, PriorityLabel, ProgressBar } from "@/components/badges";
 import { formatDateShort, formatDateFull, daysOverdue, isOverdue, assigneeDisplay } from "@/lib/format";
 
 type SortKey =
+  | "taskNumber"
   | "status"
   | "title"
   | "category"
@@ -29,6 +30,17 @@ interface ColumnDef {
 }
 
 const BUILTIN_COLUMN_DEFS: ColumnDef[] = [
+  {
+    key: "taskNumber",
+    label: "업무번호",
+    width: "108px",
+    sortKey: "taskNumber",
+    render: (t) => (
+      <div className="truncate text-[10px] text-[var(--text-faint)]" title={t.taskNumber}>
+        {t.taskNumber}
+      </div>
+    ),
+  },
   {
     key: "status",
     label: "상태",
@@ -213,6 +225,9 @@ export function TaskTable({
     const withValue = tasks.map((t) => {
       let v: string | number;
       switch (sortKey) {
+        case "taskNumber":
+          v = t.taskNumber;
+          break;
         case "status":
           v = t.status;
           break;

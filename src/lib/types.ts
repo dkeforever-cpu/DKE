@@ -26,6 +26,7 @@ export interface ChecklistItem {
 
 export interface Task {
   id: string;
+  taskNumber: string; // 업무번호: "카테고리-등록일(YYMMDD)-일련번호", 생성 시 한 번 배정되며 이후 바뀌지 않음
   title: string;
   description: string;
   teamId: string;
@@ -125,6 +126,7 @@ export interface BuiltinColumnDef {
 }
 
 export const BUILTIN_COLUMNS: BuiltinColumnDef[] = [
+  { key: "taskNumber", label: "업무번호" },
   { key: "status", label: "상태" },
   { key: "title", label: "업무명" },
   { key: "category", label: "카테고리" },

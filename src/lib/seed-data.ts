@@ -11,6 +11,7 @@ import {
   BUILTIN_COLUMNS,
 } from "./types";
 import { seedCategoriesByTeam } from "./categories";
+import { generateTaskNumber } from "./format";
 import {
   MGMT_SUPPORT_CATEGORIES,
   MGMT_SUPPORT_COMMENTS,
@@ -80,7 +81,7 @@ export const USERS: User[] = [
   ...MGMT_SUPPORT_USERS,
 ];
 
-export const SEED_TASKS: Task[] = [
+const BASE_TASKS: Omit<Task, "taskNumber">[] = [
   {
     id: "t1",
     title: "부산센터 임차 계약 갱신 검토",
@@ -332,6 +333,13 @@ export const SEED_TASKS: Task[] = [
       ci("ci_t12_4", "비용 입금(환입) 확인", 0, [], offsetDate(10), offsetDateTime(-3, 9, 35)),
     ],
   },
+];
+
+export const SEED_TASKS: Task[] = [
+  ...BASE_TASKS.map((t, i) => ({
+    ...t,
+    taskNumber: generateTaskNumber(t.categoryLarge, t.createdAt, BASE_TASKS.slice(0, i)),
+  })),
   ...MGMT_SUPPORT_TASKS,
 ];
 
