@@ -13,6 +13,7 @@ import {
 import { seedCategoriesByTeam } from "./categories";
 import {
   MGMT_SUPPORT_CATEGORIES,
+  MGMT_SUPPORT_COMMENTS,
   MGMT_SUPPORT_TASKS,
   MGMT_SUPPORT_USERS,
 } from "./seed-data-mgmt-support";
@@ -439,4 +440,5 @@ export const SEED_COMMENTS: Comment[] = [
     attachments: ["보험접수증.pdf"],
     createdAt: offsetDateTime(-1, 16, 5),
   },
+  ...MGMT_SUPPORT_COMMENTS,
 ];
