@@ -107,3 +107,27 @@ export function useTheme() {
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;
 }
+
+// 화면 배율(80~130%)은 document.body.style.zoom으로 적용되는데, 이는
+// window.innerHeight를 바꾸지 않고 렌더링 크기만 키우거나 줄인다. 그래서
+// 레이아웃을 "뷰포트에 꽉 채우고 그 안에서만 스크롤"시키려는 화면(h-screen +
+// overflow-hidden 조합)은 배율이 100%가 아니면 실제 화면보다 크게 렌더링돼
+// 하단 내용이 잘린다. 실제 뷰포트 높이를 배율만큼 보정한 CSS px 값을 돌려줘,
+// 그 값을 style={{ height }}로 직접 지정하면 배율과 무관하게 항상 화면에
+// 정확히 맞는다.
+export function useZoomCorrectedViewportHeight(): number {
+  const { scale } = useTheme();
+  const [innerHeight, setInnerHeight] = useState(0);
+
+  useEffect(() => {
+    function update() {
+      setInnerHeight(window.innerHeight);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  if (innerHeight === 0) return 0;
+  return innerHeight / ((scale || 100) / 100);
+}

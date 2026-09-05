@@ -3,6 +3,7 @@
 import { ReactNode, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
+import { useZoomCorrectedViewportHeight } from "@/lib/theme";
 import { useDashboardState } from "@/lib/dashboard-state";
 import { TopBar } from "@/components/top-bar";
 import { Sidebar, Selection } from "@/components/sidebar";
@@ -14,6 +15,7 @@ import { Sidebar, Selection } from "@/components/sidebar";
 // rail via a small icon, independent of what page is showing.
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const viewportHeight = useZoomCorrectedViewportHeight();
   const { boards, categoriesByTeam, tasks, currentUser } = useStore();
   const {
     teamTab,
@@ -63,7 +65,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    <div
+      className="flex h-screen flex-col"
+      style={viewportHeight ? { height: viewportHeight } : undefined}
+    >
       <TopBar />
       <div className="flex flex-1 overflow-hidden">
         {sidebarCollapsed ? (
