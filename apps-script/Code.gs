@@ -13,18 +13,28 @@
  *
  * 요청: GET ?data=<JSON.stringify({action, token, payload}) 를 encodeURIComponent>
  * 응답 본문: { ok: true, data } 또는 { ok: false, error }
- * data 파라미터가 없는 순수 GET(주소창에 직접 열었을 때)은 상태 메시지만 보여준다.
+ * data 파라미터가 없는 순수 GET(주소창에 직접 열었을 때)은 업무관리 시스템
+ * 앱 화면 자체를 돌려준다 — 이 배포 URL 하나가 화면과 API를 동시에 서빙
+ * 한다. 팀원들에게 파일을 따로 나눠줄 필요 없이 이 주소만 공유하면 된다.
  */
 
 function doGet(e) {
   var raw = e && e.parameter && e.parameter.data;
-  if (!raw) {
-    return jsonResponse_({
-      ok: true,
-      data: { status: "물류센터 업무관리 시스템 백엔드 정상 동작 중" },
-    });
+  if (raw) {
+    return handleApiRequest_(raw);
   }
-  return handleApiRequest_(raw);
+  return serveApp_();
+}
+
+/** 이 배포의 안정적인 웹 앱 주소(재배포해도 바뀌지 않음)를 앱 화면에 심어준다. */
+function serveApp_() {
+  var appHtml = HtmlService.createHtmlOutputFromFile("App").getContent();
+  var backendUrl = ScriptApp.getService().getUrl();
+  var bootstrap = "<script>window.__DKE_BACKEND_URL__=" + JSON.stringify(backendUrl) + ";</script>";
+  var withBootstrap = appHtml.replace("<head>", "<head>" + bootstrap);
+  return HtmlService.createHtmlOutput(withBootstrap)
+    .setTitle("물류센터 업무관리 시스템")
+    .addMetaTag("viewport", "width=device-width, initial-scale=1");
 }
 
 function doPost(e) {

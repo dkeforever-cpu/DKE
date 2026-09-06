@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { BackendSettingsModal } from "@/components/backend-settings-modal";
+import { getSelfHostedBackendUrl, hasBackendConfig } from "@/lib/gas-client";
 
 export default function LoginPage() {
   const { teams, login, ready, resetDemoData, backendConfigured, backendError, retryBackend } = useStore();
@@ -12,7 +13,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  // 배포된 웹 앱에서 직접 이 페이지를 연 경우, 아직 연동 전이라면 설정
+  // 창을 처음부터 띄워준다 (URL은 이미 채워져 있고 토큰만 입력하면 됨).
+  const [settingsOpen, setSettingsOpen] = useState(() => !hasBackendConfig() && !!getSelfHostedBackendUrl());
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

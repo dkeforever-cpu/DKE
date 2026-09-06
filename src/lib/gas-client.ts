@@ -38,6 +38,16 @@ export function hasBackendConfig(): boolean {
   return getBackendConfig() !== null;
 }
 
+/**
+ * 이 페이지가 Apps Script 웹 앱 배포 자체에서 서빙되고 있다면(Code.gs의
+ * serveApp_이 심어준 값), 그 배포의 안정적인 웹 앱 주소를 돌려준다. 로컬
+ * 파일로 열었거나 아티팩트로 열었을 때는 null.
+ */
+export function getSelfHostedBackendUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  return (window as unknown as { __DKE_BACKEND_URL__?: string }).__DKE_BACKEND_URL__ || null;
+}
+
 export class GasApiError extends Error {}
 
 async function call<T>(action: string, payload: unknown = {}, configOverride?: BackendConfig): Promise<T> {

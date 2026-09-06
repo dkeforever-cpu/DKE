@@ -5,6 +5,7 @@ import {
   clearBackendConfig,
   gas,
   getBackendConfig,
+  getSelfHostedBackendUrl,
   GasApiError,
   setBackendConfig,
 } from "@/lib/gas-client";
@@ -12,7 +13,8 @@ import { FloatingWindow } from "@/components/floating-window";
 
 export function BackendSettingsModal({ onClose }: { onClose: () => void }) {
   const existing = getBackendConfig();
-  const [url, setUrl] = useState(existing?.url ?? "");
+  const selfHostedUrl = getSelfHostedBackendUrl();
+  const [url, setUrl] = useState(existing?.url ?? selfHostedUrl ?? "");
   const [token, setToken] = useState(existing?.token ?? "");
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -52,6 +54,16 @@ export function BackendSettingsModal({ onClose }: { onClose: () => void }) {
           웹 앱의 URL과 API 토큰을 아래에 입력하세요. 아직 설치하지 않았다면 설치 매뉴얼을
           참고해주세요.
         </div>
+
+        {selfHostedUrl && !existing && (
+          <div
+            className="rounded-[2px] px-2.5 py-2 text-[10.5px] leading-relaxed"
+            style={{ background: "var(--accent-soft-bg)", color: "var(--accent-soft-fg)" }}
+          >
+            이 화면은 배포된 웹 앱에서 직접 열렸습니다 — 주소가 자동으로 채워졌습니다. API
+            토큰만 입력하시면 됩니다 (스프레드시트 메뉴 → &lsquo;3. API 토큰 다시 보기&rsquo;).
+          </div>
+        )}
 
         <Field label="Apps Script 웹 앱 URL">
           <input
