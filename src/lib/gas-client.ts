@@ -96,7 +96,18 @@ export interface UploadedFile {
 // base64 문자열을 작은 조각으로 나눠 순서대로 여러 번 보낸다. 서버(Drive.gs)가
 // 마지막 조각을 받으면 전체를 이어붙여 실제 드라이브 업로드를 수행하고,
 // 그 결과(driveFileId/url 등)를 마지막 호출의 응답으로 돌려준다.
-const UPLOAD_CHUNK_SIZE = 3000;
+//
+// 일반 base64는 +, /, = 문자가 섞여 있어서 URL에 실을 때 encodeURIComponent가
+// 그 문자들을 퍼센트 인코딩(%2B 등)해 최대 3배까지 길어진다 — 그만큼 한
+// 조각에 실을 수 있는 실제 데이터가 줄어들어 조각 수(=왕복 횟수)가 늘고
+// 업로드가 느려진다. URL에 그대로 써도 되는 base64url(A-Z a-z 0-9 - _)로
+// 바꿔 보내면 인코딩으로 인한 길이 증가가 거의 없어, 조각 하나에 더 많은
+// 데이터를 실을 수 있다.
+const UPLOAD_CHUNK_SIZE = 8000;
+
+function toBase64Url(base64: string): string {
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
 
 // folder를 넘기면(예: 업무번호) 드라이브의 공용 업로드 폴더 아래에 그
 // 이름의 하위 폴더를 만들어 그 안에 저장한다 — 업무별로 첨부파일을
@@ -107,11 +118,12 @@ async function uploadFile(
   base64Data: string,
   folder?: string
 ): Promise<UploadedFile> {
+  const data = toBase64Url(base64Data);
   const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
-  const total = Math.max(1, Math.ceil(base64Data.length / UPLOAD_CHUNK_SIZE));
+  const total = Math.max(1, Math.ceil(data.length / UPLOAD_CHUNK_SIZE));
   let result: UploadedFile | { received: true } | undefined;
   for (let i = 0; i < total; i++) {
-    const chunk = base64Data.slice(i * UPLOAD_CHUNK_SIZE, (i + 1) * UPLOAD_CHUNK_SIZE);
+    const chunk = data.slice(i * UPLOAD_CHUNK_SIZE, (i + 1) * UPLOAD_CHUNK_SIZE);
     result = await call<UploadedFile | { received: true }>("uploadFileChunk", {
       uploadId,
       index: i,

@@ -5,7 +5,7 @@ import { Comment, ResourceFile, User } from "@/lib/types";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
-import { uploadPickedFile } from "@/lib/attachments";
+import { finalizeAttachment, readPickedFile } from "@/lib/attachments";
 import { downloadResourceFile } from "@/lib/download";
 
 export function PencilIcon() {
@@ -70,13 +70,24 @@ export function CommentList({
   const [replyText, setReplyText] = useState("");
   const [replyAttachments, setReplyAttachments] = useState<ResourceFile[]>([]);
   const [attachError, setAttachError] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function submitReply() {
+  async function submitReply() {
     if (!replyText.trim()) return;
-    onAdd(replyText.trim(), replyAttachments);
-    setReplyText("");
-    setReplyAttachments([]);
+    setSubmitting(true);
+    setAttachError("");
+    try {
+      const finalAttachments = await Promise.all(
+        replyAttachments.map((f) => finalizeAttachment(f, folderHint))
+      );
+      onAdd(replyText.trim(), finalAttachments);
+      setReplyText("");
+      setReplyAttachments([]);
+    } catch (err) {
+      setAttachError(err instanceof Error ? err.message : "첨부파일 업로드에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
@@ -86,17 +97,17 @@ export function CommentList({
     // so resetting e.target.value would empty it before the async reads finish.
     const picked = Array.from(files);
     e.target.value = "";
-    setUploading(true);
     setAttachError("");
+    // 여기서는 로컬에서 읽기만 한다 — 실제 드라이브 업로드는 "등록"을
+    // 눌렀을 때 한 번에 처리한다.
     for (const file of picked) {
       try {
-        const uploaded = await uploadPickedFile(file, folderHint);
-        setReplyAttachments((prev) => [...prev, uploaded]);
+        const read = await readPickedFile(file);
+        setReplyAttachments((prev) => [...prev, read]);
       } catch (err) {
-        setAttachError(err instanceof Error ? err.message : "파일을 업로드하지 못했습니다.");
+        setAttachError(err instanceof Error ? err.message : "파일을 읽지 못했습니다.");
       }
     }
-    setUploading(false);
   }
 
   return (
@@ -128,20 +139,17 @@ export function CommentList({
             className="flex h-6 w-6 flex-none cursor-pointer items-center justify-center rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
             <ClipIcon />
-            <input type="file" multiple className="hidden" onChange={handleFilePick} disabled={uploading} />
+            <input type="file" multiple className="hidden" onChange={handleFilePick} disabled={submitting} />
           </label>
           <button
             onClick={submitReply}
-            disabled={uploading}
+            disabled={submitting}
             className="h-6 flex-none rounded-[2px] px-2 text-[10px] font-semibold disabled:opacity-40"
             style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
           >
-            등록
+            {submitting ? "등록 중..." : "등록"}
           </button>
         </div>
-        {uploading && (
-          <div className="ml-6 text-[9.5px] text-[var(--text-faintest)]">업로드 중...</div>
-        )}
         {attachError && (
           <div className="ml-6 text-[9.5px]" style={{ color: "var(--danger)" }}>
             {attachError}

@@ -61,6 +61,12 @@ function handleUploadFile_(payload) {
  * 마지막 조각이 도착하면 이어붙여서 실제 드라이브 업로드를 수행한다.
  *
  * payload: { uploadId, index, total, chunk, fileName, mimeType, folder }
+ *
+ * chunk는 클라이언트가 base64url(A-Z a-z 0-9 - _)로 보낸다 — 일반 base64의
+ * +, /, = 문자는 URL에 실을 때 퍼센트 인코딩되어 최대 3배까지 길어지므로,
+ * URL에 그대로 써도 되는 base64url로 보내면 한 조각에 더 많은 데이터를
+ * 실을 수 있어(=조각 수가 줄어) 업로드가 더 빠르다. 다 모으고 나서
+ * 표준 base64로 되돌려 디코딩한다.
  */
 function handleUploadFileChunk_(payload) {
   var cache = CacheService.getScriptCache();
@@ -88,9 +94,17 @@ function handleUploadFileChunk_(payload) {
   return handleUploadFile_({
     fileName: payload.fileName,
     mimeType: payload.mimeType,
-    base64Data: parts.join(""),
+    base64Data: base64UrlToBase64_(parts.join("")),
     folder: payload.folder,
   });
+}
+
+function base64UrlToBase64_(s) {
+  var b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) {
+    b64 += "=";
+  }
+  return b64;
 }
 
 /** payload: { driveFileId } — 자료 삭제 시 드라이브의 실제 파일도 함께 정리한다. */

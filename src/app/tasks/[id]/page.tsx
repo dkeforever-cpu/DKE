@@ -12,7 +12,7 @@ import { LogEntryItem } from "@/components/log-entry-item";
 import { TaskFormModal } from "@/components/task-form-modal";
 import { ChecklistTree } from "@/components/checklist-tree";
 import { formatDateFull, formatDateTime, daysOverdue, isOverdue } from "@/lib/format";
-import { uploadPickedFile } from "@/lib/attachments";
+import { finalizeAttachment, readPickedFile } from "@/lib/attachments";
 import { downloadResourceFile } from "@/lib/download";
 import type { ResourceFile } from "@/lib/types";
 
@@ -45,7 +45,7 @@ export default function TaskDetailPage() {
   const [newContent, setNewContent] = useState("");
   const [newAttachments, setNewAttachments] = useState<ResourceFile[]>([]);
   const [attachError, setAttachError] = useState("");
-  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [submittingEntry, setSubmittingEntry] = useState(false);
 
   const task = tasks.find((t) => t.id === id);
 
@@ -89,36 +89,47 @@ export default function TaskDetailPage() {
   const editable = canEditTask(task);
   const collaborators = task.collaboratorIds.map((id) => getUser(id)?.name ?? "?");
 
-  function handleSubmitEntry() {
+  async function handleSubmitEntry() {
     if (!newContent.trim() || !currentUser || !task) return;
-    addLogEntry({
-      taskId: task.id,
-      authorId: currentUser.id,
-      content: newContent.trim(),
-      attachments: newAttachments,
-    });
-    setNewContent("");
-    setNewAttachments([]);
+    setSubmittingEntry(true);
+    setAttachError("");
+    try {
+      const finalAttachments = await Promise.all(
+        newAttachments.map((f) => finalizeAttachment(f, task.taskNumber))
+      );
+      addLogEntry({
+        taskId: task.id,
+        authorId: currentUser.id,
+        content: newContent.trim(),
+        attachments: finalAttachments,
+      });
+      setNewContent("");
+      setNewAttachments([]);
+    } catch (err) {
+      setAttachError(err instanceof Error ? err.message : "첨부파일 업로드에 실패했습니다.");
+    } finally {
+      setSubmittingEntry(false);
+    }
   }
 
   async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
-    if (!files || !task) return;
+    if (!files) return;
     // Snapshot before clearing the input — e.target.files is a live FileList,
     // so resetting e.target.value would empty it before the async reads finish.
     const picked = Array.from(files);
     e.target.value = "";
-    setUploadingAttachment(true);
     setAttachError("");
+    // 여기서는 로컬에서 읽기만 한다 — 실제 드라이브 업로드는 "메모 등록"을
+    // 눌렀을 때 한 번에 처리한다.
     for (const file of picked) {
       try {
-        const uploaded = await uploadPickedFile(file, task.taskNumber);
-        setNewAttachments((prev) => [...prev, uploaded]);
+        const read = await readPickedFile(file);
+        setNewAttachments((prev) => [...prev, read]);
       } catch (err) {
-        setAttachError(err instanceof Error ? err.message : "파일을 업로드하지 못했습니다.");
+        setAttachError(err instanceof Error ? err.message : "파일을 읽지 못했습니다.");
       }
     }
-    setUploadingAttachment(false);
   }
 
   async function handleDeleteTask() {
@@ -286,22 +297,22 @@ export default function TaskDetailPage() {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
                     <path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                   </svg>
-                  {uploadingAttachment ? "업로드 중..." : "파일 첨부"}
+                  파일 첨부
                   <input
                     type="file"
                     multiple
                     className="hidden"
                     onChange={handleFilePick}
-                    disabled={uploadingAttachment}
+                    disabled={submittingEntry}
                   />
                 </label>
                 <button
                   onClick={handleSubmitEntry}
-                  disabled={!newContent.trim() || uploadingAttachment}
+                  disabled={!newContent.trim() || submittingEntry}
                   className="h-6 rounded-[2px] px-3 text-[10.5px] font-semibold disabled:opacity-40"
                   style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
                 >
-                  메모 등록
+                  {submittingEntry ? "등록 중..." : "메모 등록"}
                 </button>
               </div>
             </div>
