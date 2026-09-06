@@ -100,6 +100,31 @@ function normalizeCategories(
   return out;
 }
 
+// 예전 "카테고리명-YYMMDD-일련번호" 형식으로 저장된 업무번호를 새
+// "대분류코드_중분류코드_YYMMDD_일련번호" 형식으로 다시 배정한다 — 이미 새
+// 형식인 값은 그대로 둔다 (재배정 시 일련번호가 순서대로 다시 매겨진다).
+const TASK_NUMBER_RE = /^[^_]+_[^_]+_\d{6}_\d{2}$/;
+
+function migrateTaskNumbers(tasks: Task[], categoriesByTeam: Record<string, CategoryLarge[]>): Task[] {
+  const migrated: Task[] = [];
+  for (const t of tasks) {
+    if (TASK_NUMBER_RE.test(t.taskNumber)) {
+      migrated.push(t);
+      continue;
+    }
+    const largeCat = (categoriesByTeam[t.teamId] ?? []).find((l) => l.name === t.categoryLarge);
+    const mediumCat = largeCat?.children.find((m) => m.name === t.categoryMedium);
+    const taskNumber = generateTaskNumber(
+      largeCat?.code ?? "",
+      mediumCat?.code ?? "",
+      t.createdAt,
+      migrated
+    );
+    migrated.push({ ...t, taskNumber });
+  }
+  return migrated;
+}
+
 function normalize(data: Partial<StoreData>): StoreData {
   // Legacy shape (pre-team-system) stored a single `dept` string on users
   // and tasks instead of `teamId`; carry that value over so old browsers
@@ -129,7 +154,7 @@ function normalize(data: Partial<StoreData>): StoreData {
     };
   });
 
-  const tasks = legacyTasks.map((t) => {
+  const rawTasks = legacyTasks.map((t) => {
     const teamId = t.teamId ?? t.dept ?? teams[0]?.id ?? "";
     return {
       ...t,
@@ -145,6 +170,8 @@ function normalize(data: Partial<StoreData>): StoreData {
       ? data.categoriesByTeam
       : seedCategoriesByTeam()
   );
+
+  const tasks = migrateTaskNumbers(rawTasks, categoriesByTeam);
 
   const boards =
     data.boards && data.boards.length > 0
@@ -302,15 +329,6 @@ interface StoreContextValue {
   addCategoryMedium: (teamId: string, largeId: string, name: string) => void;
   renameCategoryMedium: (teamId: string, largeId: string, id: string, name: string) => void;
   deleteCategoryMedium: (teamId: string, largeId: string, id: string) => void;
-  addCategorySmall: (teamId: string, largeId: string, mediumId: string, name: string) => void;
-  renameCategorySmall: (
-    teamId: string,
-    largeId: string,
-    mediumId: string,
-    id: string,
-    name: string
-  ) => void;
-  deleteCategorySmall: (teamId: string, largeId: string, mediumId: string, id: string) => void;
 
   addBoard: (teamId: string, name: string) => void;
   updateBoard: (id: string, patch: Partial<Pick<Board, "name" | "visibleColumns">>) => void;
@@ -727,7 +745,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) => {
           if (l.id !== largeId) return l;
           const code = nextMediumCode(l.children.map((m) => m.code));
-          return { ...l, children: [...l.children, { id: genId("cm"), name, code, children: [] }] };
+          return { ...l, children: [...l.children, { id: genId("cm"), name, code }] };
         }),
       },
     }));
@@ -761,78 +779,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
     }));
   }, []);
-
-  const addCategorySmall = useCallback(
-    (teamId: string, largeId: string, mediumId: string, name: string) => {
-      setData((prev) => ({
-        ...prev,
-        categoriesByTeam: {
-          ...prev.categoriesByTeam,
-          [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
-            l.id === largeId
-              ? {
-                  ...l,
-                  children: l.children.map((m) =>
-                    m.id === mediumId
-                      ? { ...m, children: [...m.children, { id: genId("cs"), name }] }
-                      : m
-                  ),
-                }
-              : l
-          ),
-        },
-      }));
-    },
-    []
-  );
-
-  const renameCategorySmall = useCallback(
-    (teamId: string, largeId: string, mediumId: string, id: string, name: string) => {
-      setData((prev) => ({
-        ...prev,
-        categoriesByTeam: {
-          ...prev.categoriesByTeam,
-          [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
-            l.id === largeId
-              ? {
-                  ...l,
-                  children: l.children.map((m) =>
-                    m.id === mediumId
-                      ? { ...m, children: m.children.map((s) => (s.id === id ? { ...s, name } : s)) }
-                      : m
-                  ),
-                }
-              : l
-          ),
-        },
-      }));
-    },
-    []
-  );
-
-  const deleteCategorySmall = useCallback(
-    (teamId: string, largeId: string, mediumId: string, id: string) => {
-      setData((prev) => ({
-        ...prev,
-        categoriesByTeam: {
-          ...prev.categoriesByTeam,
-          [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
-            l.id === largeId
-              ? {
-                  ...l,
-                  children: l.children.map((m) =>
-                    m.id === mediumId
-                      ? { ...m, children: m.children.filter((s) => s.id !== id) }
-                      : m
-                  ),
-                }
-              : l
-          ),
-        },
-      }));
-    },
-    []
-  );
 
   // --- Admin: boards ---
 
@@ -997,9 +943,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addCategoryMedium,
     renameCategoryMedium,
     deleteCategoryMedium,
-    addCategorySmall,
-    renameCategorySmall,
-    deleteCategorySmall,
     addBoard,
     updateBoard,
     deleteBoard,

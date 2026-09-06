@@ -99,7 +99,6 @@ export default function DashboardPage() {
           t.description,
           t.categoryLarge,
           t.categoryMedium,
-          t.categorySmall,
           t.center,
           getUser(t.assigneeId)?.name ?? "",
           ...t.collaboratorIds.map((id) => getUser(id)?.name ?? ""),

@@ -10,8 +10,8 @@ export function CategoriesSection() {
   const activeTeamId = teams.some((t) => t.id === teamId) ? teamId : teams[0]?.id ?? "";
   const tree = categoriesByTeam[activeTeamId] ?? [];
 
-  // 각 대분류/중분류 행의 펼침 상태 — 키가 없으면 기본값(펼침)으로 취급하고,
-  // "전체 펼치기"는 맵을 비워 전부 기본값(펼침)으로 되돌린다.
+  // 대분류 행의 펼침 상태 — 키가 없으면 기본값(펼침)으로 취급하고, "전체
+  // 펼치기"는 맵을 비워 전부 기본값(펼침)으로 되돌린다.
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const isExpanded = (id: string) => expandedMap[id] ?? true;
   const toggleExpanded = (id: string) =>
@@ -24,9 +24,6 @@ export function CategoriesSection() {
     const next: Record<string, boolean> = {};
     tree.forEach((l) => {
       next[l.id] = false;
-      l.children.forEach((m) => {
-        next[m.id] = false;
-      });
     });
     setExpandedMap(next);
   }
@@ -38,9 +35,9 @@ export function CategoriesSection() {
   return (
     <div className="flex flex-col gap-3">
       <div className="text-[11px] text-[var(--text-faint)]">
-        팀별로 대분류 · 중분류 · 소분류를 추가·수정·삭제할 수 있습니다. 업무 등록 화면의 분류
-        선택지에 바로 반영되며, 대분류·중분류 옆의 코드는 업무번호(예:
-        A_01_260906_01)를 만드는 데 쓰입니다.
+        팀별로 대분류 · 중분류를 추가·수정·삭제할 수 있습니다. 업무 등록 화면의 분류 선택지에
+        바로 반영되며, 대분류·중분류 옆의 코드는 업무번호(예: A_01_260906_01)를 만드는 데
+        쓰입니다.
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -87,8 +84,6 @@ export function CategoriesSection() {
             large={large}
             expanded={isExpanded(large.id)}
             onToggleExpanded={() => toggleExpanded(large.id)}
-            isExpanded={isExpanded}
-            onToggleExpandedId={toggleExpanded}
           />
         ))}
         <AddLargeRow teamId={activeTeamId} />
@@ -131,20 +126,16 @@ function LargeRow({
   large,
   expanded,
   onToggleExpanded,
-  isExpanded,
-  onToggleExpandedId,
 }: {
   teamId: string;
   large: {
     id: string;
     name: string;
     code: string;
-    children: { id: string; name: string; code: string; children: { id: string; name: string }[] }[];
+    children: { id: string; name: string; code: string }[];
   };
   expanded: boolean;
   onToggleExpanded: () => void;
-  isExpanded: (id: string) => boolean;
-  onToggleExpandedId: (id: string) => void;
 }) {
   const { renameCategoryLarge, deleteCategoryLarge, addCategoryMedium } = useStore();
   const { confirm } = useConfirmDialog();
@@ -212,14 +203,7 @@ function LargeRow({
       {expanded && (
         <div className="pl-5">
           {large.children.map((medium) => (
-            <MediumRow
-              key={medium.id}
-              teamId={teamId}
-              largeId={large.id}
-              medium={medium}
-              expanded={isExpanded(medium.id)}
-              onToggleExpanded={() => onToggleExpandedId(medium.id)}
-            />
+            <MediumRow key={medium.id} teamId={teamId} largeId={large.id} medium={medium} />
           ))}
           {addingMedium && (
             <div className="flex items-center gap-1.5 border-t border-[var(--divider)] px-2.5 py-1.5">
@@ -246,146 +230,53 @@ function MediumRow({
   teamId,
   largeId,
   medium,
-  expanded,
-  onToggleExpanded,
 }: {
   teamId: string;
   largeId: string;
-  medium: { id: string; name: string; code: string; children: { id: string; name: string }[] };
-  expanded: boolean;
-  onToggleExpanded: () => void;
+  medium: { id: string; name: string; code: string };
 }) {
-  const { renameCategoryMedium, deleteCategoryMedium, addCategorySmall, renameCategorySmall, deleteCategorySmall } =
-    useStore();
+  const { renameCategoryMedium, deleteCategoryMedium } = useStore();
   const { confirm } = useConfirmDialog();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(medium.name);
-  const [addingSmall, setAddingSmall] = useState(false);
-  const [newSmall, setNewSmall] = useState("");
-
-  function addSmall() {
-    if (!newSmall.trim()) return;
-    addCategorySmall(teamId, largeId, medium.id, newSmall.trim());
-    setNewSmall("");
-    setAddingSmall(false);
-  }
 
   return (
-    <div className="border-t border-[var(--divider)]">
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5">
-        <button onClick={onToggleExpanded} className="flex-none text-[var(--text-faint)]">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" style={{ transform: expanded ? "rotate(90deg)" : "none" }}>
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </button>
-        <span className="flex-none rounded-[2px] border border-[var(--border)] bg-[var(--surface-alt)] px-1 py-0.5 font-mono text-[9px] font-bold text-[var(--text-muted)]">
-          {medium.code}
-        </span>
-        {editing ? (
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => {
-              if (draft.trim()) renameCategoryMedium(teamId, largeId, medium.id, draft.trim());
-              setEditing(false);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-            className="h-6 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
-          />
-        ) : (
-          <button onClick={() => setEditing(true)} className="flex-1 text-left text-[11px] font-semibold text-[var(--text-secondary)]">
-            {medium.name}
-          </button>
-        )}
-        <span className="text-[9px] text-[var(--text-faintest)]">중분류</span>
-        <button onClick={() => setAddingSmall((v) => !v)} className="text-[var(--text-faint)] hover:text-[var(--accent)]">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
-        <button
-          onClick={async () => {
-            if (await confirm(`'${medium.name}' 중분류를 삭제할까요? 하위 항목도 함께 삭제됩니다.`))
-              deleteCategoryMedium(teamId, largeId, medium.id);
+    <div className="flex items-center gap-1.5 border-t border-[var(--divider)] px-2.5 py-1.5">
+      <span className="w-2.5 flex-none" />
+      <span className="flex-none rounded-[2px] border border-[var(--border)] bg-[var(--surface-alt)] px-1 py-0.5 font-mono text-[9px] font-bold text-[var(--text-muted)]">
+        {medium.code}
+      </span>
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            if (draft.trim()) renameCategoryMedium(teamId, largeId, medium.id, draft.trim());
+            setEditing(false);
           }}
-          style={{ color: "var(--danger-text)" }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18" />
-            <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-          </svg>
+          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+          className="h-6 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
+        />
+      ) : (
+        <button onClick={() => setEditing(true)} className="flex-1 text-left text-[11px] font-semibold text-[var(--text-secondary)]">
+          {medium.name}
         </button>
-      </div>
-
-      {expanded && (
-        <div className="pl-5">
-          {medium.children.map((small) => (
-            <div key={small.id} className="flex items-center gap-1.5 border-t border-[var(--divider)] px-2.5 py-1.5">
-              <span className="w-2.5 flex-none" />
-              <SmallLabel
-                name={small.name}
-                onRename={(name) => renameCategorySmall(teamId, largeId, medium.id, small.id, name)}
-              />
-              <span className="text-[9px] text-[var(--text-faintest)]">소분류</span>
-              <button
-                onClick={async () => {
-                  if (await confirm(`'${small.name}' 소분류를 삭제할까요?`))
-                    deleteCategorySmall(teamId, largeId, medium.id, small.id);
-                }}
-                style={{ color: "var(--danger-text)" }}
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18" />
-                  <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                </svg>
-              </button>
-            </div>
-          ))}
-          {addingSmall && (
-            <div className="flex items-center gap-1.5 border-t border-[var(--divider)] px-2.5 py-1.5">
-              <input
-                autoFocus
-                value={newSmall}
-                onChange={(e) => setNewSmall(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addSmall()}
-                placeholder="새 소분류"
-                className="h-6 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
-              />
-              <button onClick={addSmall} className="h-6 rounded-[2px] px-2 text-[10px] font-semibold" style={{ background: "var(--accent)", color: "var(--accent-fg)" }}>
-                추가
-              </button>
-            </div>
-          )}
-        </div>
       )}
-    </div>
-  );
-}
-
-function SmallLabel({ name, onRename }: { name: string; onRename: (name: string) => void }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(name);
-  if (editing) {
-    return (
-      <input
-        autoFocus
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft.trim()) onRename(draft.trim());
-          setEditing(false);
+      <span className="text-[9px] text-[var(--text-faintest)]">중분류</span>
+      <button
+        onClick={async () => {
+          if (await confirm(`'${medium.name}' 중분류를 삭제할까요?`))
+            deleteCategoryMedium(teamId, largeId, medium.id);
         }}
-        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-        className="h-6 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-1.5 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
-      />
-    );
-  }
-  return (
-    <button onClick={() => setEditing(true)} className="flex-1 text-left text-[10.5px] text-[var(--text-muted)]">
-      {name}
-    </button>
+        style={{ color: "var(--danger-text)" }}
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 6h18" />
+          <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        </svg>
+      </button>
+    </div>
   );
 }

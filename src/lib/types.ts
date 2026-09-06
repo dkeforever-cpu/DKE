@@ -35,7 +35,6 @@ export interface Task {
   teamId: string;
   categoryLarge: string;
   categoryMedium: string;
-  categorySmall: string;
   assigneeId: string;
   collaboratorIds: string[];
   center: string;
@@ -94,17 +93,12 @@ export interface ResourceDoc {
 }
 
 // --- Admin-editable category taxonomy (was a hardcoded const, now per-team data) ---
-
-export interface CategorySmall {
-  id: string;
-  name: string;
-}
+// 대분류 · 중분류 2단계만 사용 — 소분류는 실제 업무 데이터에 존재하지 않아 제외.
 
 export interface CategoryMedium {
   id: string;
   name: string;
   code: string; // 업무번호에 쓰이는 중분류 코드 (2자리 숫자, 예: "01")
-  children: CategorySmall[];
 }
 
 export interface CategoryLarge {

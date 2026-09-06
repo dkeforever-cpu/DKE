@@ -47,9 +47,6 @@ export function TaskFormModal({
   const [medium, setMedium] = useState(
     task?.categoryMedium ?? largeNode?.children[0]?.name ?? ""
   );
-  const mediumNode =
-    largeNode?.children.find((n) => n.name === medium) ?? largeNode?.children[0];
-  const [small, setSmall] = useState(task?.categorySmall ?? mediumNode?.children[0]?.name ?? "");
 
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
@@ -76,20 +73,12 @@ export function TaskFormModal({
     const t = categoriesByTeam[next] ?? [];
     setLarge(t[0]?.name ?? "");
     setMedium(t[0]?.children[0]?.name ?? "");
-    setSmall(t[0]?.children[0]?.children[0]?.name ?? "");
   }
 
   function handleLargeChange(name: string) {
     setLarge(name);
     const node = tree.find((n) => n.name === name);
     setMedium(node?.children[0]?.name ?? "");
-    setSmall(node?.children[0]?.children[0]?.name ?? "");
-  }
-
-  function handleMediumChange(name: string) {
-    setMedium(name);
-    const node = largeNode?.children.find((n) => n.name === name);
-    setSmall(node?.children[0]?.name ?? "");
   }
 
   function toggleCollaborator(id: string) {
@@ -119,7 +108,6 @@ export function TaskFormModal({
         teamId,
         categoryLarge: large,
         categoryMedium: medium,
-        categorySmall: small,
         assigneeId,
         collaboratorIds: collaboratorIds.filter((id2) => id2 !== assigneeId),
         center,
@@ -139,7 +127,6 @@ export function TaskFormModal({
         teamId,
         categoryLarge: large,
         categoryMedium: medium,
-        categorySmall: small,
         assigneeId,
         collaboratorIds: collaboratorIds.filter((id2) => id2 !== assigneeId),
         center,
@@ -219,8 +206,8 @@ export function TaskFormModal({
         />
       </Field>
 
-      <Field label="업무 분류 (대분류 · 중분류 · 소분류)">
-        <div className="grid grid-cols-3 gap-1.5">
+      <Field label="업무 분류 (대분류 · 중분류)">
+        <div className="grid grid-cols-2 gap-1.5">
           <select value={large} onChange={(e) => handleLargeChange(e.target.value)} className={inputCls}>
             {tree.map((n) => (
               <option key={n.id} value={n.name}>
@@ -228,15 +215,8 @@ export function TaskFormModal({
               </option>
             ))}
           </select>
-          <select value={medium} onChange={(e) => handleMediumChange(e.target.value)} className={inputCls}>
+          <select value={medium} onChange={(e) => setMedium(e.target.value)} className={inputCls}>
             {(largeNode?.children ?? []).map((n) => (
-              <option key={n.id} value={n.name}>
-                {n.name}
-              </option>
-            ))}
-          </select>
-          <select value={small} onChange={(e) => setSmall(e.target.value)} className={inputCls}>
-            {(mediumNode?.children ?? []).map((n) => (
               <option key={n.id} value={n.name}>
                 {n.name}
               </option>

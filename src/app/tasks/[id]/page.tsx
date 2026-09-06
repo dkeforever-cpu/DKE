@@ -139,8 +139,6 @@ export default function TaskDetailPage() {
                   {task.categoryLarge}
                   <span className="text-[var(--text-disabled)]">›</span>
                   {task.categoryMedium}
-                  <span className="text-[var(--text-disabled)]">›</span>
-                  {task.categorySmall}
                   <span className="text-[var(--text-disabled)]">·</span>
                   <span title="업무번호">{task.taskNumber}</span>
                 </div>
