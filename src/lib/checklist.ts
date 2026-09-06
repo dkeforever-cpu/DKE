@@ -20,7 +20,7 @@ export function updateNode(
 ): ChecklistItem[] {
   return tree.map((item) =>
     item.id === id
-      ? { ...item, ...patch }
+      ? { ...item, ...patch, updatedAt: new Date().toISOString() }
       : { ...item, children: updateNode(item.children, id, patch) }
   );
 }

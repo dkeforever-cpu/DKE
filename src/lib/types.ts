@@ -22,7 +22,8 @@ export interface ChecklistItem {
   label: string;
   progress: number; // 0-100, set independently of the parent task's progress
   dueDate?: string; // YYYY-MM-DD, set independently of the parent task's due date
-  createdAt: string; // YYYY-MM-DD, set once when the item is added
+  createdAt: string; // ISO datetime, set once when the item is added
+  updatedAt?: string; // ISO datetime, set whenever label/progress/dueDate changes
   children: ChecklistItem[];
 }
 

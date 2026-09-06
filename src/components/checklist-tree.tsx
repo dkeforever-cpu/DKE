@@ -311,7 +311,8 @@ function ChecklistNode({
           style={{ paddingLeft: indent + 20, borderColor: "var(--divider)" }}
         >
           <div className="mb-1.5 text-[9px] text-[var(--text-disabled)]">
-            등록일 {formatDateTime(item.createdAt)}
+            작성 {formatDateTime(item.createdAt)}
+            {item.updatedAt && ` · 수정 ${formatDateTime(item.updatedAt)}`}
           </div>
           <div className="mb-1 text-[9.5px] font-semibold text-[var(--text-faintest)]">댓글</div>
           <CommentList
