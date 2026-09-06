@@ -107,69 +107,66 @@ function importExportedJson(jsonText) {
     clearSheetRows_(getSheet_(SCHEMA[entity].sheet));
   });
 
-  (data.teams || []).forEach(function (t) {
-    handleCreate_("teams", t);
-  });
+  batchCreate_("teams", data.teams || []);
   counts.teams = (data.teams || []).length;
 
-  (data.centers || []).forEach(function (name) {
-    handleCreate_("centers", { name: name });
-  });
+  batchCreate_(
+    "centers",
+    (data.centers || []).map(function (name) {
+      return { name: name };
+    })
+  );
   counts.centers = (data.centers || []).length;
 
-  var mediumCount = 0;
+  var largeRecords = [];
+  var mediumRecords = [];
   Object.keys(data.categoriesByTeam || {}).forEach(function (teamId) {
     (data.categoriesByTeam[teamId] || []).forEach(function (large) {
-      handleCreate_("categoryLarge", { id: large.id, teamId: teamId, name: large.name, code: large.code });
+      largeRecords.push({ id: large.id, teamId: teamId, name: large.name, code: large.code });
       (large.children || []).forEach(function (medium) {
-        handleCreate_("categoryMedium", { id: medium.id, largeId: large.id, name: medium.name, code: medium.code });
-        mediumCount++;
+        mediumRecords.push({ id: medium.id, largeId: large.id, name: medium.name, code: medium.code });
       });
     });
   });
-  counts.categoryMedium = mediumCount;
+  batchCreate_("categoryLarge", largeRecords);
+  batchCreate_("categoryMedium", mediumRecords);
+  counts.categoryMedium = mediumRecords.length;
 
-  (data.boards || []).forEach(function (b) {
-    handleCreate_("boards", b);
-  });
+  batchCreate_("boards", data.boards || []);
   counts.boards = (data.boards || []).length;
 
-  (data.customFields || []).forEach(function (f) {
-    handleCreate_("customFields", f);
-  });
+  batchCreate_("customFields", data.customFields || []);
   counts.customFields = (data.customFields || []).length;
 
-  (data.users || []).forEach(function (u) {
-    handleCreate_("users", u);
-  });
+  batchCreate_("users", data.users || []);
   counts.users = (data.users || []).length;
 
-  var checklistCount = 0;
+  var taskRecords = [];
+  var checklistRecords = [];
   (data.tasks || []).forEach(function (t) {
-    var checklist = t.checklist || [];
     var rest = {};
     Object.keys(t).forEach(function (k) {
       if (k !== "checklist") rest[k] = t[k];
     });
-    handleCreate_("tasks", rest);
-    checklistCount += flattenAndCreateChecklist_(t.id, null, checklist);
+    taskRecords.push(rest);
+    collectChecklist_(t.id, null, t.checklist || [], checklistRecords);
   });
-  counts.tasks = (data.tasks || []).length;
-  counts.checklistItems = checklistCount;
+  batchCreate_("tasks", taskRecords);
+  batchCreate_("checklistItems", checklistRecords);
+  counts.tasks = taskRecords.length;
+  counts.checklistItems = checklistRecords.length;
 
-  (data.logEntries || []).forEach(function (l) {
-    handleCreate_("logEntries", l);
-  });
+  batchCreate_("logEntries", data.logEntries || []);
   counts.logEntries = (data.logEntries || []).length;
 
-  (data.comments || []).forEach(function (c) {
-    handleCreate_("comments", c);
-  });
+  batchCreate_("comments", data.comments || []);
   counts.comments = (data.comments || []).length;
 
   // 자료실 파일은 base64가 그대로 들어있으면 시트 셀 용량(약 5만자)을 금방
-  // 넘기므로, 가져오는 김에 드라이브에 올리고 링크만 저장한다.
-  (data.resources || []).forEach(function (r) {
+  // 넘기므로, 가져오는 김에 드라이브에 올리고 링크만 저장한다. 드라이브
+  // 업로드 자체는 파일마다 별도 API 호출이라 이 부분만은 배치로 줄일 수
+  // 없다 — 그래도 시트에 쓰는 부분은 한 번에 처리한다.
+  var resourceRecords = (data.resources || []).map(function (r) {
     var files = (r.files || []).map(function (f) {
       if (!f.base64) return f;
       var uploaded = handleUploadFile_({
@@ -186,7 +183,7 @@ function importExportedJson(jsonText) {
         base64: "",
       };
     });
-    handleCreate_("resources", {
+    return {
       id: r.id,
       title: r.title,
       description: r.description,
@@ -194,17 +191,17 @@ function importExportedJson(jsonText) {
       files: files,
       uploadedBy: r.uploadedBy,
       createdAt: r.createdAt,
-    });
+    };
   });
-  counts.resources = (data.resources || []).length;
+  batchCreate_("resources", resourceRecords);
+  counts.resources = resourceRecords.length;
 
   return counts;
 }
 
-function flattenAndCreateChecklist_(taskId, parentId, items) {
-  var count = 0;
+function collectChecklist_(taskId, parentId, items, out) {
   (items || []).forEach(function (item) {
-    handleCreate_("checklistItems", {
+    out.push({
       id: item.id,
       taskId: taskId,
       parentId: parentId || "",
@@ -214,8 +211,22 @@ function flattenAndCreateChecklist_(taskId, parentId, items) {
       createdAt: item.createdAt,
       updatedAt: item.updatedAt || "",
     });
-    count++;
-    count += flattenAndCreateChecklist_(taskId, item.id, item.children);
+    collectChecklist_(taskId, item.id, item.children, out);
   });
-  return count;
+}
+
+/**
+ * handleCreate_를 레코드마다 반복 호출(=시트 쓰기 API도 레코드마다 반복)
+ * 하는 대신, 한 시트에 들어갈 레코드를 전부 모아 단 한 번의 범위 쓰기로
+ * 처리한다. 가져오기 대상이 수백 건이면 이 차이가 몇 분과 몇 초의 차이를
+ * 만든다 (Apps Script 실행 제한 시간이 계정 유형에 따라 6분 정도로 짧다).
+ */
+function batchCreate_(entity, records) {
+  if (!records || records.length === 0) return;
+  var schema = schemaFor_(entity);
+  var sheet = getSheet_(schema.sheet);
+  var encoded = records.map(function (r) {
+    return encodeRecord_(schema, r);
+  });
+  appendRows_(sheet, schema.headers, encoded);
 }

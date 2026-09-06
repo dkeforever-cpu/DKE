@@ -47,6 +47,22 @@ function appendRow_(sheet, headers, obj) {
   sheet.appendRow(row);
 }
 
+/**
+ * appendRow_의 여러 건짜리 버전 — 레코드마다 시트 API를 한 번씩 부르는
+ * 대신, 전체를 2차원 배열로 만들어 범위 쓰기 한 번으로 끝낸다. 대량
+ * 가져오기(importExportedJson)처럼 수백 건을 한 번에 넣을 때 훨씬 빠르다.
+ */
+function appendRows_(sheet, headers, objs) {
+  if (!objs || objs.length === 0) return;
+  var rows = objs.map(function (obj) {
+    return headers.map(function (h) {
+      return obj[h] !== undefined && obj[h] !== null ? obj[h] : "";
+    });
+  });
+  var startRow = sheet.getLastRow() + 1;
+  sheet.getRange(startRow, 1, rows.length, headers.length).setValues(rows);
+}
+
 /** id/키 컬럼에서 값이 일치하는 첫 번째 행의 1-기반 행 번호. 없으면 -1. */
 function findRowIndexByField_(sheet, fieldIndex, value) {
   var lastRow = sheet.getLastRow();
