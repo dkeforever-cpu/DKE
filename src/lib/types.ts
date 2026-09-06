@@ -41,6 +41,7 @@ export interface Task {
   priority: Priority;
   status: Status;
   progress: number;
+  reported: boolean; // 보고완료 여부 — 업무 진행 상태(status)와는 별개로 관리
   level: number; // 업무레벨: only viewable by users whose User.level <= this value
   dueDate: string; // YYYY-MM-DD
   createdBy: string;
@@ -139,6 +140,7 @@ export const BUILTIN_COLUMNS: BuiltinColumnDef[] = [
   { key: "dueDate", label: "마감일" },
   { key: "attachments", label: "첨부" },
   { key: "comments", label: "첨언" },
+  { key: "reported", label: "보고" },
 ];
 
 export interface Board {

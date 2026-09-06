@@ -187,7 +187,7 @@ export function TaskTable({
   commentCount: (taskId: string) => number;
 }) {
   const router = useRouter();
-  const { deleteTask } = useStore();
+  const { deleteTask, updateTask } = useStore();
   const { confirm } = useConfirmDialog();
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -203,6 +203,7 @@ export function TaskTable({
   const activeColumns = allColumnDefs.filter((c) => columns.includes(c.key));
   const showAttachments = columns.includes("attachments");
   const showComments = columns.includes("comments");
+  const showReported = columns.includes("reported");
 
   const COLS = [
     "26px",
@@ -210,6 +211,7 @@ export function TaskTable({
     ...activeColumns.map((c) => c.width),
     ...(showAttachments ? ["48px"] : []),
     ...(showComments ? ["48px"] : []),
+    ...(showReported ? ["64px"] : []),
   ].join(" ");
 
   function toggleSort(key: SortKey) {
@@ -320,6 +322,7 @@ export function TaskTable({
         )}
         {showAttachments && <div className="text-center">첨부</div>}
         {showComments && <div className="text-center">첨언</div>}
+        {showReported && <div className="text-center">보고</div>}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -367,6 +370,21 @@ export function TaskTable({
               )}
               {showComments && (
                 <div className="text-center text-[10px] text-[var(--text-faintest)]">{commentCount(t.id)}</div>
+              )}
+              {showReported && (
+                <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => updateTask(t.id, { reported: !t.reported })}
+                    className="h-5 rounded-full px-2 text-[9.5px] font-semibold"
+                    style={
+                      t.reported
+                        ? { background: "var(--success-soft-bg)", color: "var(--success)" }
+                        : { background: "var(--surface-alt)", color: "var(--text-faint)", border: "1px solid var(--border-strong)" }
+                    }
+                  >
+                    {t.reported ? "완료" : "미보고"}
+                  </button>
+                </div>
               )}
             </div>
           );

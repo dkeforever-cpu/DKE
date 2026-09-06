@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [assigneeFilter, setAssigneeFilter] = useState("전체");
   const [statusFilter, setStatusFilter] = useState<"전체" | Status>("전체");
   const [priorityFilter, setPriorityFilter] = useState<"전체" | Priority>("전체");
+  const [includeReported, setIncludeReported] = useState(true);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
 
@@ -53,6 +54,7 @@ export default function DashboardPage() {
       "dueDate",
       "attachments",
       "comments",
+      "reported",
     ];
 
   const attachmentCount = (taskId: string) =>
@@ -93,6 +95,7 @@ export default function DashboardPage() {
       if (assigneeFilter !== "전체" && t.assigneeId !== assigneeFilter) return false;
       if (statusFilter !== "전체" && t.status !== statusFilter) return false;
       if (priorityFilter !== "전체" && t.priority !== priorityFilter) return false;
+      if (!includeReported && t.reported) return false;
       if (q) {
         const haystack = [
           t.title,
@@ -109,7 +112,7 @@ export default function DashboardPage() {
       }
       return true;
     });
-  }, [scoped, centerFilter, assigneeFilter, statusFilter, priorityFilter, search, getUser]);
+  }, [scoped, centerFilter, assigneeFilter, statusFilter, priorityFilter, includeReported, search, getUser]);
 
   const summary = useMemo(() => {
     const base = scoped;
@@ -254,6 +257,18 @@ export default function DashboardPage() {
             placeholder="업무명·설명·카테고리·담당자·센터 검색"
             className="h-6 w-[180px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
           />
+          <button
+            onClick={() => setIncludeReported((v) => !v)}
+            className="h-6 rounded-[2px] border px-2 text-[10.5px] font-semibold"
+            style={
+              includeReported
+                ? { borderColor: "var(--border-strong)", color: "var(--text-muted)", background: "var(--surface)" }
+                : { borderColor: "var(--accent)", color: "var(--accent-fg)", background: "var(--accent)" }
+            }
+            title="보고완료 업무를 목록에 표시할지 전환합니다"
+          >
+            {includeReported ? "보고완료 포함" : "보고완료 제외"}
+          </button>
           <div className="flex-1" />
           <button
             onClick={() => setFormOpen(true)}

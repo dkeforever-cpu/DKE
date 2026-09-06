@@ -162,6 +162,7 @@ function normalize(data: Partial<StoreData>): StoreData {
       level: t.level ?? 1,
       collaboratorIds: t.collaboratorIds ?? [],
       checklist: normalizeChecklist(t.checklist),
+      reported: t.reported ?? false,
     };
   });
 
@@ -173,7 +174,9 @@ function normalize(data: Partial<StoreData>): StoreData {
 
   const tasks = migrateTaskNumbers(rawTasks, categoriesByTeam);
 
-  const boards =
+  // 이미 저장된 게시판에는 "보고" 컬럼이 없을 수 있어(추가되기 전 데이터),
+  // 항상 노출되도록 뒤에 채워 넣는다.
+  const boards = (
     data.boards && data.boards.length > 0
       ? data.boards
       : teams.map((t) => ({
@@ -181,7 +184,13 @@ function normalize(data: Partial<StoreData>): StoreData {
           teamId: t.id,
           name: "전체",
           visibleColumns: BUILTIN_COLUMNS.map((c) => c.key),
-        }));
+        }))
+  ).map((b) => ({
+    ...b,
+    visibleColumns: b.visibleColumns.includes("reported")
+      ? b.visibleColumns
+      : [...b.visibleColumns, "reported"],
+  }));
 
   const customFields = data.customFields ?? [];
 
@@ -286,7 +295,7 @@ interface StoreContextValue {
   logout: () => void;
   changePassword: (userId: string, currentPassword: string, newPassword: string) => Promise<boolean>;
 
-  addTask: (input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber">) => string;
+  addTask: (input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber" | "reported">) => string;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
 
@@ -432,7 +441,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [data.tasks, canViewTask]
   );
 
-  const addTask = useCallback((input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber">) => {
+  const addTask = useCallback((input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber" | "reported">) => {
     const id = genId("t");
     const today = new Date();
     const createdAt = `${today.getFullYear()}-${String(
@@ -450,7 +459,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       createdAt,
       data.tasks
     );
-    const task: Task = { ...input, id, createdAt, progress, status, taskNumber };
+    const task: Task = { ...input, id, createdAt, progress, status, taskNumber, reported: false };
     setData((prev) => ({ ...prev, tasks: [task, ...prev.tasks] }));
 
     const logId = genId("l");
