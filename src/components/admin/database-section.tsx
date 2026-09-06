@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "@/lib/store";
+import { FloatingWindow } from "@/components/floating-window";
 
 const TABLE_LABELS: Record<string, string> = {
   teams: "팀 (teams)",
@@ -49,15 +50,38 @@ export function DatabaseSection() {
     resources,
   };
   const [openTable, setOpenTable] = useState<string | null>("tasks");
+  const [exportOpen, setExportOpen] = useState(false);
+  const [copyMsg, setCopyMsg] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const exportJson = JSON.stringify(tables, null, 2);
 
   function downloadJson() {
-    const blob = new Blob([JSON.stringify(tables, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `dke-data-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // 다운로드를 시도해보되(자체 호스팅/로컬 파일에서는 정상 동작), 클로드
+    // 아티팩트 화면처럼 다운로드 자체가 차단된 환경도 있으므로 항상 성공한다고
+    // 가정하지 않는다 — 그래서 모달의 복사/선택 방식이 진짜 fallback이다.
+    try {
+      const blob = new Blob([exportJson], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `dke-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // 무시 — 아래 모달에서 어차피 복사할 수 있다.
+    }
+    setExportOpen(true);
+  }
+
+  async function copyJson() {
+    try {
+      await navigator.clipboard.writeText(exportJson);
+      setCopyMsg("복사되었습니다.");
+    } catch {
+      textareaRef.current?.focus();
+      textareaRef.current?.select();
+      setCopyMsg("자동 복사가 막혀 있어 텍스트를 전체 선택해두었습니다 — Ctrl+C(맥은 ⌘+C)로 복사해주세요.");
+    }
   }
 
   return (
@@ -103,6 +127,53 @@ export function DatabaseSection() {
           );
         })}
       </div>
+
+      {exportOpen && (
+        <FloatingWindow
+          title="전체 JSON 내보내기"
+          onClose={() => setExportOpen(false)}
+          defaultWidth={560}
+          defaultHeight={520}
+          footer={
+            <>
+              <button
+                onClick={() => setExportOpen(false)}
+                className="h-7 rounded-[2px] border border-[var(--border-strong)] px-3 text-[11.5px] text-[var(--text-muted)]"
+              >
+                닫기
+              </button>
+              <button
+                onClick={copyJson}
+                className="h-7 rounded-[2px] px-3.5 text-[11.5px] font-semibold"
+                style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+              >
+                전체 복사
+              </button>
+            </>
+          }
+        >
+          <div className="flex h-full flex-col gap-2">
+            <div className="text-[10.5px] leading-relaxed text-[var(--text-faint)]">
+              파일 다운로드가 안 되는 화면(예: 클로드 아티팩트)에서도 쓸 수 있도록, 아래
+              텍스트를 그대로 복사해서 구글 시트의 &lsquo;기존 데이터 가져오기&rsquo;
+              창에 붙여넣으시면 됩니다. &lsquo;전체 복사&rsquo;가 안 먹으면 텍스트 상자를
+              클릭한 뒤 Ctrl+A → Ctrl+C로 직접 복사해주세요.
+            </div>
+            {copyMsg && (
+              <div className="text-[10.5px]" style={{ color: "var(--success)" }}>
+                {copyMsg}
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              readOnly
+              value={exportJson}
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-h-0 flex-1 resize-none rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface-alt)] p-2 font-mono text-[10px] leading-relaxed text-[var(--text-secondary)] outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+        </FloatingWindow>
+      )}
     </div>
   );
 }
