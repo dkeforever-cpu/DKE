@@ -605,6 +605,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-17",
     createdBy: "u11",
     createdAt: "2026-07-02",
+    completedAt: "2026-07-15",
     checklist: [
       ci("tms4_ci1", "B동 추가임대 불가/전대가능 사무실 확인", 100, "2026-07-02", "2026-07-02"),
       ci("tms4_ci2", "C동 전대관련정보 전대인측 요청", 100, "2026-07-06", "2026-07-06"),
@@ -632,6 +633,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-16",
     createdBy: "u11",
     createdAt: "2026-07-14",
+    completedAt: "2026-07-14",
     checklist: [
       ci("tms5_ci1", "연락처 최신정보 갱신/출력, 배포 완료", 100, "2026-07-16", "2026-07-14"),
     ],
@@ -655,6 +657,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-27",
     createdBy: "u11",
     createdAt: "2026-07-14",
+    completedAt: "2026-07-14",
     checklist: [
       ci("tms6_ci1", "조직도 갱신/정보 수집 중", 100, "2026-07-27", "2026-07-14"),
     ],
@@ -702,6 +705,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-02",
     createdBy: "u11",
     createdAt: "2026-09-01",
+    completedAt: "2026-09-01",
     checklist: [
       ci("tms8_ci1", "출,퇴근 기준 자료 보고 완료", 100, "2026-09-02", "2026-09-01"),
     ],
@@ -725,6 +729,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-22",
     createdBy: "u11",
     createdAt: "2026-06-02",
+    completedAt: "2026-07-22",
     checklist: [
       ci("tms9_ci1", "2분기 진행여부 확인을 위한 센터 공지(~6/30한)", 100, "2026-06-30", "2026-06-02"),
       ci("tms9_ci2", "센터별 수신 완료,미완료 센터 추가 확인(~7-21)", 100, "2026-07-21", "2026-06-30"),
@@ -805,6 +810,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-30",
     createdBy: "u11",
     createdAt: "2026-07-30",
+    completedAt: "2026-07-30",
     checklist: [
       ci("tms12_ci1", "육아 휴직자 2명 중도복귀 희망에 따른 절차 허인선주임에게 안내", 100, "2026-07-30", "2026-07-30"),
     ],
@@ -828,6 +834,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-31",
     createdBy: "u11",
     createdAt: "2026-07-31",
+    completedAt: "2026-07-31",
     checklist: [
       ci("tms13_ci1", "근태(안면인식등)누락 월 3회 발생자 취합 및 품의 상신", 100, "2026-07-31", "2026-07-31"),
     ],
@@ -882,6 +889,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-12",
     createdBy: "u11",
     createdAt: "2026-08-03",
+    completedAt: "2026-08-05",
     checklist: [
       ci("tms15_ci1", "사업장 별 비대상 명단 국민건강보험 변경 신청", 100, "2026-08-12", "2026-08-03"),
       ci("tms15_ci2", "센터별 명단 송부 및 작성 안내", 100, "2026-08-05", "2026-08-05"),
@@ -933,6 +941,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-10",
     createdBy: "u11",
     createdAt: "2026-06-25",
+    completedAt: "2026-07-28",
     checklist: [
       ci("tms17_ci1", "근태누락(매월3회,3개월이상)발생", 100, "2026-08-10", "2026-06-25"),
       ci("tms17_ci2", "징계심의 위원회 구성 및 진행방식 센터 안내(최병택이사)", 100, "2026-07-13", "2026-07-13"),
@@ -1013,6 +1022,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-05",
     createdBy: "u11",
     createdAt: "2026-07-30",
+    completedAt: "2026-07-30",
     checklist: [
       ci("tms20_ci1", "직장내 괴롭힘 신고인 퇴사 후 실업급여 수급신청을 위한 노동부 자료 작성요청", 100, "2026-08-03", "2026-07-30"),
       ci("tms20_ci2", "고용노동부 담당자 통하여 자료 원부 수신, 내용 기재후 회신", 100, "2026-08-05", "2026-07-30"),
@@ -1066,6 +1076,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-13",
     createdBy: "u11",
     createdAt: "2026-08-13",
+    completedAt: "2026-08-13",
     checklist: [
       ci("tms22_ci1", "개인용 이동기기 이용중 사고, 사고보고O/추가대처X안내", 100, "2026-08-13", "2026-08-13"),
     ],
@@ -1089,6 +1100,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-27",
     createdBy: "u11",
     createdAt: "2026-08-26",
+    completedAt: "2026-08-27",
     checklist: [
       ci("tms23_ci1", "8월 입사자 무단결근 처리 문의", 100, "2026-08-27", "2026-08-26"),
       ci("tms23_ci2", "당자사 퇴직의사 전달", 100, "2026-08-27", "2026-08-27"),
@@ -1164,6 +1176,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-13",
     createdBy: "u11",
     createdAt: "2026-08-11",
+    completedAt: "2026-08-11",
     checklist: [
       ci("tms26_ci1", "손해사정인 요청 서류 발송", 100, "2026-08-13", "2026-08-11"),
       ci("tms26_ci2", "보험금 지급 여부 확인", 100, "2026-08-13", "2026-08-11"),
@@ -1242,6 +1255,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-07",
     createdBy: "u11",
     createdAt: "2026-08-05",
+    completedAt: "2026-08-05",
     checklist: [
       ci("tms29_ci1", "보험처리내역 보고", 100, "2026-08-07", "2026-08-05"),
     ],
@@ -1265,6 +1279,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-28",
     createdBy: "u11",
     createdAt: "2026-08-28",
+    completedAt: "2026-08-28",
     checklist: [
       ci("tms30_ci1", "근태누락자 시말서 확인 및 보고", 100, "2026-08-28", "2026-08-28"),
     ],
@@ -1288,6 +1303,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-24",
     createdBy: "u11",
     createdAt: "2026-07-24",
+    completedAt: "2026-07-24",
     checklist: [
       ci("tms31_ci1", "08-12 종료대비 인근센터 안내자료(용인푸드빌추가) 작성 및 공유", 100, "2026-07-24", "2026-07-24"),
     ],
@@ -1343,6 +1359,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-27",
     createdBy: "u11",
     createdAt: "2026-07-24",
+    completedAt: "2026-07-27",
     checklist: [
       ci("tms33_ci1", "센터장, 관리팀 휴가일정 확인", 100, "2026-07-27", "2026-07-24"),
       ci("tms33_ci2", "취합 및 보고", 100, "2026-07-27", "2026-07-27"),
@@ -1367,6 +1384,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-14",
     createdBy: "u11",
     createdAt: "2026-07-14",
+    completedAt: "2026-08-07",
     checklist: [
       ci("tms34_ci1", "운영기준 변경 사항 확인(관리팀,재경팀)", 100, "2026-08-03", "2026-07-14"),
       ci("tms34_ci2", "변경 내용 검토 및 최종안 작성", 100, "2026-08-05", "2026-07-14"),
@@ -1394,6 +1412,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-24",
     createdBy: "u11",
     createdAt: "2026-07-16",
+    completedAt: "2026-07-17",
     checklist: [
       ci("tms35_ci1", "고객사로부터 정규인원 안정화대책 미팅 요청 인입", 100, "2026-07-24", "2026-07-16"),
       ci("tms35_ci2", "입사/퇴사/채용 자료 구성", 100, "2026-07-18", "2026-07-17"),
@@ -1418,6 +1437,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-21",
     createdBy: "u11",
     createdAt: "2026-07-20",
+    completedAt: "2026-07-21",
     checklist: [
       ci("tms36_ci1", "프린터 목록 구성(기본 140~180만원대)", 100, "2026-07-20", "2026-07-20"),
       ci("tms36_ci2", "단건 용도는 경우 토너비용 감안 인쇄업체 이용예정, 구매 보류", 100, "2026-07-21", "2026-07-21"),
@@ -1442,6 +1462,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-04",
     createdBy: "u11",
     createdAt: "2026-09-03",
+    completedAt: "2026-09-03",
     checklist: [
       ci("tms37_ci1", "본사 안전관리자(주현하),동탄온라인센터 보건관리자 명함 구매", 100, "2026-09-04", "2026-09-03"),
     ],
@@ -1465,6 +1486,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-10",
     createdBy: "u11",
     createdAt: "2026-06-21",
+    completedAt: "2026-07-24",
     checklist: [
       ci("tms38_ci1", "2분기 TO,투입실적 요청 및 수신", 100, "2026-06-21", "2026-06-21"),
       ci("tms38_ci2", "자료 취합 및 평가표 구성", 100, undefined, "2026-07-13"),
@@ -1527,6 +1549,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-26",
     createdBy: "u11",
     createdAt: "2026-08-24",
+    completedAt: "2026-08-24",
     checklist: [
       ci("tms40_ci1", "회의내용 기초, 초안 작성", 100, "2026-08-26", "2026-08-24"),
     ],
@@ -1550,6 +1573,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-10",
     createdBy: "u11",
     createdAt: "2026-07-24",
+    completedAt: "2026-08-04",
     checklist: [
       ci("tms41_ci1", "스피커 수리", 100, "2026-08-10", "2026-07-24"),
       ci("tms41_ci2", "스피커 고장, 수리접수", 100, "2026-07-24", "2026-07-24"),
@@ -1578,6 +1602,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-03",
     createdBy: "u11",
     createdAt: "2026-09-02",
+    completedAt: "2026-09-02",
     checklist: [
       ci("tms42_ci1", "차고지 위반 수집 및 신고", 100, "2026-09-03", "2026-09-02"),
     ],
@@ -1635,6 +1660,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-05",
     createdBy: "u12",
     createdAt: "2026-07-20",
+    completedAt: "2026-08-05",
     checklist: [
       ci("tms44_ci1", "제당 업무 종료로 인한 이행보증금 조정 요청", 100, undefined, "2026-07-20"),
       ci("tms44_ci2", "진행상황 확인", 100, undefined, "2026-07-20"),
@@ -1806,6 +1832,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-04",
     createdBy: "u12",
     createdAt: "2026-05-23",
+    completedAt: "2026-08-26",
     checklist: [
       ci("tms50_ci1", "부당해고 구제 신청서 송달 (경기지방노동위원회)", 100, undefined, "2026-05-23"),
       ci("tms50_ci2", "담당 조사관 유선 통화", 100, undefined, "2026-05-27"),
@@ -1841,6 +1868,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-31",
     createdBy: "u12",
     createdAt: "2026-07-09",
+    completedAt: "2026-07-31",
     checklist: [
       ci("tms51_ci1", "유족급여 청구 신청", 100, undefined, "2026-07-09"),
       ci("tms51_ci2", "모스트피플 대표 논의", 100, undefined, "2026-07-10"),
@@ -1933,6 +1961,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-14",
     createdBy: "u12",
     createdAt: "2026-08-13",
+    completedAt: "2026-08-14",
     checklist: [
       ci("tms54_ci1", "하민수 실신", 100, undefined, "2026-08-13"),
       ci("tms54_ci2", "병원 검사 지시", 100, undefined, "2026-08-13"),
@@ -1958,6 +1987,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-02",
     createdBy: "u12",
     createdAt: "2026-06-12",
+    completedAt: "2026-07-28",
     checklist: [
       ci("tms55_ci1", "국토교통부 실증사업 개인정보 위임 동의 검토", 100, undefined, "2026-06-12"),
       ci("tms55_ci2", "검토 내용 회신", 100, undefined, "2026-06-12"),
@@ -1989,6 +2019,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-24",
     createdBy: "u12",
     createdAt: "2026-07-16",
+    completedAt: "2026-07-24",
     checklist: [
       ci("tms56_ci1", "푸드빌 미팅 요청", 100, undefined, "2026-07-16"),
       ci("tms56_ci2", "운영 인력 검토", 100, undefined, "2026-07-17"),
@@ -2047,6 +2078,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-17",
     createdBy: "u12",
     createdAt: "2026-07-08",
+    completedAt: "2026-08-05",
     checklist: [
       ci("tms58_ci1", "업무체크리스트 작성 지시", 100, "2026-07-17", "2026-07-08"),
       ci("tms58_ci2", "관리팀 미팅", 100, "2026-07-13", "2026-07-08"),
@@ -2079,6 +2111,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-21",
     createdBy: "u12",
     createdAt: "2026-07-08",
+    completedAt: "2026-07-21",
     checklist: [
       ci("tms59_ci1", "14차 결재기준 미팅", 100, undefined, "2026-07-08"),
       ci("tms59_ci2", "초안 보고", 100, undefined, "2026-07-12"),
@@ -2107,6 +2140,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-22",
     createdBy: "u12",
     createdAt: "2026-07-21",
+    completedAt: "2026-07-22",
     checklist: [
       ci("tms60_ci1", "26년 상반기 전센터 클레임 취합", 100, "2026-07-22", "2026-07-21"),
       ci("tms60_ci2", "클레임 비용 보고", 100, undefined, "2026-07-22"),
@@ -2131,6 +2165,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-22",
     createdBy: "u12",
     createdAt: "2026-07-21",
+    completedAt: "2026-07-21",
     checklist: [
       ci("tms61_ci1", "직무별 인당 손익 산출", 100, "2026-07-22", "2026-07-21"),
     ],
@@ -2154,6 +2189,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-07",
     createdBy: "u12",
     createdAt: "2026-07-29",
+    completedAt: "2026-08-07",
     checklist: [
       ci("tms62_ci1", "성남씨푸드 파트직 퇴충금 정산", 100, "2026-08-07", "2026-07-29"),
       ci("tms62_ci2", "퇴직금 산정서 수취", 100, undefined, "2026-07-29"),
@@ -2180,6 +2216,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-07",
     createdBy: "u12",
     createdAt: "2026-07-30",
+    completedAt: "2026-07-30",
     checklist: [
       ci("tms63_ci1", "SPC 1차 결과 미팅", 100, undefined, "2026-07-30"),
       ci("tms63_ci2", "SPC 2차 방문시 확인 필요사항 미팅", 100, "2026-08-06", "2026-07-30"),
@@ -2205,6 +2242,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-04",
     createdBy: "u12",
     createdAt: "2026-07-31",
+    completedAt: "2026-08-04",
     checklist: [
       ci("tms64_ci1", "물류창고 시설현황 및 운영실태 조사", 100, "2026-08-04", "2026-07-31"),
       ci("tms64_ci2", "건물주 작성내용 작성 요청", 100, "2026-08-04", "2026-07-31"),
@@ -2230,6 +2268,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-07",
     createdBy: "u12",
     createdAt: "2026-08-07",
+    completedAt: "2026-08-07",
     checklist: [
       ci("tms65_ci1", "군포네이버센터 패트롤", 100, "2026-08-07", "2026-08-07"),
     ],
@@ -2278,6 +2317,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-05",
     createdBy: "u12",
     createdAt: "2026-05-01",
+    completedAt: "2026-08-05",
     checklist: [
       ci("tms67_ci1", "익산하림센터 사업장 종료로 인한 사택 정리", 100, undefined, "2026-05-01"),
       ci("tms67_ci2", "집주인 통보 및 부동산 임대공고 요청", 100, undefined, "2026-05-01"),
@@ -2331,6 +2371,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-04",
     createdBy: "u12",
     createdAt: "2026-07-30",
+    completedAt: "2026-08-04",
     checklist: [
       ci("tms69_ci1", "THE H1 콩카페 창업 문의", 100, undefined, "2026-07-30"),
       ci("tms69_ci2", "콩카페 신성일 대표 유선 미팅", 100, undefined, "2026-08-04"),
@@ -2356,6 +2397,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-08",
     createdBy: "u13",
     createdAt: "2026-07-08",
+    completedAt: "2026-07-08",
     checklist: [
       ci("tms70_ci1", "사업지원팀 폐지/ 관리팀 신설 및 승진공고문 작성", 100, "2026-07-08", "2026-07-08"),
     ],
@@ -2379,6 +2421,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-14",
     createdBy: "u13",
     createdAt: "2026-07-06",
+    completedAt: "2026-07-14",
     checklist: [
       ci("tms71_ci1", "무단결근에 따른 징계위원회 출석통지 내용증명 발송", 100, "2026-07-06", "2026-07-06"),
       ci("tms71_ci2", "미반납 피복 공제금액 및 잔여 급여 확인", 100, "2026-07-14", "2026-07-14"),
@@ -2404,6 +2447,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-08",
     createdBy: "u13",
     createdAt: "2026-07-08",
+    completedAt: "2026-07-08",
     checklist: [
       ci("tms72_ci1", "양지올리브영 보건관리자 황지성 선임보고서 제출", 100, "2026-07-08", "2026-07-08"),
     ],
@@ -2450,6 +2494,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-24",
     createdBy: "u13",
     createdAt: "2026-07-15",
+    completedAt: "2026-07-24",
     checklist: [
       ci("tms74_ci1", "개인질병 장기결근자 처리방안 가이드 전달", 100, "2026-07-15", "2026-07-15"),
       ci("tms74_ci2", "진행상황 확인", 100, "2026-07-16", "2026-07-16"),
@@ -2477,6 +2522,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-30",
     createdBy: "u13",
     createdAt: "2026-07-29",
+    completedAt: "2026-07-30",
     checklist: [
       ci("tms75_ci1", "무단결근자 처리방안 안내", 100, "2026-07-30", "2026-07-29"),
       ci("tms75_ci2", "처리결과 확인", 100, "2026-07-30", "2026-07-30"),
@@ -2501,6 +2547,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-27",
     createdBy: "u13",
     createdAt: "2026-07-23",
+    completedAt: "2026-07-23",
     checklist: [
       ci("tms76_ci1", "센터별 인사발령추천 내용 취합 후 품의 진행", 100, "2026-07-27", "2026-07-23"),
     ],
@@ -2524,6 +2571,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-26",
     createdBy: "u13",
     createdAt: "2026-08-24",
+    completedAt: "2026-08-24",
     checklist: [
       ci("tms77_ci1", "센터별 인사발령추천 내용 취합 후 품의 진행", 100, "2026-08-26", "2026-08-24"),
     ],
@@ -2547,6 +2595,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-19",
     createdBy: "u13",
     createdAt: "2026-08-19",
+    completedAt: "2026-08-19",
     checklist: [
       ci("tms78_ci1", "취업규칙 변경 신고", 100, "2026-08-19", "2026-08-19"),
     ],
@@ -2570,6 +2619,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-27",
     createdBy: "u13",
     createdAt: "2026-07-27",
+    completedAt: "2026-07-27",
     checklist: [
       ci("tms79_ci1", "시설물 파손 사고건 처리방안 요청", 100, "2026-07-27", "2026-07-27"),
     ],
@@ -2593,6 +2643,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-29",
     createdBy: "u13",
     createdAt: "2026-07-28",
+    completedAt: "2026-07-28",
     checklist: [
       ci("tms80_ci1", "부딪힘 사고로 발생한 열상 치료비 전액 지급하여 공상으로 처리하는 합의서 작성", 100, "2026-07-29", "2026-07-28"),
     ],
@@ -2616,6 +2667,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-29",
     createdBy: "u13",
     createdAt: "2026-07-28",
+    completedAt: "2026-07-28",
     checklist: [
       ci("tms81_ci1", "부딪힘 사고로 발생한 타박상 치료비 전액 지급하여 공상으로 처리하는 합의서 작성", 100, "2026-07-29", "2026-07-28"),
     ],
@@ -2639,6 +2691,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-30",
     createdBy: "u13",
     createdAt: "2026-08-04",
+    completedAt: "2026-08-12",
     checklist: [
       ci("tms82_ci1", "통상임금 관련 임금 과소지급 진정 인입", 100, "2026-09-30", "2026-08-04"),
       ci("tms82_ci2", "진정인 주장 확인 후 근로감독관 1차 답변안 작성", 100, "2026-08-11", "2026-08-04"),
@@ -2667,6 +2720,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-14",
     createdBy: "u13",
     createdAt: "2026-08-05",
+    completedAt: "2026-08-06",
     checklist: [
       ci("tms83_ci1", "요양급여 신청사실통지서 수취", 100, "2026-08-07", "2026-08-05"),
       ci("tms83_ci2", "사실관계 확인 후 의견서 회신", 100, "2026-08-07", "2026-08-06"),
@@ -2692,6 +2746,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-05",
     createdBy: "u13",
     createdAt: "2026-07-23",
+    completedAt: "2026-08-03",
     checklist: [
       ci("tms84_ci1", "26년 발생 사건/사고 비용 정리", 100, "2026-07-23", "2026-07-23"),
       ci("tms84_ci2", "확인 누락된 보험처리건 확인", 100, "2026-08-05", "2026-08-03"),
@@ -2716,6 +2771,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-27",
     createdBy: "u13",
     createdAt: "2026-07-24",
+    completedAt: "2026-07-24",
     checklist: [
       ci("tms85_ci1", "안전모 제품 정보 취득 후 KC 인증 여부 확인", 100, "2026-07-27", "2026-07-24"),
     ],
@@ -2739,6 +2795,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-05",
     createdBy: "u13",
     createdAt: "2026-07-01",
+    completedAt: "2026-08-03",
     checklist: [
       ci("tms86_ci1", "정기 지급 장갑 및 군포네이버 안전화 발주", 100, "2026-07-01", "2026-07-01"),
       ci("tms86_ci2", "피복 재고 및 관리 현황 보고 자료 작성", 100, "2026-08-05", "2026-08-03"),
@@ -2763,6 +2820,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-31",
     createdBy: "u13",
     createdAt: "2026-08-05",
+    completedAt: "2026-08-11",
     checklist: [
       ci("tms87_ci1", "거점 재고 실사", 100, "2026-08-31", "2026-08-05"),
       ci("tms87_ci2", "거점별 주요 관리 피복 선정 후 재고 이동", 100, "2026-08-31", "2026-08-11"),
@@ -2812,6 +2870,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-25",
     createdBy: "u13",
     createdAt: "2026-07-21",
+    completedAt: "2026-08-25",
     checklist: [
       ci("tms89_ci1", "휴지, 물티슈, 커피 구매", 100, "2026-08-25", "2026-08-25"),
       ci("tms89_ci2", "문서세단기, 우편함 번호판 구매", 100, "2026-07-21", "2026-07-21"),
@@ -2837,6 +2896,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-21",
     createdBy: "u13",
     createdAt: "2026-07-21",
+    completedAt: "2026-07-21",
     checklist: [
       ci("tms90_ci1", "동탄 저온, 군포 네이버, 용인 네이버, 양지올리브영 사원증 제작", 100, "2026-07-21", "2026-07-21"),
     ],
@@ -2860,6 +2920,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-18",
     createdBy: "u13",
     createdAt: "2026-08-11",
+    completedAt: "2026-08-11",
     checklist: [
       ci("tms91_ci1", "재발급 및 미반납 공제 여부 확인", 100, "2026-08-18", "2026-08-11"),
     ],
@@ -2883,6 +2944,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-21",
     createdBy: "u13",
     createdAt: "2026-07-21",
+    completedAt: "2026-07-21",
     checklist: [
       ci("tms92_ci1", "조직변경 후 피복 거점배치 유지 및 안전재고 사용여부 관련", 100, "2026-07-21", "2026-07-21"),
     ],
@@ -2906,6 +2968,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-05",
     createdBy: "u13",
     createdAt: "2026-07-28",
+    completedAt: "2026-07-28",
     checklist: [
       ci("tms93_ci1", "거점재고 보관 프로세스 폐지, 센터별 직납 관리 가이던스", 100, "2026-08-05", "2026-07-28"),
     ],
@@ -2929,6 +2992,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-31",
     createdBy: "u13",
     createdAt: "2026-08-11",
+    completedAt: "2026-08-11",
     checklist: [
       ci("tms94_ci1", "보관 재고 수량 확인 후 품목 단위 관리 가능 여부 확인", 100, "2026-08-31", "2026-08-11"),
     ],
@@ -2995,6 +3059,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-01",
     createdBy: "u13",
     createdAt: "2026-07-01",
+    completedAt: "2026-08-20",
     checklist: [
       ci("tms96_ci1", "AGT 5차 P/L 제출", 100, "2026-07-01", "2026-07-01"),
       ci("tms96_ci2", "외상매입금잔액확인서 회신", 100, "2026-07-02", "2026-07-02"),
@@ -3048,6 +3113,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-12",
     createdBy: "u13",
     createdAt: "2026-08-05",
+    completedAt: "2026-08-12",
     checklist: [
       ci("tms98_ci1", "입찰 공고 확인 및 서류 준비", 100, "2026-08-07", "2026-08-05"),
       ci("tms98_ci2", "광축 견적서 확인", 100, "2026-08-07", "2026-08-05"),
@@ -3075,6 +3141,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-03",
     createdBy: "u13",
     createdAt: "2026-07-10",
+    completedAt: "2026-07-27",
     checklist: [
       ci("tms99_ci1", "배수로 점검", 100, "2026-07-10", "2026-07-10"),
       ci("tms99_ci2", "컨테이너 견적", 100, "2026-08-03", "2026-07-27"),
@@ -3099,6 +3166,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-25",
     createdBy: "u13",
     createdAt: "2026-07-23",
+    completedAt: "2026-07-23",
     checklist: [
       ci("tms100_ci1", "루핀, 증포동 REVIEW", 100, "2026-07-25", "2026-07-23"),
     ],
@@ -3147,6 +3215,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-16",
     createdBy: "u13",
     createdAt: "2026-07-10",
+    completedAt: "2026-07-10",
     checklist: [
       ci("tms102_ci1", "채용담당자 업무 참고자료 작성", 100, "2026-07-16", "2026-07-10"),
     ],
@@ -3170,6 +3239,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-22",
     createdBy: "u13",
     createdAt: "2026-07-22",
+    completedAt: "2026-07-22",
     checklist: [
       ci("tms103_ci1", "개인정보보호교육 미이수자 포함된 채용방 정리 후 신규 채용방 개설", 100, "2026-07-22", "2026-07-22"),
     ],
@@ -3193,6 +3263,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-07",
     createdBy: "u13",
     createdAt: "2026-07-30",
+    completedAt: "2026-07-30",
     checklist: [
       ci("tms104_ci1", "현재 채용 진행 중인 공고 연장 게시", 100, "2026-07-30", "2026-07-30"),
       ci("tms104_ci2", "센터별 장애인 채용 가능 여부 확인 후 추가 공고 게시", 100, "2026-08-07", "2026-07-30"),
@@ -3217,6 +3288,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-11",
     createdBy: "u13",
     createdAt: "2026-07-28",
+    completedAt: "2026-08-11",
     checklist: [
       ci("tms105_ci1", "현재 이용 중인 패키지상품 외 추가 유료 상품 적용 문의", 100, "2026-07-29", "2026-07-28"),
       ci("tms105_ci2", "견적 내부 보고 후 상품 적용 일정 확인", 100, "2026-07-30", "2026-07-30"),
@@ -3242,6 +3314,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-02",
     createdBy: "u13",
     createdAt: "2026-07-02",
+    completedAt: "2026-07-02",
     checklist: [
       ci("tms106_ci1", "설치기사 방문", 100, "2026-07-02", "2026-07-02"),
     ],
@@ -3265,6 +3338,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-24",
     createdBy: "u13",
     createdAt: "2026-07-08",
+    completedAt: "2026-07-24",
     checklist: [
       ci("tms107_ci1", "관리팀 미팅", 100, "2026-07-08", "2026-07-08"),
       ci("tms107_ci2", "관리팀 미팅", 100, "2026-07-15", "2026-07-15"),
@@ -3291,6 +3365,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-06-30",
     createdBy: "u14",
     createdAt: "2026-06-30",
+    completedAt: "2026-06-30",
     checklist: [
       ci("tms108_ci1", "센터방문 계획서 수립 및 작성(일정, 시간, 점검항목 등)", 100, "2026-06-30", "2026-06-30"),
       ci("tms108_ci2", "센터방문 계획서 팀장, CSO 보고 후 센터에 일정 전파", 100, "2026-06-30", "2026-06-30"),
@@ -3341,6 +3416,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-01",
     createdBy: "u14",
     createdAt: "2026-07-01",
+    completedAt: "2026-07-01",
     checklist: [
       ci("tms110_ci1", "센터 방문 센터장, 안전관리자 면담 및 방문목적 안내", 100, "2026-07-01", "2026-07-01"),
       ci("tms110_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-01", "2026-07-01"),
@@ -3366,6 +3442,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-06",
     createdBy: "u14",
     createdAt: "2026-07-06",
+    completedAt: "2026-07-06",
     checklist: [
       ci("tms111_ci1", "센터 방문 센터장, 안전관리자 면담 및 방문목적 안내", 100, "2026-07-06", "2026-07-06"),
       ci("tms111_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-06", "2026-07-06"),
@@ -3391,6 +3468,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-08",
     createdBy: "u14",
     createdAt: "2026-07-08",
+    completedAt: "2026-07-08",
     checklist: [
       ci("tms112_ci1", "센터 방문 센터장, 안전관리자 면담 및 방문목적 안내", 100, "2026-07-08", "2026-07-08"),
       ci("tms112_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-08", "2026-07-08"),
@@ -3416,6 +3494,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-13",
     createdBy: "u14",
     createdAt: "2026-07-13",
+    completedAt: "2026-07-13",
     checklist: [
       ci("tms113_ci1", "센터 방문 센터장, 담당자 면담 및 방문목적 안내", 100, "2026-07-13", "2026-07-13"),
       ci("tms113_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-13", "2026-07-13"),
@@ -3441,6 +3520,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-14",
     createdBy: "u14",
     createdAt: "2026-07-14",
+    completedAt: "2026-07-14",
     checklist: [
       ci("tms114_ci1", "센터 방문 센터장, 담당자 면담 및 방문목적 안내", 100, "2026-07-14", "2026-07-14"),
       ci("tms114_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-14", "2026-07-14"),
@@ -3465,6 +3545,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-14",
     createdBy: "u14",
     createdAt: "2026-07-14",
+    completedAt: "2026-07-14",
     checklist: [
       ci("tms115_ci1", "센터 현장순회점검 후 결과 보고서 작성", 100, "2026-07-14", "2026-07-14"),
     ],
@@ -3488,6 +3569,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-16",
     createdBy: "u14",
     createdAt: "2026-07-15",
+    completedAt: "2026-07-16",
     checklist: [
       ci("tms116_ci1", "목요일 고객사(대한통운) 안전점검 관련하여 추가방문", 100, "2026-07-15", "2026-07-15"),
       ci("tms116_ci2", "해당 센터에 비치해야할 안전보건 서류 재점검", 100, "2026-07-15", "2026-07-15"),
@@ -3517,6 +3599,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-20",
     createdBy: "u14",
     createdAt: "2026-07-20",
+    completedAt: "2026-07-20",
     checklist: [
       ci("tms117_ci1", "센터 방문 센터장, 담당자 면담 및 방문목적 안내", 100, "2026-07-20", "2026-07-20"),
       ci("tms117_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-20", "2026-07-20"),
@@ -3542,6 +3625,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-21",
     createdBy: "u14",
     createdAt: "2026-07-21",
+    completedAt: "2026-07-21",
     checklist: [
       ci("tms118_ci1", "센터 방문 센터장, 담당자 면담 및 방문목적 안내", 100, "2026-07-21", "2026-07-21"),
       ci("tms118_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-21", "2026-07-21"),
@@ -3567,6 +3651,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-22",
     createdBy: "u14",
     createdAt: "2026-07-22",
+    completedAt: "2026-07-22",
     checklist: [
       ci("tms119_ci1", "센터 방문 센터장, 담당자 면담 및 방문목적 안내", 100, "2026-07-22", "2026-07-22"),
       ci("tms119_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-22", "2026-07-22"),
@@ -3592,6 +3677,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-07-27",
     createdBy: "u14",
     createdAt: "2026-07-23",
+    completedAt: "2026-07-24",
     checklist: [
       ci("tms120_ci1", "센터 방문 센터장, 담당자 면담 및 방문목적 안내", 100, "2026-07-23", "2026-07-23"),
       ci("tms120_ci2", "센터 업무공정 및 안전보건서류 등 확인", 100, "2026-07-23", "2026-07-23"),
@@ -3618,6 +3704,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-03",
     createdBy: "u14",
     createdAt: "2026-07-27",
+    completedAt: "2026-08-03",
     checklist: [
       ci("tms121_ci1", "업무 실적 및 추진업무 구성", 100, "2026-07-27", "2026-07-27"),
       ci("tms121_ci2", "업무 실적 및 추진업무 구성", 100, "2026-07-28", "2026-07-28"),
@@ -3646,6 +3733,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-31",
     createdBy: "u14",
     createdAt: "2026-08-01",
+    completedAt: "2026-08-01",
     checklist: [
       ci("tms122_ci1", "공유방에서 일일 안전점검 확인(센터장, 담당자, 안전교육)", 100, "2026-08-31", "2026-08-01"),
     ],
@@ -3733,6 +3821,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-05",
     createdBy: "u14",
     createdAt: "2026-08-05",
+    completedAt: "2026-08-05",
     checklist: [
       ci("tms125_ci1", "센터별 건강검진 업무 인계", 100, "2026-08-05", "2026-08-05"),
       ci("tms125_ci2", "건강검진 업무 파악", 100, "2026-08-05", "2026-08-05"),
@@ -3760,6 +3849,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-13",
     createdBy: "u14",
     createdAt: "2026-08-13",
+    completedAt: "2026-08-13",
     checklist: [
       ci("tms126_ci1", "건강검진 비대상명단 확인", 100, "2026-08-13", "2026-08-13"),
     ],
@@ -3783,6 +3873,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-17",
     createdBy: "u14",
     createdAt: "2026-08-13",
+    completedAt: "2026-08-13",
     checklist: [
       ci("tms127_ci1", "사고관련 업무 인수인계 진행", 100, "2026-08-17", "2026-08-13"),
     ],
@@ -3806,6 +3897,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-31",
     createdBy: "u14",
     createdAt: "2026-08-19",
+    completedAt: "2026-08-28",
     checklist: [
       ci("tms128_ci1", "08월 센터점검 계획", 100, "2026-08-31", "2026-08-19"),
       ci("tms128_ci2", "08월 센터점검 계획서 작성", 100, "2026-08-20", "2026-08-19"),
@@ -3840,6 +3932,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-14",
     createdBy: "u14",
     createdAt: "2026-08-14",
+    completedAt: "2026-08-14",
     checklist: [
       ci("tms129_ci1", "군포네이버 배치 전 검진 병원 변경 요청", 100, "2026-08-14", "2026-08-14"),
       ci("tms129_ci2", "안양샘병원 담당자 업무 확인 및 협조 완료", 100, "2026-08-14", "2026-08-14"),
@@ -3918,6 +4011,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-25",
     createdBy: "u14",
     createdAt: "2026-08-18",
+    completedAt: "2026-08-25",
     checklist: [
       ci("tms132_ci1", "용인 네이버센터 사고 관련 업무 진행", 100, "2026-08-25", "2026-08-18"),
       ci("tms132_ci2", "센터담당자에게 자료요청", 100, "2026-08-25", "2026-08-25"),
@@ -3944,6 +4038,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-19",
     createdBy: "u14",
     createdAt: "2026-08-18",
+    completedAt: "2026-08-18",
     checklist: [
       ci("tms133_ci1", "성남씨푸드 고객사 Audit 진행", 100, "2026-08-19", "2026-08-18"),
       ci("tms133_ci2", "성남씨푸드 안전보건 서류 확인", 100, "2026-08-18", "2026-08-18"),
@@ -3971,6 +4066,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-20",
     createdBy: "u14",
     createdAt: "2026-08-19",
+    completedAt: "2026-08-19",
     checklist: [
       ci("tms134_ci1", "군포네이버센터 고객사 Audit 진행", 100, "2026-08-20", "2026-08-19"),
       ci("tms134_ci2", "군포네이버센터 안전보건 서류 확인", 100, "2026-08-20", "2026-08-19"),
@@ -3996,6 +4092,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-04",
     createdBy: "u14",
     createdAt: "2026-08-24",
+    completedAt: "2026-09-04",
     checklist: [
       ci("tms135_ci1", "오산 투썸 고객사 Audit 진행", 100, "2026-09-04", "2026-08-24"),
       ci("tms135_ci2", "고객사 Audit 일정 조율", 100, "2026-08-28", "2026-08-24"),
@@ -4023,6 +4120,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-08-25",
     createdBy: "u14",
     createdAt: "2026-08-24",
+    completedAt: "2026-08-25",
     checklist: [
       ci("tms136_ci1", "평택 사조센터 사고 관련 업무 진행_2", 100, "2026-08-25", "2026-08-24"),
       ci("tms136_ci2", "사고 현황 작성(구글시트)", 100, "2026-08-24", "2026-08-24"),
@@ -4228,6 +4326,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
     dueDate: "2026-09-03",
     createdBy: "u14",
     createdAt: "2026-09-03",
+    completedAt: "2026-09-03",
     checklist: [
       ci("tms144_ci1", "지게차 작업계획서 내용 추가요청", 100, "2026-09-03", "2026-09-03"),
       ci("tms144_ci2", "오산 삼양 지게차 작업계획서 양식 수정", 100, "2026-09-03", "2026-09-03"),

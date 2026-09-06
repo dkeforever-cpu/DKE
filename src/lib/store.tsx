@@ -33,7 +33,7 @@ import {
   USERS,
 } from "./seed-data";
 import { CENTERS as SEED_CENTERS, nextLargeCode, nextMediumCode, seedCategoriesByTeam } from "./categories";
-import { addNode, computeProgress, deriveStatus, findNode, flatten, removeNode, updateNode } from "./checklist";
+import { addNode, applyChecklist, computeProgress, findNode, flatten, removeNode, updateNode } from "./checklist";
 import { generateTaskNumber } from "./format";
 import { DEFAULT_PASSWORD_HASH, sha256Hex } from "./auth";
 
@@ -125,6 +125,21 @@ function migrateTaskNumbers(tasks: Task[], categoriesByTeam: Record<string, Cate
   return migrated;
 }
 
+// 진행률이 이미 100%인데 completedAt이 없는 예전 데이터(종료일 기능 도입
+// 전에 저장된 업무)를 위한 최선 추정치 — 필요 업무 중 가장 최근 등록일을
+// 종료일로, 필요 업무가 없으면 업무 등록일을 그대로 쓴다.
+function backfillCompletedAt(tasks: Task[]): Task[] {
+  return tasks.map((t) => {
+    if (t.progress !== 100 || t.completedAt) return t;
+    const dates = flatten(t.checklist ?? [])
+      .map((i) => i.createdAt?.slice(0, 10))
+      .filter((d): d is string => Boolean(d))
+      .sort();
+    const completedAt = dates.length > 0 ? dates[dates.length - 1] : t.createdAt;
+    return { ...t, completedAt };
+  });
+}
+
 function normalize(data: Partial<StoreData>): StoreData {
   // Legacy shape (pre-team-system) stored a single `dept` string on users
   // and tasks instead of `teamId`; carry that value over so old browsers
@@ -172,7 +187,7 @@ function normalize(data: Partial<StoreData>): StoreData {
       : seedCategoriesByTeam()
   );
 
-  const tasks = migrateTaskNumbers(rawTasks, categoriesByTeam);
+  const tasks = backfillCompletedAt(migrateTaskNumbers(rawTasks, categoriesByTeam));
 
   // 이미 저장된 게시판에는 "보고" 컬럼이 없을 수 있어(추가되기 전 데이터),
   // 항상 노출되도록 뒤에 채워 넣는다.
@@ -459,7 +474,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       createdAt,
       data.tasks
     );
-    const task: Task = { ...input, id, createdAt, progress, status, taskNumber, reported: false };
+    const completedAt = progress === 100 ? createdAt : undefined;
+    const task: Task = { ...input, id, createdAt, progress, status, taskNumber, reported: false, completedAt };
     setData((prev) => ({ ...prev, tasks: [task, ...prev.tasks] }));
 
     const logId = genId("l");
@@ -505,8 +521,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         tasks: prev.tasks.map((t) => {
           if (t.id !== taskId) return t;
           const checklist = addNode(t.checklist ?? [], parentId, node);
-          const progress = computeProgress(checklist);
-          return { ...t, checklist, progress, status: deriveStatus(progress, t.status) };
+          return { ...t, ...applyChecklist(t, checklist) };
         }),
       }));
       return id;
@@ -525,8 +540,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         tasks: prev.tasks.map((t) => {
           if (t.id !== taskId) return t;
           const checklist = updateNode(t.checklist ?? [], itemId, patch);
-          const progress = computeProgress(checklist);
-          return { ...t, checklist, progress, status: deriveStatus(progress, t.status) };
+          return { ...t, ...applyChecklist(t, checklist) };
         }),
       }));
     },
@@ -545,8 +559,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         tasks: prev.tasks.map((t) => {
           if (t.id !== taskId) return t;
           const checklist = removeNode(t.checklist ?? [], itemId);
-          const progress = computeProgress(checklist);
-          return { ...t, checklist, progress, status: deriveStatus(progress, t.status) };
+          return { ...t, ...applyChecklist(t, checklist) };
         }),
         comments: prev.comments.filter(
           (c) => !(c.targetType === "checklist" && removedIds.has(c.targetId))

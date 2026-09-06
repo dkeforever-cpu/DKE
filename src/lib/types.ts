@@ -46,6 +46,7 @@ export interface Task {
   dueDate: string; // YYYY-MM-DD
   createdBy: string;
   createdAt: string; // YYYY-MM-DD
+  completedAt?: string; // YYYY-MM-DD, 진행률이 처음 100%가 된 날짜 — 다시 100% 밑으로 떨어지면 지워짐
   checklist?: ChecklistItem[];
   customFields?: Record<string, string>;
   color?: string; // hex, used for the calendar bar; auto-assigned from a palette when unset

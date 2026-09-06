@@ -1,4 +1,4 @@
-import { ChecklistItem, Status } from "./types";
+import { ChecklistItem, Status, Task } from "./types";
 
 export function addNode(
   tree: ChecklistItem[],
@@ -60,4 +60,33 @@ export function deriveStatus(progress: number, currentStatus: Status): Status {
   if (progress === 100) return "완료";
   if (currentStatus === "완료") return "진행중";
   return currentStatus;
+}
+
+// 종료일(completedAt)은 진행률이 처음 100%가 된 날짜 — 100%인 상태가
+// 계속 유지되는 동안은 그대로 두고, 100% 밑으로 떨어지면 지워졌다가
+// 다시 100%가 되면 그 시점의 날짜로 새로 채워진다.
+export function deriveCompletedAt(
+  progress: number,
+  previousProgress: number,
+  previousCompletedAt: string | undefined
+): string | undefined {
+  if (progress !== 100) return undefined;
+  if (previousProgress === 100) return previousCompletedAt;
+  return new Date().toISOString().slice(0, 10);
+}
+
+// addChecklistItem/updateChecklistItem/deleteChecklistItem이 공통으로
+// 쓰는 재계산 로직 — checklist를 바꾼 뒤 progress/status/completedAt을
+// 한 번에 다시 맞춘다.
+export function applyChecklist(
+  task: Task,
+  checklist: ChecklistItem[]
+): Pick<Task, "checklist" | "progress" | "status" | "completedAt"> {
+  const progress = computeProgress(checklist);
+  return {
+    checklist,
+    progress,
+    status: deriveStatus(progress, task.status),
+    completedAt: deriveCompletedAt(progress, task.progress, task.completedAt),
+  };
 }

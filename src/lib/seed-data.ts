@@ -196,6 +196,7 @@ const BASE_TASKS: Omit<Task, "taskNumber">[] = [
     dueDate: offsetDate(-20),
     createdBy: "u8",
     createdAt: offsetDate(-35),
+    completedAt: offsetDate(-21),
   },
 ];
 

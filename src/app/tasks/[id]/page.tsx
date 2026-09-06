@@ -336,8 +336,10 @@ export default function TaskDetailPage() {
             </div>
             <MetaRow label="우선순위" value={task.priority} />
             <MetaRow
-              label="등록자 / 등록일"
-              value={`${creator?.name ?? "-"} · ${formatDateFull(task.createdAt)}`}
+              label="등록자 / 등록일 / 종료일"
+              value={`${creator?.name ?? "-"} · ${formatDateFull(task.createdAt)} · ${
+                task.completedAt ? formatDateFull(task.completedAt) : "-"
+              }`}
             />
           </div>
 
