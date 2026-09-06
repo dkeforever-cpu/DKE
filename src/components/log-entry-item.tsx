@@ -59,8 +59,8 @@ export function LogEntryItem({
               {author?.name ?? "알 수 없음"}
             </span>
             <span className="text-[10px] text-[var(--text-faintest)]">
-              {formatDateTime(entry.createdAt)}
-              {entry.editedAt ? " · 수정됨" : ""}
+              작성 {formatDateTime(entry.createdAt)}
+              {entry.editedAt && ` · 수정 ${formatDateTime(entry.editedAt)}`}
             </span>
           </div>
           {editable && !editing && (

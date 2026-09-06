@@ -217,8 +217,8 @@ function CommentRow({
             {author?.name ?? "알 수 없음"}
           </span>
           <span className="text-[9.5px] text-[var(--text-faintest)]">
-            {formatDateTime(comment.createdAt)}
-            {comment.editedAt ? " · 수정됨" : ""}
+            작성 {formatDateTime(comment.createdAt)}
+            {comment.editedAt && ` · 수정 ${formatDateTime(comment.editedAt)}`}
           </span>
           {editable && !editing && (
             <div className="ml-auto flex items-center gap-1.5">
