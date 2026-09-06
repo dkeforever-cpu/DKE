@@ -95,12 +95,17 @@ function openImportDialog() {
 /**
  * Import.html에서 호출한다. 업무관리 시스템의 관리자 설정 → 데이터(DB)
  * 구조 → "전체 JSON 내보내기"로 받은 파일의 내용을 그대로 받는다.
- * 이미 시트에 있는 데이터는 지우지 않고 그 뒤에 추가한다 — 완전히 새로
- * 시작하려면 가져오기 전에 각 시트의 기존 데이터 행을 직접 지워라.
+ * 가져오기 전에 12개 시트를 전부 비우고 새로 채운다 — 즉 "추가"가 아니라
+ * "이 JSON으로 교체"다. 백업에서 복원하거나, 한 번 통째로 옮기는 용도에
+ * 맞춘 것이다 (추가 방식이면 admin 계정 등이 중복 생기기 쉽다).
  */
 function importExportedJson(jsonText) {
   var data = JSON.parse(jsonText);
   var counts = {};
+
+  Object.keys(SCHEMA).forEach(function (entity) {
+    clearSheetRows_(getSheet_(SCHEMA[entity].sheet));
+  });
 
   (data.teams || []).forEach(function (t) {
     handleCreate_("teams", t);

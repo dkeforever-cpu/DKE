@@ -32,6 +32,14 @@ function sheetToObjects_(sheet) {
     });
 }
 
+/** 헤더 행(1행)만 남기고 그 아래 데이터 행을 전부 지운다. */
+function clearSheetRows_(sheet) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+  }
+}
+
 function appendRow_(sheet, headers, obj) {
   var row = headers.map(function (h) {
     return obj[h] !== undefined && obj[h] !== null ? obj[h] : "";
