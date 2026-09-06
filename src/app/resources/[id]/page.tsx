@@ -136,14 +136,26 @@ export default function ResourceDetailPage() {
                       <span className="flex-none text-[9.5px] text-[var(--text-faintest)]">
                         {(f.size / 1024).toFixed(0)}KB
                       </span>
-                      <button
-                        onClick={() => handleDownload(f.name, f.base64, f.mimeType)}
-                        disabled={downloading === f.name}
-                        className="flex-none rounded-[2px] px-2 py-0.5 text-[10px] font-semibold disabled:opacity-50"
-                        style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
-                      >
-                        {downloading === f.name ? "다운로드 중..." : "다운로드"}
-                      </button>
+                      {f.url ? (
+                        <a
+                          href={f.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-none rounded-[2px] px-2 py-0.5 text-[10px] font-semibold"
+                          style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+                        >
+                          드라이브에서 열기
+                        </a>
+                      ) : (
+                        <button
+                          onClick={() => handleDownload(f.name, f.base64, f.mimeType)}
+                          disabled={downloading === f.name}
+                          className="flex-none rounded-[2px] px-2 py-0.5 text-[10px] font-semibold disabled:opacity-50"
+                          style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+                        >
+                          {downloading === f.name ? "다운로드 중..." : "다운로드"}
+                        </button>
+                      )}
                     </div>
                     {downloadError?.file === f.name && (
                       <div className="px-1 text-[9.5px]" style={{ color: "var(--danger)" }}>

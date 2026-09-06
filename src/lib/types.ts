@@ -79,9 +79,11 @@ export interface Comment {
 
 export interface ResourceFile {
   name: string;
-  base64: string; // raw base64 (no "data:...;base64," prefix) — decoded back to bytes for real downloads
+  base64: string; // raw base64 (no "data:...;base64," prefix); empty when stored on Drive instead
   mimeType: string;
   size: number; // bytes
+  driveFileId?: string; // set when the backend is configured — file bytes live on Drive, not base64
+  url?: string; // Drive "anyone with the link" view URL, set alongside driveFileId
 }
 
 export interface ResourceDoc {

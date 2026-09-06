@@ -36,6 +36,7 @@ import { CENTERS as SEED_CENTERS, nextLargeCode, nextMediumCode, seedCategoriesB
 import { addNode, applyChecklist, computeProgress, findNode, flatten, removeNode, updateNode } from "./checklist";
 import { generateTaskNumber } from "./format";
 import { DEFAULT_PASSWORD_HASH, sha256Hex } from "./auth";
+import { gas, GasApiError, hasBackendConfig } from "./gas-client";
 
 const STORAGE_KEY = "dke-task-system-v2";
 const SESSION_KEY = "dke-task-system-current-user";
@@ -57,6 +58,10 @@ function genId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random()
     .toString(36)
     .slice(2, 8)}`;
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof GasApiError ? err.message : "동기화 중 오류가 발생했습니다.";
 }
 
 // Backfills fields added to the schema after some browsers already saved
@@ -233,7 +238,14 @@ function normalize(data: Partial<StoreData>): StoreData {
     files: r.files.map((f) =>
       typeof f === "string"
         ? { name: f, base64: "", mimeType: "", size: 0 }
-        : { name: f.name, base64: f.base64 ?? "", mimeType: f.mimeType ?? "", size: f.size ?? 0 }
+        : {
+            name: f.name,
+            base64: f.base64 ?? "",
+            mimeType: f.mimeType ?? "",
+            size: f.size ?? 0,
+            driveFileId: f.driveFileId,
+            url: f.url,
+          }
     ),
   }));
 
@@ -249,7 +261,7 @@ function normalize(data: Partial<StoreData>): StoreData {
   return { teams, centers, categoriesByTeam, boards, customFields, users, tasks, logEntries, comments, resources };
 }
 
-function loadData(): StoreData {
+function loadLocalData(): StoreData {
   if (typeof window === "undefined") {
     return {
       teams: SEED_TEAMS,
@@ -305,6 +317,13 @@ interface StoreContextValue {
   resources: ResourceDoc[];
   currentUser: User | null;
   ready: boolean;
+
+  // --- 구글 시트/드라이브 백엔드 연동 ---
+  backendConfigured: boolean; // 웹앱 URL·토큰이 등록되어 있는지
+  backendError: string | null; // 최초 로딩(bootstrap) 실패 사유 — 있으면 데이터가 비어있을 수 있음
+  syncError: string | null; // 등록 이후 개별 변경 동기화가 실패했을 때의 사유 (데이터는 화면엔 반영됨)
+  retryBackend: () => void;
+  dismissSyncError: () => void;
 
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -369,40 +388,92 @@ interface StoreContextValue {
   deleteUser: (id: string) => boolean;
   resetUserPassword: (id: string) => void;
 
-  resetDemoData: () => void;
+  resetDemoData: () => boolean;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
 
+const EMPTY_DATA: StoreData = {
+  teams: [],
+  centers: [],
+  categoriesByTeam: {},
+  boards: [],
+  customFields: [],
+  users: [],
+  tasks: [],
+  logEntries: [],
+  comments: [],
+  resources: [],
+};
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [data, setData] = useState<StoreData>({
-    teams: [],
-    centers: [],
-    categoriesByTeam: {},
-    boards: [],
-    customFields: [],
-    users: [],
-    tasks: [],
-    logEntries: [],
-    comments: [],
-    resources: [],
-  });
+  const [data, setData] = useState<StoreData>(EMPTY_DATA);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [backendConfigured, setBackendConfigured] = useState(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // One-time client-side hydration from localStorage; SSR has no
-    // localStorage, so this must run after mount rather than in render.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setData(loadData());
-    setCurrentUserId(loadCurrentUserId());
-    setReady(true);
+  const loadFromBackend = useCallback(async () => {
+    setBackendError(null);
+    try {
+      const result = await gas.bootstrap<Partial<StoreData>>();
+      setData(normalize(result));
+    } catch (err) {
+      setBackendError(errorMessage(err));
+    }
   }, []);
 
+  const retryBackend = useCallback(() => {
+    setReady(false);
+    loadFromBackend().finally(() => setReady(true));
+  }, [loadFromBackend]);
+
   useEffect(() => {
-    if (!ready) return;
+    async function init() {
+      const configured = hasBackendConfig();
+      setBackendConfigured(configured);
+      setCurrentUserId(loadCurrentUserId());
+      if (configured) {
+        await loadFromBackend();
+      } else {
+        setData(loadLocalData());
+      }
+      setReady(true);
+    }
+    init();
+  }, [loadFromBackend]);
+
+  useEffect(() => {
+    if (!ready || backendConfigured) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data, ready]);
+  }, [data, ready, backendConfigured]);
+
+  // 개별 변경을 백엔드로 밀어넣는 fire-and-forget 도우미들. 로컬 상태는
+  // 이미 setData로 즉시 반영되어 있으므로 화면은 그대로 빠르게 동작하고,
+  // 이 호출들은 실패해도 syncError만 띄운다(자동 롤백은 하지 않음 —
+  // 실패 시 새로고침하면 서버 기준으로 다시 맞춰진다).
+  const pushCreate = useCallback(
+    (entity: string, record: object) => {
+      if (!backendConfigured) return;
+      gas.create(entity, record).catch((err) => setSyncError(errorMessage(err)));
+    },
+    [backendConfigured]
+  );
+  const pushUpdate = useCallback(
+    (entity: string, id: string, patch: object) => {
+      if (!backendConfigured) return;
+      gas.update(entity, id, patch).catch((err) => setSyncError(errorMessage(err)));
+    },
+    [backendConfigured]
+  );
+  const pushDelete = useCallback(
+    (entity: string, id: string) => {
+      if (!backendConfigured) return;
+      gas.remove(entity, id).catch((err) => setSyncError(errorMessage(err)));
+    },
+    [backendConfigured]
+  );
 
   const login = useCallback(
     async (username: string, password: string) => {
@@ -433,9 +504,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         users: prev.users.map((u) => (u.id === userId ? { ...u, passwordHash: newHash } : u)),
       }));
+      pushUpdate("users", userId, { passwordHash: newHash });
       return true;
     },
-    [data.users]
+    [data.users, pushUpdate]
   );
 
   const currentUser = useMemo(
@@ -457,58 +529,95 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [data.tasks, canViewTask]
   );
 
-  const addTask = useCallback((input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber" | "reported">) => {
-    const id = genId("t");
-    const today = new Date();
-    const createdAt = `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const progress = computeProgress(input.checklist ?? []);
-    const status = progress === 100 ? "완료" : input.status;
-    const largeCat = (data.categoriesByTeam[input.teamId] ?? []).find(
-      (l) => l.name === input.categoryLarge
-    );
-    const mediumCat = largeCat?.children.find((m) => m.name === input.categoryMedium);
-    const taskNumber = generateTaskNumber(
-      largeCat?.code ?? "",
-      mediumCat?.code ?? "",
-      createdAt,
-      data.tasks
-    );
-    const completedAt = progress === 100 ? createdAt : undefined;
-    const task: Task = { ...input, id, createdAt, progress, status, taskNumber, reported: false, completedAt };
-    setData((prev) => ({ ...prev, tasks: [task, ...prev.tasks] }));
+  const addTask = useCallback(
+    (input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber" | "reported">) => {
+      const id = genId("t");
+      const today = new Date();
+      const createdAt = `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const checklist = input.checklist ?? [];
+      const progress = computeProgress(checklist);
+      const status = progress === 100 ? "완료" : input.status;
+      const largeCat = (data.categoriesByTeam[input.teamId] ?? []).find(
+        (l) => l.name === input.categoryLarge
+      );
+      const mediumCat = largeCat?.children.find((m) => m.name === input.categoryMedium);
+      const taskNumber = generateTaskNumber(
+        largeCat?.code ?? "",
+        mediumCat?.code ?? "",
+        createdAt,
+        data.tasks
+      );
+      const completedAt = progress === 100 ? createdAt : undefined;
+      const task: Task = {
+        ...input,
+        id,
+        createdAt,
+        progress,
+        status,
+        taskNumber,
+        reported: false,
+        completedAt,
+      };
+      setData((prev) => ({ ...prev, tasks: [task, ...prev.tasks] }));
+      pushCreate("tasks", { ...task, checklist: undefined });
+      checklist.forEach((item) => {
+        pushCreate("checklistItems", {
+          id: item.id,
+          taskId: id,
+          parentId: "",
+          label: item.label,
+          progress: item.progress,
+          dueDate: item.dueDate ?? "",
+          createdAt: item.createdAt,
+          updatedAt: "",
+        });
+      });
 
-    const logId = genId("l");
-    const entry: LogEntry = {
-      id: logId,
-      taskId: id,
-      authorId: input.createdBy,
-      content: `업무 등록. ${input.description || ""}`.trim(),
-      attachments: [],
-      createdAt: new Date().toISOString(),
-    };
-    setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
-    return id;
-  }, [data.tasks, data.categoriesByTeam]);
+      const logId = genId("l");
+      const entry: LogEntry = {
+        id: logId,
+        taskId: id,
+        authorId: input.createdBy,
+        content: `업무 등록. ${input.description || ""}`.trim(),
+        attachments: [],
+        createdAt: new Date().toISOString(),
+      };
+      setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
+      pushCreate("logEntries", entry);
+      return id;
+    },
+    [data.tasks, data.categoriesByTeam, pushCreate]
+  );
 
-  const updateTask = useCallback((id: string, patch: Partial<Task>) => {
-    setData((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-    }));
-  }, []);
+  const updateTask = useCallback(
+    (id: string, patch: Partial<Task>) => {
+      setData((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      }));
+      pushUpdate("tasks", id, patch);
+    },
+    [pushUpdate]
+  );
 
-  const deleteTask = useCallback((id: string) => {
-    setData((prev) => ({
-      ...prev,
-      tasks: prev.tasks.filter((t) => t.id !== id),
-      logEntries: prev.logEntries.filter((l) => l.taskId !== id),
-    }));
-  }, []);
+  const deleteTask = useCallback(
+    (id: string) => {
+      setData((prev) => ({
+        ...prev,
+        tasks: prev.tasks.filter((t) => t.id !== id),
+        logEntries: prev.logEntries.filter((l) => l.taskId !== id),
+      }));
+      pushDelete("tasks", id);
+    },
+    [pushDelete]
+  );
 
   const addChecklistItem = useCallback(
     (taskId: string, parentId: string | null, label: string) => {
+      const task = data.tasks.find((t) => t.id === taskId);
+      if (!task) return "";
       const id = genId("ci");
       const node: ChecklistItem = {
         id,
@@ -517,17 +626,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
         children: [],
       };
+      const checklist = addNode(task.checklist ?? [], parentId, node);
+      const derived = applyChecklist(task, checklist);
       setData((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((t) => {
-          if (t.id !== taskId) return t;
-          const checklist = addNode(t.checklist ?? [], parentId, node);
-          return { ...t, ...applyChecklist(t, checklist) };
-        }),
+        tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, ...derived } : t)),
       }));
+      pushCreate("checklistItems", {
+        id,
+        taskId,
+        parentId: parentId ?? "",
+        label,
+        progress: 0,
+        dueDate: "",
+        createdAt: node.createdAt,
+        updatedAt: "",
+      });
+      pushUpdate("tasks", taskId, {
+        progress: derived.progress,
+        status: derived.status,
+        completedAt: derived.completedAt ?? "",
+      });
       return id;
     },
-    []
+    [data.tasks, pushCreate, pushUpdate]
   );
 
   const updateChecklistItem = useCallback(
@@ -536,99 +658,142 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       itemId: string,
       patch: Partial<Pick<ChecklistItem, "label" | "progress" | "dueDate">>
     ) => {
+      const task = data.tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      const checklist = updateNode(task.checklist ?? [], itemId, patch);
+      const derived = applyChecklist(task, checklist);
       setData((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((t) => {
-          if (t.id !== taskId) return t;
-          const checklist = updateNode(t.checklist ?? [], itemId, patch);
-          return { ...t, ...applyChecklist(t, checklist) };
-        }),
+        tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, ...derived } : t)),
       }));
+      pushUpdate("checklistItems", itemId, { ...patch, updatedAt: new Date().toISOString() });
+      pushUpdate("tasks", taskId, {
+        progress: derived.progress,
+        status: derived.status,
+        completedAt: derived.completedAt ?? "",
+      });
     },
-    []
+    [data.tasks, pushUpdate]
   );
 
-  const deleteChecklistItem = useCallback((taskId: string, itemId: string) => {
-    setData((prev) => {
-      const task = prev.tasks.find((t) => t.id === taskId);
-      const removedNode = task ? findNode(task.checklist ?? [], itemId) : undefined;
-      const removedIds = new Set(
-        removedNode ? flatten([removedNode]).map((n) => n.id) : [itemId]
-      );
-      return {
+  const deleteChecklistItem = useCallback(
+    (taskId: string, itemId: string) => {
+      const task = data.tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      const removedNode = findNode(task.checklist ?? [], itemId);
+      const removedIds = new Set(removedNode ? flatten([removedNode]).map((n) => n.id) : [itemId]);
+      const checklist = removeNode(task.checklist ?? [], itemId);
+      const derived = applyChecklist(task, checklist);
+      setData((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((t) => {
-          if (t.id !== taskId) return t;
-          const checklist = removeNode(t.checklist ?? [], itemId);
-          return { ...t, ...applyChecklist(t, checklist) };
-        }),
+        tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, ...derived } : t)),
         comments: prev.comments.filter(
           (c) => !(c.targetType === "checklist" && removedIds.has(c.targetId))
         ),
-      };
-    });
-  }, []);
+      }));
+      pushDelete("checklistItems", itemId); // 서버가 하위 항목·관련 댓글까지 함께 정리한다
+      pushUpdate("tasks", taskId, {
+        progress: derived.progress,
+        status: derived.status,
+        completedAt: derived.completedAt ?? "",
+      });
+    },
+    [data.tasks, pushDelete, pushUpdate]
+  );
 
   const addLogEntry = useCallback(
     (input: Omit<LogEntry, "id" | "createdAt">) => {
       const id = genId("l");
       const entry: LogEntry = { ...input, id, createdAt: new Date().toISOString() };
       setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
+      pushCreate("logEntries", entry);
       return id;
     },
-    []
+    [pushCreate]
   );
 
-  const updateLogEntry = useCallback((id: string, content: string) => {
-    setData((prev) => ({
-      ...prev,
-      logEntries: prev.logEntries.map((l) =>
-        l.id === id ? { ...l, content, editedAt: new Date().toISOString() } : l
-      ),
-    }));
-  }, []);
+  const updateLogEntry = useCallback(
+    (id: string, content: string) => {
+      const editedAt = new Date().toISOString();
+      setData((prev) => ({
+        ...prev,
+        logEntries: prev.logEntries.map((l) => (l.id === id ? { ...l, content, editedAt } : l)),
+      }));
+      pushUpdate("logEntries", id, { content, editedAt });
+    },
+    [pushUpdate]
+  );
 
-  const deleteLogEntry = useCallback((id: string) => {
-    setData((prev) => ({
-      ...prev,
-      logEntries: prev.logEntries.filter((l) => l.id !== id),
-      comments: prev.comments.filter((c) => !(c.targetType === "log" && c.targetId === id)),
-    }));
-  }, []);
+  const deleteLogEntry = useCallback(
+    (id: string) => {
+      setData((prev) => ({
+        ...prev,
+        logEntries: prev.logEntries.filter((l) => l.id !== id),
+        comments: prev.comments.filter((c) => !(c.targetType === "log" && c.targetId === id)),
+      }));
+      pushDelete("logEntries", id); // 서버가 관련 댓글까지 함께 정리한다
+    },
+    [pushDelete]
+  );
 
-  const addComment = useCallback((input: Omit<Comment, "id" | "createdAt">) => {
-    const id = genId("c");
-    const comment: Comment = { ...input, id, createdAt: new Date().toISOString() };
-    setData((prev) => ({ ...prev, comments: [...prev.comments, comment] }));
-    return id;
-  }, []);
+  const addComment = useCallback(
+    (input: Omit<Comment, "id" | "createdAt">) => {
+      const id = genId("c");
+      const comment: Comment = { ...input, id, createdAt: new Date().toISOString() };
+      setData((prev) => ({ ...prev, comments: [...prev.comments, comment] }));
+      pushCreate("comments", comment);
+      return id;
+    },
+    [pushCreate]
+  );
 
-  const updateComment = useCallback((id: string, content: string) => {
-    setData((prev) => ({
-      ...prev,
-      comments: prev.comments.map((c) =>
-        c.id === id ? { ...c, content, editedAt: new Date().toISOString() } : c
-      ),
-    }));
-  }, []);
+  const updateComment = useCallback(
+    (id: string, content: string) => {
+      const editedAt = new Date().toISOString();
+      setData((prev) => ({
+        ...prev,
+        comments: prev.comments.map((c) => (c.id === id ? { ...c, content, editedAt } : c)),
+      }));
+      pushUpdate("comments", id, { content, editedAt });
+    },
+    [pushUpdate]
+  );
 
-  const deleteComment = useCallback((id: string) => {
-    setData((prev) => ({
-      ...prev,
-      comments: prev.comments.filter((c) => c.id !== id),
-    }));
-  }, []);
+  const deleteComment = useCallback(
+    (id: string) => {
+      setData((prev) => ({
+        ...prev,
+        comments: prev.comments.filter((c) => c.id !== id),
+      }));
+      pushDelete("comments", id);
+    },
+    [pushDelete]
+  );
 
-  const addResource = useCallback((input: Omit<ResourceDoc, "id" | "createdAt">) => {
-    const id = genId("r");
-    const resource: ResourceDoc = { ...input, id, createdAt: new Date().toISOString() };
-    setData((prev) => ({ ...prev, resources: [resource, ...prev.resources] }));
-    return id;
-  }, []);
+  const addResource = useCallback(
+    (input: Omit<ResourceDoc, "id" | "createdAt">) => {
+      const id = genId("r");
+      const resource: ResourceDoc = { ...input, id, createdAt: new Date().toISOString() };
+      setData((prev) => ({ ...prev, resources: [resource, ...prev.resources] }));
+      pushCreate("resources", resource);
+      return id;
+    },
+    [pushCreate]
+  );
 
-  const deleteResource = useCallback((id: string) => {
-    setData((prev) => ({ ...prev, resources: prev.resources.filter((r) => r.id !== id) }));
-  }, []);
+  const deleteResource = useCallback(
+    (id: string) => {
+      const resource = data.resources.find((r) => r.id === id);
+      setData((prev) => ({ ...prev, resources: prev.resources.filter((r) => r.id !== id) }));
+      pushDelete("resources", id);
+      if (backendConfigured) {
+        (resource?.files ?? []).forEach((f) => {
+          if (f.driveFileId) gas.deleteFile(f.driveFileId).catch(() => {});
+        });
+      }
+    },
+    [data.resources, backendConfigured, pushDelete]
+  );
 
   const getUser = useCallback((id: string) => data.users.find((u) => u.id === id), [data.users]);
 
@@ -655,22 +820,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // --- Admin: teams ---
 
-  const addTeam = useCallback((name: string) => {
-    const id = genId("team");
-    setData((prev) => ({
-      ...prev,
-      teams: [...prev.teams, { id, name }],
-      categoriesByTeam: { ...prev.categoriesByTeam, [id]: [] },
-      boards: [...prev.boards, { id: `board_${id}_default`, teamId: id, name: "전체", visibleColumns: BUILTIN_COLUMNS.map((c) => c.key) }],
-    }));
-  }, []);
+  const addTeam = useCallback(
+    (name: string) => {
+      const id = genId("team");
+      const board = { id: `board_${id}_default`, teamId: id, name: "전체", visibleColumns: BUILTIN_COLUMNS.map((c) => c.key) };
+      setData((prev) => ({
+        ...prev,
+        teams: [...prev.teams, { id, name }],
+        categoriesByTeam: { ...prev.categoriesByTeam, [id]: [] },
+        boards: [...prev.boards, board],
+      }));
+      pushCreate("teams", { id, name });
+      pushCreate("boards", board);
+    },
+    [pushCreate]
+  );
 
-  const renameTeam = useCallback((id: string, name: string) => {
-    setData((prev) => ({
-      ...prev,
-      teams: prev.teams.map((t) => (t.id === id ? { ...t, name } : t)),
-    }));
-  }, []);
+  const renameTeam = useCallback(
+    (id: string, name: string) => {
+      setData((prev) => ({
+        ...prev,
+        teams: prev.teams.map((t) => (t.id === id ? { ...t, name } : t)),
+      }));
+      pushUpdate("teams", id, { name });
+    },
+    [pushUpdate]
+  );
 
   const deleteTeam = useCallback(
     (id: string) => {
@@ -693,86 +868,114 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           })),
         };
       });
+      pushDelete("teams", id); // 서버가 해당 팀의 카테고리·게시판까지 함께 정리한다
       return true;
     },
-    [data.tasks, data.users]
+    [data.tasks, data.users, pushDelete]
   );
 
   // --- Admin: centers ---
 
-  const addCenter = useCallback((name: string) => {
-    setData((prev) => (prev.centers.includes(name) ? prev : { ...prev, centers: [...prev.centers, name] }));
-  }, []);
+  const addCenter = useCallback(
+    (name: string) => {
+      setData((prev) => (prev.centers.includes(name) ? prev : { ...prev, centers: [...prev.centers, name] }));
+      pushCreate("centers", { name });
+    },
+    [pushCreate]
+  );
 
-  const renameCenter = useCallback((oldName: string, newName: string) => {
-    setData((prev) => ({
-      ...prev,
-      centers: prev.centers.map((c) => (c === oldName ? newName : c)),
-      tasks: prev.tasks.map((t) => (t.center === oldName ? { ...t, center: newName } : t)),
-    }));
-  }, []);
+  const renameCenter = useCallback(
+    (oldName: string, newName: string) => {
+      const affectedTaskIds = data.tasks.filter((t) => t.center === oldName).map((t) => t.id);
+      setData((prev) => ({
+        ...prev,
+        centers: prev.centers.map((c) => (c === oldName ? newName : c)),
+        tasks: prev.tasks.map((t) => (t.center === oldName ? { ...t, center: newName } : t)),
+      }));
+      pushUpdate("centers", oldName, { name: newName });
+      affectedTaskIds.forEach((taskId) => pushUpdate("tasks", taskId, { center: newName }));
+    },
+    [data.tasks, pushUpdate]
+  );
 
   const deleteCenter = useCallback(
     (name: string) => {
       const inUse = data.tasks.some((t) => t.center === name);
       if (inUse) return false;
       setData((prev) => ({ ...prev, centers: prev.centers.filter((c) => c !== name) }));
+      pushDelete("centers", name);
       return true;
     },
-    [data.tasks]
+    [data.tasks, pushDelete]
   );
 
   // --- Admin: categories ---
 
-  const addCategoryLarge = useCallback((teamId: string, name: string) => {
-    setData((prev) => {
-      const siblings = prev.categoriesByTeam[teamId] ?? [];
+  const addCategoryLarge = useCallback(
+    (teamId: string, name: string) => {
+      const siblings = data.categoriesByTeam[teamId] ?? [];
       const code = nextLargeCode(siblings.map((l) => l.code));
-      return {
+      const id = genId("cl");
+      setData((prev) => ({
         ...prev,
         categoriesByTeam: {
           ...prev.categoriesByTeam,
-          [teamId]: [...siblings, { id: genId("cl"), name, code, children: [] }],
+          [teamId]: [...(prev.categoriesByTeam[teamId] ?? []), { id, name, code, children: [] }],
         },
-      };
-    });
-  }, []);
+      }));
+      pushCreate("categoryLarge", { id, teamId, name, code });
+    },
+    [data.categoriesByTeam, pushCreate]
+  );
 
-  const renameCategoryLarge = useCallback((teamId: string, id: string, name: string) => {
-    setData((prev) => ({
-      ...prev,
-      categoriesByTeam: {
-        ...prev.categoriesByTeam,
-        [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
-          l.id === id ? { ...l, name } : l
-        ),
-      },
-    }));
-  }, []);
+  const renameCategoryLarge = useCallback(
+    (teamId: string, id: string, name: string) => {
+      setData((prev) => ({
+        ...prev,
+        categoriesByTeam: {
+          ...prev.categoriesByTeam,
+          [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
+            l.id === id ? { ...l, name } : l
+          ),
+        },
+      }));
+      pushUpdate("categoryLarge", id, { name });
+    },
+    [pushUpdate]
+  );
 
-  const deleteCategoryLarge = useCallback((teamId: string, id: string) => {
-    setData((prev) => ({
-      ...prev,
-      categoriesByTeam: {
-        ...prev.categoriesByTeam,
-        [teamId]: (prev.categoriesByTeam[teamId] ?? []).filter((l) => l.id !== id),
-      },
-    }));
-  }, []);
+  const deleteCategoryLarge = useCallback(
+    (teamId: string, id: string) => {
+      setData((prev) => ({
+        ...prev,
+        categoriesByTeam: {
+          ...prev.categoriesByTeam,
+          [teamId]: (prev.categoriesByTeam[teamId] ?? []).filter((l) => l.id !== id),
+        },
+      }));
+      pushDelete("categoryLarge", id); // 서버가 하위 중분류까지 함께 정리한다
+    },
+    [pushDelete]
+  );
 
-  const addCategoryMedium = useCallback((teamId: string, largeId: string, name: string) => {
-    setData((prev) => ({
-      ...prev,
-      categoriesByTeam: {
-        ...prev.categoriesByTeam,
-        [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) => {
-          if (l.id !== largeId) return l;
-          const code = nextMediumCode(l.children.map((m) => m.code));
-          return { ...l, children: [...l.children, { id: genId("cm"), name, code }] };
-        }),
-      },
-    }));
-  }, []);
+  const addCategoryMedium = useCallback(
+    (teamId: string, largeId: string, name: string) => {
+      const large = (data.categoriesByTeam[teamId] ?? []).find((l) => l.id === largeId);
+      const code = nextMediumCode((large?.children ?? []).map((m) => m.code));
+      const id = genId("cm");
+      setData((prev) => ({
+        ...prev,
+        categoriesByTeam: {
+          ...prev.categoriesByTeam,
+          [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
+            l.id === largeId ? { ...l, children: [...l.children, { id, name, code }] } : l
+          ),
+        },
+      }));
+      pushCreate("categoryMedium", { id, largeId, name, code });
+    },
+    [data.categoriesByTeam, pushCreate]
+  );
 
   const renameCategoryMedium = useCallback(
     (teamId: string, largeId: string, id: string, name: string) => {
@@ -787,33 +990,38 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           ),
         },
       }));
+      pushUpdate("categoryMedium", id, { name });
     },
-    []
+    [pushUpdate]
   );
 
-  const deleteCategoryMedium = useCallback((teamId: string, largeId: string, id: string) => {
-    setData((prev) => ({
-      ...prev,
-      categoriesByTeam: {
-        ...prev.categoriesByTeam,
-        [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
-          l.id === largeId ? { ...l, children: l.children.filter((m) => m.id !== id) } : l
-        ),
-      },
-    }));
-  }, []);
+  const deleteCategoryMedium = useCallback(
+    (teamId: string, largeId: string, id: string) => {
+      setData((prev) => ({
+        ...prev,
+        categoriesByTeam: {
+          ...prev.categoriesByTeam,
+          [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
+            l.id === largeId ? { ...l, children: l.children.filter((m) => m.id !== id) } : l
+          ),
+        },
+      }));
+      pushDelete("categoryMedium", id);
+    },
+    [pushDelete]
+  );
 
   // --- Admin: boards ---
 
-  const addBoard = useCallback((teamId: string, name: string) => {
-    setData((prev) => ({
-      ...prev,
-      boards: [
-        ...prev.boards,
-        { id: genId("board"), teamId, name, visibleColumns: BUILTIN_COLUMNS.map((c) => c.key) },
-      ],
-    }));
-  }, []);
+  const addBoard = useCallback(
+    (teamId: string, name: string) => {
+      const id = genId("board");
+      const board = { id, teamId, name, visibleColumns: BUILTIN_COLUMNS.map((c) => c.key) };
+      setData((prev) => ({ ...prev, boards: [...prev.boards, board] }));
+      pushCreate("boards", board);
+    },
+    [pushCreate]
+  );
 
   const updateBoard = useCallback(
     (id: string, patch: Partial<Pick<Board, "name" | "visibleColumns">>) => {
@@ -821,13 +1029,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         boards: prev.boards.map((b) => (b.id === id ? { ...b, ...patch } : b)),
       }));
+      pushUpdate("boards", id, patch);
     },
-    []
+    [pushUpdate]
   );
 
-  const deleteBoard = useCallback((id: string) => {
-    setData((prev) => ({ ...prev, boards: prev.boards.filter((b) => b.id !== id) }));
-  }, []);
+  const deleteBoard = useCallback(
+    (id: string) => {
+      setData((prev) => ({ ...prev, boards: prev.boards.filter((b) => b.id !== id) }));
+      pushDelete("boards", id);
+    },
+    [pushDelete]
+  );
 
   // --- Admin: custom fields ---
 
@@ -835,42 +1048,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (label: string, type: CustomFieldDef["type"], options?: string[]) => {
       const id = genId("field");
       setData((prev) => ({ ...prev, customFields: [...prev.customFields, { id, label, type, options }] }));
+      pushCreate("customFields", { id, label, type, options: options ?? [] });
     },
-    []
+    [pushCreate]
   );
 
-  const deleteCustomField = useCallback((id: string) => {
-    setData((prev) => ({
-      ...prev,
-      customFields: prev.customFields.filter((f) => f.id !== id),
-      boards: prev.boards.map((b) => ({
-        ...b,
-        visibleColumns: b.visibleColumns.filter((c) => c !== id),
-      })),
-    }));
-  }, []);
+  const deleteCustomField = useCallback(
+    (id: string) => {
+      const affectedBoards = data.boards
+        .filter((b) => b.visibleColumns.includes(id))
+        .map((b) => ({ id: b.id, visibleColumns: b.visibleColumns.filter((c) => c !== id) }));
+      setData((prev) => ({
+        ...prev,
+        customFields: prev.customFields.filter((f) => f.id !== id),
+        boards: prev.boards.map((b) => ({
+          ...b,
+          visibleColumns: b.visibleColumns.filter((c) => c !== id),
+        })),
+      }));
+      pushDelete("customFields", id);
+      affectedBoards.forEach((b) => pushUpdate("boards", b.id, { visibleColumns: b.visibleColumns }));
+    },
+    [data.boards, pushDelete, pushUpdate]
+  );
 
   // --- Admin: users ---
 
-  const addUser = useCallback((name: string, teamId: string) => {
-    const id = genId("u");
-    setData((prev) => ({
-      ...prev,
-      users: [
-        ...prev.users,
-        {
-          id,
-          name,
-          username: name,
-          passwordHash: DEFAULT_PASSWORD_HASH,
-          teamId,
-          viewTeamIds: [teamId],
-          level: 1,
-          isAdmin: false,
-        },
-      ],
-    }));
-  }, []);
+  const addUser = useCallback(
+    (name: string, teamId: string) => {
+      const id = genId("u");
+      const user: User = {
+        id,
+        name,
+        username: name,
+        passwordHash: DEFAULT_PASSWORD_HASH,
+        teamId,
+        viewTeamIds: [teamId],
+        level: 1,
+        isAdmin: false,
+      };
+      setData((prev) => ({ ...prev, users: [...prev.users, user] }));
+      pushCreate("users", user);
+    },
+    [pushCreate]
+  );
 
   const updateUser = useCallback(
     (id: string, patch: Partial<Pick<User, "teamId" | "viewTeamIds" | "level" | "isAdmin">>) => {
@@ -878,18 +1099,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         users: prev.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
       }));
+      pushUpdate("users", id, patch);
     },
-    []
+    [pushUpdate]
   );
 
   // 관리자 전용: 본인 인증 없이 지정한 사용자의 비밀번호를 기본값(초기
   // 비밀번호)으로 되돌린다 — 계정을 잠근 사용자를 관리자가 구제할 때 사용.
-  const resetUserPassword = useCallback((id: string) => {
-    setData((prev) => ({
-      ...prev,
-      users: prev.users.map((u) => (u.id === id ? { ...u, passwordHash: DEFAULT_PASSWORD_HASH } : u)),
-    }));
-  }, []);
+  const resetUserPassword = useCallback(
+    (id: string) => {
+      setData((prev) => ({
+        ...prev,
+        users: prev.users.map((u) => (u.id === id ? { ...u, passwordHash: DEFAULT_PASSWORD_HASH } : u)),
+      }));
+      pushUpdate("users", id, { passwordHash: DEFAULT_PASSWORD_HASH });
+    },
+    [pushUpdate]
+  );
 
   const deleteUser = useCallback(
     (id: string) => {
@@ -906,12 +1132,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const remainingAdmins = data.users.filter((u) => u.isAdmin && u.id !== id).length;
       if (target?.isAdmin && remainingAdmins === 0) return false; // keep at least one admin
       setData((prev) => ({ ...prev, users: prev.users.filter((u) => u.id !== id) }));
+      pushDelete("users", id);
       return true;
     },
-    [data.tasks, data.logEntries, data.comments, data.resources, data.users, currentUser]
+    [data.tasks, data.logEntries, data.comments, data.resources, data.users, currentUser, pushDelete]
   );
 
+  // 구글 시트에 연동된 상태에서는 여기서 되돌리면 팀 전체가 공유하는
+  // 데이터가 데모값으로 지워질 위험이 있어, 연동 중에는 동작하지 않는다.
   const resetDemoData = useCallback(() => {
+    if (backendConfigured) return false;
     const seeded: StoreData = {
       teams: SEED_TEAMS,
       centers: SEED_CENTERS,
@@ -926,7 +1156,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
     setData(seeded);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-  }, []);
+    return true;
+  }, [backendConfigured]);
 
   const value: StoreContextValue = {
     teams: data.teams,
@@ -942,6 +1173,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     resources: data.resources,
     currentUser,
     ready,
+    backendConfigured,
+    backendError,
+    syncError,
+    retryBackend,
+    dismissSyncError: () => setSyncError(null),
     login,
     logout,
     changePassword,

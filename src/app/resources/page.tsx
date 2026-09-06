@@ -8,6 +8,7 @@ import { AppShell } from "@/components/app-shell";
 import { FloatingWindow } from "@/components/floating-window";
 import { readFileAsBase64, MAX_FILE_SIZE_LABEL } from "@/lib/download";
 import { formatDateShort } from "@/lib/format";
+import { gas, hasBackendConfig } from "@/lib/gas-client";
 
 export const CATEGORIES = ["업무메뉴얼", "양식/서식", "안내자료", "기타"];
 
@@ -134,6 +135,7 @@ function ResourceUploadModal({ onClose }: { onClose: () => void }) {
   const [files, setFiles] = useState<{ name: string; base64: string; mimeType: string; size: number }[]>([]);
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files;
@@ -153,7 +155,7 @@ function ResourceUploadModal({ onClose }: { onClose: () => void }) {
     setReading(false);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!currentUser) return;
     if (!title.trim()) {
       setError("제목을 입력해주세요.");
@@ -163,11 +165,38 @@ function ResourceUploadModal({ onClose }: { onClose: () => void }) {
       setError("첨부할 파일을 최소 1개 선택해주세요.");
       return;
     }
+
+    let finalFiles = files;
+    if (hasBackendConfig()) {
+      setUploading(true);
+      setError("");
+      try {
+        finalFiles = await Promise.all(
+          files.map(async (f) => {
+            const uploaded = await gas.uploadFile(f.name, f.mimeType, f.base64);
+            return {
+              name: uploaded.name,
+              mimeType: uploaded.mimeType,
+              size: uploaded.size,
+              driveFileId: uploaded.driveFileId,
+              url: uploaded.url,
+              base64: "",
+            };
+          })
+        );
+      } catch (err) {
+        setUploading(false);
+        setError(err instanceof Error ? err.message : "구글 드라이브 업로드에 실패했습니다.");
+        return;
+      }
+      setUploading(false);
+    }
+
     addResource({
       title: title.trim(),
       description: description.trim(),
       category,
-      files,
+      files: finalFiles,
       uploadedBy: currentUser.id,
     });
     onClose();
@@ -189,11 +218,11 @@ function ResourceUploadModal({ onClose }: { onClose: () => void }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={reading}
+            disabled={reading || uploading}
             className="h-7 rounded-[2px] px-3.5 text-[11.5px] font-semibold disabled:opacity-50"
             style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
           >
-            업로드
+            {uploading ? "업로드 중..." : "업로드"}
           </button>
         </>
       }

@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store";
 
 const TABLE_LABELS: Record<string, string> = {
   teams: "팀 (teams)",
+  centers: "센터 (centers)",
   users: "사용자 (users)",
   categoriesByTeam: "카테고리 트리 (categoriesByTeam)",
   boards: "게시판 (boards)",
@@ -12,6 +13,7 @@ const TABLE_LABELS: Record<string, string> = {
   tasks: "업무 (tasks)",
   logEntries: "업무 메모 (logEntries)",
   comments: "댓글 (comments)",
+  resources: "자료실 (resources)",
 };
 
 function countOf(v: unknown): number {
@@ -21,10 +23,22 @@ function countOf(v: unknown): number {
 }
 
 export function DatabaseSection() {
-  const { teams, users, categoriesByTeam, boards, customFields, allTasks, logEntries, comments } =
-    useStore();
+  const {
+    teams,
+    centers,
+    users,
+    categoriesByTeam,
+    boards,
+    customFields,
+    allTasks,
+    logEntries,
+    comments,
+    resources,
+    backendConfigured,
+  } = useStore();
   const tables: Record<string, unknown> = {
     teams,
+    centers,
     users,
     categoriesByTeam,
     boards,
@@ -32,6 +46,7 @@ export function DatabaseSection() {
     tasks: allTasks,
     logEntries,
     comments,
+    resources,
   };
   const [openTable, setOpenTable] = useState<string | null>("tasks");
 
@@ -49,9 +64,9 @@ export function DatabaseSection() {
     <div className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3 rounded-[4px] border border-dashed border-[var(--border-strong)] bg-[var(--surface-alt)] p-2.5">
         <div className="text-[10.5px] leading-relaxed text-[var(--text-faintest)]">
-          지금은 별도 서버 DB 없이, 이 브라우저의 localStorage에만 저장되는 구조입니다 — 다른 사람
-          기기의 데이터와 공유되지 않습니다. 아래는 현재 저장된 데이터의 테이블별 구조·건수이며,
-          실제 백엔드(DB)를 구성할 때 테이블 설계 참고용으로 JSON을 내보낼 수 있습니다.
+          {backendConfigured
+            ? "구글 시트에 연동되어, 팀 전체가 같은 데이터를 공유합니다. 아래는 현재 데이터의 테이블별 구조·건수이며, 백업용으로 JSON을 내보낼 수 있습니다."
+            : "지금은 이 브라우저의 localStorage에만 저장되는 구조입니다 — 다른 사람 기기의 데이터와 공유되지 않습니다. 아래는 현재 저장된 데이터의 테이블별 구조·건수이며, '백엔드 연동' 탭에서 구글 시트를 연결하면 팀 전체와 공유할 수 있고, 여기서 내보낸 JSON을 그대로 가져올 수 있습니다."}
         </div>
         <button
           onClick={downloadJson}
