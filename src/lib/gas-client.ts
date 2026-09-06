@@ -104,7 +104,12 @@ export interface UploadedFile {
 // 그 문자들을 퍼센트 인코딩(%2B 등)해 최대 3배까지 길어진다 — URL에 그대로
 // 써도 되는 base64url(A-Z a-z 0-9 - _)로 바꿔 보내면 그 증가가 없어서,
 // 조각 크기를 그만큼 더 키울 수 있다.
-const UPLOAD_CHUNK_SIZE = 20000;
+//
+// 20000자로 올려봤더니 구글 쪽에서 요청 자체를 거부해(연결 실패로 보임)
+// 실사용 중 확인됨 — 그 값과 8000(정상 동작 확인됨) 사이 어딘가에 실제
+// 한계가 있다는 뜻. 안전하게 확인된 8000으로 되돌린다. 더 키우고 싶다면
+// 이 값을 조금씩만 올려가며 실제로 큰 파일을 올려보고 확인해야 한다.
+const UPLOAD_CHUNK_SIZE = 8000;
 
 function toBase64Url(base64: string): string {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
