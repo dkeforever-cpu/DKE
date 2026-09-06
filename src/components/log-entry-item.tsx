@@ -1,36 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Comment, LogEntry, User } from "@/lib/types";
+import { LogEntry, User } from "@/lib/types";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
-import { CommentThread, FileIcon, PencilIcon, TrashIcon } from "@/components/comment-thread";
+import { FileIcon, PencilIcon, TrashIcon } from "@/components/comment-thread";
 
 export function LogEntryItem({
   entry,
-  comments,
   getUser,
   canEdit,
   isLast,
-  currentUserId,
   onUpdateEntry,
   onDeleteEntry,
-  onAddComment,
-  onUpdateComment,
-  onDeleteComment,
 }: {
   entry: LogEntry;
-  comments: Comment[];
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
   isLast: boolean;
-  currentUserId: string;
   onUpdateEntry: (id: string, content: string) => void;
   onDeleteEntry: (id: string) => void;
-  onAddComment: (content: string, attachments: string[]) => void;
-  onUpdateComment: (id: string, content: string) => void;
-  onDeleteComment: (id: string) => void;
 }) {
   const author = getUser(entry.authorId);
   const [editing, setEditing] = useState(false);
@@ -70,7 +60,7 @@ export function LogEntryItem({
               </button>
               <button
                 onClick={async () => {
-                  if (await confirm("이 일지를 삭제할까요?")) onDeleteEntry(entry.id);
+                  if (await confirm("이 메모를 삭제할까요?")) onDeleteEntry(entry.id);
                 }}
                 title="삭제"
               >
@@ -125,18 +115,6 @@ export function LogEntryItem({
             ))}
           </div>
         )}
-
-        <div className="pl-[26px]">
-          <CommentThread
-            comments={comments}
-            getUser={getUser}
-            canEdit={canEdit}
-            currentUserId={currentUserId}
-            onAdd={onAddComment}
-            onUpdateComment={onUpdateComment}
-            onDeleteComment={onDeleteComment}
-          />
-        </div>
       </div>
     </div>
   );

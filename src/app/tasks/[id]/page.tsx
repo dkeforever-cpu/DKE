@@ -109,7 +109,7 @@ export default function TaskDetailPage() {
 
   async function handleDeleteTask() {
     if (!task) return;
-    if (await confirm("이 업무를 삭제할까요? 진행 일지와 댓글도 함께 삭제됩니다.")) {
+    if (await confirm("이 업무를 삭제할까요? 업무 메모와 댓글도 함께 삭제됩니다.")) {
       deleteTask(task.id);
       router.push("/");
     }
@@ -218,12 +218,12 @@ export default function TaskDetailPage() {
           <div className="flex flex-col gap-3 border border-[var(--border)] bg-[var(--surface)] p-3.5">
             <div className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5">
-                <div className="text-[12px] font-bold text-[var(--text)]">진행 일지</div>
+                <div className="text-[12px] font-bold text-[var(--text)]">업무 메모</div>
                 <span className="text-[10px] text-[var(--text-faintest)]">{taskLogEntries.length}건</span>
               </div>
               <div className="text-[9.5px] text-[var(--text-faintest)]">
-                등록 횟수 제한 없음 · 본인이 작성한 일지·댓글은 언제든 수정할 수 있어요 (관리자
-                권한 계정은 전체 수정·삭제 가능)
+                등록 횟수 제한 없음 · 본인이 작성한 메모는 언제든 수정할 수 있어요 (관리자 권한
+                계정은 전체 수정·삭제 가능)
               </div>
             </div>
 
@@ -240,7 +240,7 @@ export default function TaskDetailPage() {
               <textarea
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
-                placeholder="오늘 진행한 내용을 기록하세요 (예: 건물주 통화, 견적 확인, 서류 검토 등)"
+                placeholder="오늘 진행한 내용을 자유롭게 기록하세요 (예: 건물주 통화, 견적 확인, 서류 검토 등)"
                 className="h-12 resize-none rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-2 text-[11px] text-[var(--text)] outline-none focus:border-[var(--accent)]"
               />
               {newAttachments.length > 0 && (
@@ -277,7 +277,7 @@ export default function TaskDetailPage() {
                   className="h-6 rounded-[2px] px-3 text-[10.5px] font-semibold disabled:opacity-40"
                   style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
                 >
-                  일지 등록
+                  메모 등록
                 </button>
               </div>
             </div>
@@ -285,33 +285,18 @@ export default function TaskDetailPage() {
             <div className="flex flex-col">
               {taskLogEntries.length === 0 && (
                 <div className="py-5 text-center text-[11px] text-[var(--text-faintest)]">
-                  아직 등록된 진행 일지가 없습니다.
+                  아직 등록된 업무 메모가 없습니다.
                 </div>
               )}
               {taskLogEntries.map((entry, idx) => (
                 <LogEntryItem
                   key={entry.id}
                   entry={entry}
-                  comments={comments
-                    .filter((c) => c.targetType === "log" && c.targetId === entry.id)
-                    .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1))}
                   getUser={getUser}
                   canEdit={canEdit}
                   isLast={idx === taskLogEntries.length - 1}
-                  currentUserId={currentUser.id}
                   onUpdateEntry={updateLogEntry}
                   onDeleteEntry={deleteLogEntry}
-                  onAddComment={(content, attachments) =>
-                    addComment({
-                      targetType: "log",
-                      targetId: entry.id,
-                      authorId: currentUser.id,
-                      content,
-                      attachments,
-                    })
-                  }
-                  onUpdateComment={updateComment}
-                  onDeleteComment={deleteComment}
                 />
               ))}
             </div>

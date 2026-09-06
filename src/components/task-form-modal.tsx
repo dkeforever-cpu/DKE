@@ -432,7 +432,7 @@ export function TaskFormModal({
 
       {mode === "create" && (
         <div className="text-[9.5px] text-[var(--text-faintest)]">
-          등록 이후 진행 내용은 업무 상세 화면의 &lsquo;진행 일지&rsquo;에서 계속
+          등록 이후 진행 내용은 업무 상세 화면의 &lsquo;업무 메모&rsquo;에서 계속
           기록합니다.
         </div>
       )}

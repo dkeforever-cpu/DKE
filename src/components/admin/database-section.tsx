@@ -10,7 +10,7 @@ const TABLE_LABELS: Record<string, string> = {
   boards: "게시판 (boards)",
   customFields: "커스텀 필드 (customFields)",
   tasks: "업무 (tasks)",
-  logEntries: "진행 일지 (logEntries)",
+  logEntries: "업무 메모 (logEntries)",
   comments: "댓글 (comments)",
 };
 

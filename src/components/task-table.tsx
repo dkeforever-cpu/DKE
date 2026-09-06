@@ -288,7 +288,7 @@ export function TaskTable({
 
   async function handleBulkDelete() {
     if (selected.size === 0) return;
-    if (!(await confirm(`선택한 ${selected.size}건의 업무를 삭제할까요? 진행 일지와 댓글도 함께 삭제됩니다.`)))
+    if (!(await confirm(`선택한 ${selected.size}건의 업무를 삭제할까요? 업무 메모와 댓글도 함께 삭제됩니다.`)))
       return;
     selected.forEach((id) => deleteTask(id));
     setSelected(new Set());
