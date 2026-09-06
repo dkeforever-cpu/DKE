@@ -42,6 +42,44 @@ function handleUploadFile_(payload) {
   };
 }
 
+/**
+ * 첨부파일은 GET 쿼리 파라미터 하나로 보내기엔 너무 클 수 있어서(URL 길이
+ * 제한), 클라이언트가 base64 문자열을 작은 조각으로 나눠 여러 번의 GET
+ * 요청으로 보낸다. 조각들은 스크립트 캐시(최대 6시간)에 임시 보관하다가
+ * 마지막 조각이 도착하면 이어붙여서 실제 드라이브 업로드를 수행한다.
+ *
+ * payload: { uploadId, index, total, chunk, fileName, mimeType }
+ */
+function handleUploadFileChunk_(payload) {
+  var cache = CacheService.getScriptCache();
+  var key = "upload_" + payload.uploadId + "_" + payload.index;
+  cache.put(key, payload.chunk || "", 21600);
+
+  var isLast = payload.index === payload.total - 1;
+  if (!isLast) {
+    return { received: true };
+  }
+
+  var parts = [];
+  for (var i = 0; i < payload.total; i++) {
+    var partKey = "upload_" + payload.uploadId + "_" + i;
+    var part = cache.get(partKey);
+    if (part === null) {
+      throw new Error("업로드 조각이 유실되었습니다. 다시 시도해주세요.");
+    }
+    parts.push(part);
+  }
+  for (var j = 0; j < payload.total; j++) {
+    cache.remove("upload_" + payload.uploadId + "_" + j);
+  }
+
+  return handleUploadFile_({
+    fileName: payload.fileName,
+    mimeType: payload.mimeType,
+    base64Data: parts.join(""),
+  });
+}
+
 /** payload: { driveFileId } — 자료 삭제 시 드라이브의 실제 파일도 함께 정리한다. */
 function handleDeleteFile_(payload) {
   var id = payload.driveFileId;

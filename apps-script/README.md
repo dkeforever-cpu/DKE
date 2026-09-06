@@ -14,7 +14,7 @@
 | --- | --- |
 | `Schema.gs` | 시트 탭 이름·열 구성·JSON 인코딩 대상 필드 정의 |
 | `Sheets.gs` | 시트를 "id로 찾는 테이블"처럼 다루는 범용 도우미 |
-| `Code.gs` | 웹 앱 진입점(`doGet`/`doPost`), 제네릭 create/update/delete, bootstrap |
+| `Code.gs` | 웹 앱 진입점(`doGet` — 실제 통신은 전부 이쪽, `doPost`는 예비용), 제네릭 create/update/delete, bootstrap |
 | `Drive.gs` | 파일 업로드/삭제 (구글 드라이브) |
 | `Setup.gs` | 설치 메뉴, 초기 시트 생성, 기존 데이터 가져오기 |
 | `Import.html` | "기존 데이터 가져오기" 메뉴가 띄우는 붙여넣기 창 |
@@ -60,3 +60,22 @@ Users, Tasks, ChecklistItems, LogEntries, Comments, Resources). 배열/객체
 `apps-script/*.gs` 파일 내용을 바꿨다면, Apps Script 편집기에서 배포 →
 배포 관리 → 연필(수정) 아이콘 → 버전: 새 버전 → 배포. 웹 앱 URL은 그대로
 유지되므로 팀원들이 다시 설정할 필요는 없습니다.
+
+## 통신 방식이 GET인 이유 (POST를 쓰지 않는 이유)
+
+Apps Script 웹 앱의 `/exec` 주소는 실제 실행 서버로 302 리다이렉트됩니다.
+브라우저 `fetch()` 표준(Fetch 스펙)은 POST 요청이 301/302 리다이렉트를
+만나면 요청을 자동으로 GET으로 바꾸고 본문(body)을 버립니다 — 그 결과
+실제로는 토큰도 요청 내용도 서버에 전혀 전달되지 않고, Apps Script 실행
+기록(Executions)에는 `doPost`가 한 번도 찍히지 않고 `doGet`만 반복해서
+찍히는 증상으로 나타납니다. 이 문제 때문에 프론트엔드(`gas-client.ts`)는
+모든 요청을 GET으로 보내고, action/token/payload를 JSON으로 묶어
+`?data=` 쿼리 파라미터 하나에 실어 보냅니다. `Code.gs`의 `doGet`이 이
+파라미터를 파싱해서 처리합니다 (파라미터가 없으면 상태 확인 메시지만
+보여줍니다). 첨부파일은 URL 길이 제한 때문에 작은 조각으로 나눠 여러 번의
+GET 요청으로 보내고, 서버가 마지막 조각에서 전체를 이어붙여 드라이브에
+저장합니다 (`uploadFileChunk` 액션, `Drive.gs`).
+
+**이전에 이미 6개 파일을 붙여넣어 설치하신 분들은 `Code.gs`와 `Drive.gs`
+두 파일만 이 저장소의 최신 내용으로 다시 덮어쓰고, 배포 → 배포 관리 →
+새 버전으로 재배포해주세요.** 웹 앱 URL과 API 토큰은 그대로 쓰시면 됩니다.

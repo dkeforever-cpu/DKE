@@ -1,10 +1,12 @@
 "use client";
 
 // Google Apps Script 백엔드(../../apps-script)와 통신하는 얇은 클라이언트.
-// 모든 요청은 배포된 웹 앱 URL로 보내는 POST이며, 브라우저가 CORS
-// 프리플라이트(OPTIONS)를 만들지 않도록 Content-Type: text/plain으로
-// 보낸다 (Apps Script 웹 앱은 프리플라이트에 응답하지 못한다). 본문은
-// 그래도 JSON 문자열이고, 서버(Code.gs)가 수동으로 파싱한다.
+// 모든 요청은 GET이다 — POST를 쓰면 Apps Script 웹 앱의 /exec 주소가 302로
+// 리다이렉트할 때 브라우저 fetch()가 표준(Fetch 스펙)에 따라 요청을
+// 자동으로 GET으로 바꾸고 본문을 버려서, 실제로는 토큰도 action도 서버에
+// 전달되지 않는다(Apps Script 실행 기록에 doPost가 안 찍히는 게 그 증거).
+// GET은 리다이렉트를 거쳐도 메서드가 바뀌지 않으므로, action/token/payload를
+// 전부 JSON으로 묶어 쿼리 파라미터 하나(data)에 실어 보낸다.
 
 const URL_KEY = "dke-backend-url";
 const TOKEN_KEY = "dke-backend-token";
@@ -44,13 +46,13 @@ async function call<T>(action: string, payload: unknown = {}, configOverride?: B
     throw new GasApiError("연동된 구글 시트가 없습니다. 설정에서 Apps Script 웹앱 URL을 등록해주세요.");
   }
 
+  const requestBody = JSON.stringify({ action, token: cfg.token, payload });
+  const sep = cfg.url.includes("?") ? "&" : "?";
+  const requestUrl = `${cfg.url}${sep}data=${encodeURIComponent(requestBody)}`;
+
   let res: Response;
   try {
-    res = await fetch(cfg.url, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action, token: cfg.token, payload }),
-    });
+    res = await fetch(requestUrl, { method: "GET" });
   } catch {
     throw new GasApiError("구글 시트 서버에 연결할 수 없습니다. 인터넷 연결과 웹앱 URL을 확인해주세요.");
   }
@@ -59,17 +61,17 @@ async function call<T>(action: string, payload: unknown = {}, configOverride?: B
     throw new GasApiError(`서버 오류 (${res.status}): 잠시 후 다시 시도해주세요.`);
   }
 
-  let body: { ok: boolean; data?: T; error?: string };
+  let resBody: { ok: boolean; data?: T; error?: string };
   try {
-    body = await res.json();
+    resBody = await res.json();
   } catch {
     throw new GasApiError("서버 응답을 해석할 수 없습니다. 웹앱 URL이 올바른지 확인해주세요.");
   }
 
-  if (!body.ok) {
-    throw new GasApiError(body.error || "알 수 없는 오류가 발생했습니다.");
+  if (!resBody.ok) {
+    throw new GasApiError(resBody.error || "알 수 없는 오류가 발생했습니다.");
   }
-  return body.data as T;
+  return resBody.data as T;
 }
 
 export interface UploadedFile {
@@ -80,13 +82,36 @@ export interface UploadedFile {
   url: string;
 }
 
+// 첨부파일은 쿼리 파라미터 하나에 다 실으면 URL이 너무 길어질 수 있어서,
+// base64 문자열을 작은 조각으로 나눠 순서대로 여러 번 보낸다. 서버(Drive.gs)가
+// 마지막 조각을 받으면 전체를 이어붙여 실제 드라이브 업로드를 수행하고,
+// 그 결과(driveFileId/url 등)를 마지막 호출의 응답으로 돌려준다.
+const UPLOAD_CHUNK_SIZE = 3000;
+
+async function uploadFile(fileName: string, mimeType: string, base64Data: string): Promise<UploadedFile> {
+  const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+  const total = Math.max(1, Math.ceil(base64Data.length / UPLOAD_CHUNK_SIZE));
+  let result: UploadedFile | { received: true } | undefined;
+  for (let i = 0; i < total; i++) {
+    const chunk = base64Data.slice(i * UPLOAD_CHUNK_SIZE, (i + 1) * UPLOAD_CHUNK_SIZE);
+    result = await call<UploadedFile | { received: true }>("uploadFileChunk", {
+      uploadId,
+      index: i,
+      total,
+      chunk,
+      fileName,
+      mimeType,
+    });
+  }
+  return result as UploadedFile;
+}
+
 export const gas = {
   testConnection: (cfg: BackendConfig) => call<{ pong: boolean }>("ping", {}, cfg),
   bootstrap: <T>() => call<T>("bootstrap"),
   create: (entity: string, record: object) => call("create", { entity, record }),
   update: (entity: string, id: string, patch: object) => call("update", { entity, id, patch }),
   remove: (entity: string, id: string) => call("delete", { entity, id }),
-  uploadFile: (fileName: string, mimeType: string, base64Data: string) =>
-    call<UploadedFile>("uploadFile", { fileName, mimeType, base64Data }),
+  uploadFile,
   deleteFile: (driveFileId: string) => call<{ deleted: boolean }>("deleteFile", { driveFileId }),
 };

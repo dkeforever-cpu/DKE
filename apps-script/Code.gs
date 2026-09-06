@@ -1,34 +1,46 @@
 /**
- * 웹 앱 진입점. 프론트엔드는 전부 doPost로만 통신한다 (doGet은 브라우저로
- * 배포 URL을 열어봤을 때 에러 대신 상태 메시지를 보여주는 용도).
+ * 웹 앱 진입점. 프론트엔드는 전부 doGet의 쿼리 파라미터로 통신한다.
  *
- * 중요 (프론트엔드 계약): 브라우저 fetch()는 이 URL에 반드시
- * Content-Type: text/plain;charset=utf-8 로 보내야 한다 (application/json
- * 아님). Apps Script 웹 앱은 CORS 프리플라이트(OPTIONS)에 응답하지 못하기
- * 때문에, "진짜" JSON Content-Type은 프리플라이트를 유발해서 실패한다.
- * text/plain으로 보내면 "simple request"로 취급돼 프리플라이트 없이
- * 바로 전송되고, 본문은 서버에서 수동으로 JSON.parse 한다.
+ * 왜 POST가 아니라 GET인가: Apps Script 웹 앱의 /exec 주소는 실제 실행
+ * 서버(script.googleusercontent.com)로 302 리다이렉트된다. 그런데 브라우저
+ * fetch() 표준(Fetch 스펙)은 POST 요청이 301/302 리다이렉트를 만나면
+ * 요청을 자동으로 GET으로 바꾸고 본문(body)을 버린다 — 그 결과 실제로는
+ * 토큰도 action도 서버에 전혀 전달되지 않고, doGet만 계속 호출된다(실행
+ * 기록에 doPost가 한 번도 안 찍히는 게 그 증거). GET은 리다이렉트를 거쳐도
+ * 메서드가 바뀌지 않으므로, 전체 API를 GET 쿼리 파라미터 기반으로 통일한다.
+ * (POST 핸들러도 남겨두지만 — 서버 대 서버 호출 등 리다이렉트를 타지 않는
+ * 환경을 위한 것으로, 브라우저 프론트엔드는 쓰지 않는다.)
  *
- * 요청 본문: { action, token, payload }
+ * 요청: GET ?data=<JSON.stringify({action, token, payload}) 를 encodeURIComponent>
  * 응답 본문: { ok: true, data } 또는 { ok: false, error }
+ * data 파라미터가 없는 순수 GET(주소창에 직접 열었을 때)은 상태 메시지만 보여준다.
  */
 
 function doGet(e) {
-  return jsonResponse_({
-    ok: true,
-    data: { status: "물류센터 업무관리 시스템 백엔드 정상 동작 중" },
-  });
+  var raw = e && e.parameter && e.parameter.data;
+  if (!raw) {
+    return jsonResponse_({
+      ok: true,
+      data: { status: "물류센터 업무관리 시스템 백엔드 정상 동작 중" },
+    });
+  }
+  return handleApiRequest_(raw);
 }
 
 function doPost(e) {
+  var raw = e && e.postData && e.postData.contents;
+  return handleApiRequest_(raw);
+}
+
+function handleApiRequest_(raw) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
     var body = {};
     try {
-      body = JSON.parse(e.postData.contents);
+      body = JSON.parse(raw);
     } catch (parseErr) {
-      throw new Error("요청 본문을 해석할 수 없습니다 (JSON 형식이어야 합니다)");
+      throw new Error("요청을 해석할 수 없습니다 (JSON 형식이어야 합니다)");
     }
     checkToken_(body.token);
     var data = route_(body.action, body.payload || {});
@@ -71,6 +83,8 @@ function route_(action, payload) {
       return handleDelete_(payload.entity, payload.id);
     case "uploadFile":
       return handleUploadFile_(payload);
+    case "uploadFileChunk":
+      return handleUploadFileChunk_(payload);
     case "deleteFile":
       return handleDeleteFile_(payload);
     default:
