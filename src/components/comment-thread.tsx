@@ -1,10 +1,12 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { Comment, User } from "@/lib/types";
+import { Comment, ResourceFile, User } from "@/lib/types";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
+import { uploadPickedFile } from "@/lib/attachments";
+import { downloadResourceFile } from "@/lib/download";
 
 export function PencilIcon() {
   return (
@@ -47,9 +49,11 @@ interface CommentListProps {
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
   currentUserId: string;
-  onAdd: (content: string, attachments: string[]) => void;
+  onAdd: (content: string, attachments: ResourceFile[]) => void;
   onUpdateComment: (id: string, content: string) => void;
   onDeleteComment: (id: string) => void;
+  /** 첨부파일이 구글 드라이브에 올라갈 때 담길 하위 폴더 이름 (보통 업무번호). */
+  folderHint?: string;
 }
 
 /** Comment list + reply box, no expand/collapse of its own — the caller controls visibility. */
@@ -61,9 +65,12 @@ export function CommentList({
   onAdd,
   onUpdateComment,
   onDeleteComment,
+  folderHint,
 }: CommentListProps) {
   const [replyText, setReplyText] = useState("");
-  const [replyAttachments, setReplyAttachments] = useState<string[]>([]);
+  const [replyAttachments, setReplyAttachments] = useState<ResourceFile[]>([]);
+  const [attachError, setAttachError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   function submitReply() {
     if (!replyText.trim()) return;
@@ -72,15 +79,24 @@ export function CommentList({
     setReplyAttachments([]);
   }
 
-  function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
+  async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
-    // Snapshot the names before clearing the input — e.target.files is a live
-    // FileList, so resetting e.target.value would empty it before a deferred
-    // functional setState update gets a chance to read it.
-    const names = Array.from(files).map((f) => f.name);
+    // Snapshot before clearing the input — e.target.files is a live FileList,
+    // so resetting e.target.value would empty it before the async reads finish.
+    const picked = Array.from(files);
     e.target.value = "";
-    setReplyAttachments((prev) => [...prev, ...names]);
+    setUploading(true);
+    setAttachError("");
+    for (const file of picked) {
+      try {
+        const uploaded = await uploadPickedFile(file, folderHint);
+        setReplyAttachments((prev) => [...prev, uploaded]);
+      } catch (err) {
+        setAttachError(err instanceof Error ? err.message : "파일을 업로드하지 못했습니다.");
+      }
+    }
+    setUploading(false);
   }
 
   return (
@@ -112,16 +128,25 @@ export function CommentList({
             className="flex h-6 w-6 flex-none cursor-pointer items-center justify-center rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
             <ClipIcon />
-            <input type="file" multiple className="hidden" onChange={handleFilePick} />
+            <input type="file" multiple className="hidden" onChange={handleFilePick} disabled={uploading} />
           </label>
           <button
             onClick={submitReply}
-            className="h-6 flex-none rounded-[2px] px-2 text-[10px] font-semibold"
+            disabled={uploading}
+            className="h-6 flex-none rounded-[2px] px-2 text-[10px] font-semibold disabled:opacity-40"
             style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
           >
             등록
           </button>
         </div>
+        {uploading && (
+          <div className="ml-6 text-[9.5px] text-[var(--text-faintest)]">업로드 중...</div>
+        )}
+        {attachError && (
+          <div className="ml-6 text-[9.5px]" style={{ color: "var(--danger)" }}>
+            {attachError}
+          </div>
+        )}
         {replyAttachments.length > 0 && (
           <div className="ml-6 flex flex-wrap gap-1">
             {replyAttachments.map((f, i) => (
@@ -130,7 +155,7 @@ export function CommentList({
                 className="flex items-center gap-1 rounded-[2px] border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] text-[var(--text-muted)]"
               >
                 <FileIcon />
-                {f}
+                {f.name}
                 <button
                   onClick={() => setReplyAttachments((prev) => prev.filter((_, idx) => idx !== i))}
                   className="text-[var(--text-faintest)] hover:text-[var(--danger)]"
@@ -155,6 +180,7 @@ export function CommentThread({
   onAdd,
   onUpdateComment,
   onDeleteComment,
+  folderHint,
   defaultExpanded,
 }: CommentListProps & { defaultExpanded?: boolean }) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? comments.length > 0);
@@ -186,6 +212,7 @@ export function CommentThread({
         onAdd={onAdd}
         onUpdateComment={onUpdateComment}
         onDeleteComment={onDeleteComment}
+        folderHint={folderHint}
       />
     </div>
   );
@@ -273,13 +300,20 @@ function CommentRow({
         {(comment.attachments ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1">
             {(comment.attachments ?? []).map((f, i) => (
-              <div
+              <button
                 key={i}
-                className="flex items-center gap-1 rounded-[2px] border border-[var(--divider)] bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] text-[var(--text-muted)]"
+                onClick={() => {
+                  if (f.url) {
+                    window.open(f.url, "_blank", "noopener,noreferrer");
+                  } else {
+                    downloadResourceFile(f.name, f.base64, f.mimeType);
+                  }
+                }}
+                className="flex items-center gap-1 rounded-[2px] border border-[var(--divider)] bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
               >
                 <FileIcon />
-                {f}
-              </div>
+                {f.name}
+              </button>
             ))}
           </div>
         )}

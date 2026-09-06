@@ -12,6 +12,9 @@ import { LogEntryItem } from "@/components/log-entry-item";
 import { TaskFormModal } from "@/components/task-form-modal";
 import { ChecklistTree } from "@/components/checklist-tree";
 import { formatDateFull, formatDateTime, daysOverdue, isOverdue } from "@/lib/format";
+import { uploadPickedFile } from "@/lib/attachments";
+import { downloadResourceFile } from "@/lib/download";
+import type { ResourceFile } from "@/lib/types";
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,7 +43,9 @@ export default function TaskDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [newContent, setNewContent] = useState("");
-  const [newAttachments, setNewAttachments] = useState<string[]>([]);
+  const [newAttachments, setNewAttachments] = useState<ResourceFile[]>([]);
+  const [attachError, setAttachError] = useState("");
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
 
   const task = tasks.find((t) => t.id === id);
 
@@ -96,15 +101,24 @@ export default function TaskDetailPage() {
     setNewAttachments([]);
   }
 
-  function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
+  async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
-    if (!files) return;
-    // Snapshot the names before clearing the input — e.target.files is a live
-    // FileList, so resetting e.target.value would empty it before a deferred
-    // functional setState update gets a chance to read it.
-    const names = Array.from(files).map((f) => f.name);
+    if (!files || !task) return;
+    // Snapshot before clearing the input — e.target.files is a live FileList,
+    // so resetting e.target.value would empty it before the async reads finish.
+    const picked = Array.from(files);
     e.target.value = "";
-    setNewAttachments((prev) => [...prev, ...names]);
+    setUploadingAttachment(true);
+    setAttachError("");
+    for (const file of picked) {
+      try {
+        const uploaded = await uploadPickedFile(file, task.taskNumber);
+        setNewAttachments((prev) => [...prev, uploaded]);
+      } catch (err) {
+        setAttachError(err instanceof Error ? err.message : "파일을 업로드하지 못했습니다.");
+      }
+    }
+    setUploadingAttachment(false);
   }
 
   async function handleDeleteTask() {
@@ -199,6 +213,7 @@ export default function TaskDetailPage() {
                 getUser,
                 canEdit,
                 currentUserId: currentUser.id,
+                folderHint: task.taskNumber,
                 onAddComment: (itemId, content, attachments) =>
                   addComment({
                     targetType: "checklist",
@@ -248,7 +263,7 @@ export default function TaskDetailPage() {
                       key={i}
                       className="flex items-center gap-1 rounded-[2px] border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] text-[var(--text-muted)]"
                     >
-                      {f}
+                      {f.name}
                       <button
                         onClick={() =>
                           setNewAttachments((prev) => prev.filter((_, idx) => idx !== i))
@@ -261,17 +276,28 @@ export default function TaskDetailPage() {
                   ))}
                 </div>
               )}
+              {attachError && (
+                <div className="text-[9.5px]" style={{ color: "var(--danger)" }}>
+                  {attachError}
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <label className="flex h-6 cursor-pointer items-center gap-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text-muted)]">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
                     <path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                   </svg>
-                  파일 첨부
-                  <input type="file" multiple className="hidden" onChange={handleFilePick} />
+                  {uploadingAttachment ? "업로드 중..." : "파일 첨부"}
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFilePick}
+                    disabled={uploadingAttachment}
+                  />
                 </label>
                 <button
                   onClick={handleSubmitEntry}
-                  disabled={!newContent.trim()}
+                  disabled={!newContent.trim() || uploadingAttachment}
                   className="h-6 rounded-[2px] px-3 text-[10.5px] font-semibold disabled:opacity-40"
                   style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
                 >
@@ -352,16 +378,26 @@ export default function TaskDetailPage() {
             ) : (
               <div className="flex flex-col gap-1.5">
                 {allAttachments.map((a, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
+                  <button
+                    key={i}
+                    onClick={() => {
+                      if (a.file.url) {
+                        window.open(a.file.url, "_blank", "noopener,noreferrer");
+                      } else {
+                        downloadResourceFile(a.file.name, a.file.base64, a.file.mimeType);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-left hover:text-[var(--accent)]"
+                  >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" className="flex-none">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <path d="M14 2v6h6" />
                     </svg>
-                    <div className="flex-1 truncate text-[10.5px] text-[var(--text)]">{a.file}</div>
+                    <div className="flex-1 truncate text-[10.5px] text-[var(--text)]">{a.file.name}</div>
                     <div className="text-[9.5px] text-[var(--text-faintest)]">
                       {formatDateTime(a.date).split(" ")[0]}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

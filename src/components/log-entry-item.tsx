@@ -5,6 +5,7 @@ import { LogEntry, User } from "@/lib/types";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
+import { downloadResourceFile } from "@/lib/download";
 import { FileIcon, PencilIcon, TrashIcon } from "@/components/comment-thread";
 
 export function LogEntryItem({
@@ -105,13 +106,20 @@ export function LogEntryItem({
         {(entry.attachments ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1 pl-[26px]">
             {(entry.attachments ?? []).map((f, i) => (
-              <div
+              <button
                 key={i}
-                className="flex items-center gap-1 rounded-[2px] border border-[var(--divider)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]"
+                onClick={() => {
+                  if (f.url) {
+                    window.open(f.url, "_blank", "noopener,noreferrer");
+                  } else {
+                    downloadResourceFile(f.name, f.base64, f.mimeType);
+                  }
+                }}
+                className="flex items-center gap-1 rounded-[2px] border border-[var(--divider)] px-2 py-0.5 text-[10px] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
               >
                 <FileIcon />
-                {f}
-              </div>
+                {f.name}
+              </button>
             ))}
           </div>
         )}

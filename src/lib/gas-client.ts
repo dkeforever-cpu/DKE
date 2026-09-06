@@ -98,7 +98,15 @@ export interface UploadedFile {
 // 그 결과(driveFileId/url 등)를 마지막 호출의 응답으로 돌려준다.
 const UPLOAD_CHUNK_SIZE = 3000;
 
-async function uploadFile(fileName: string, mimeType: string, base64Data: string): Promise<UploadedFile> {
+// folder를 넘기면(예: 업무번호) 드라이브의 공용 업로드 폴더 아래에 그
+// 이름의 하위 폴더를 만들어 그 안에 저장한다 — 업무별로 첨부파일을
+// 모아볼 수 있게 하기 위함. 안 넘기면(예: 자료실) 공용 폴더 바로 아래에 저장된다.
+async function uploadFile(
+  fileName: string,
+  mimeType: string,
+  base64Data: string,
+  folder?: string
+): Promise<UploadedFile> {
   const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
   const total = Math.max(1, Math.ceil(base64Data.length / UPLOAD_CHUNK_SIZE));
   let result: UploadedFile | { received: true } | undefined;
@@ -111,6 +119,7 @@ async function uploadFile(fileName: string, mimeType: string, base64Data: string
       chunk,
       fileName,
       mimeType,
+      folder: folder || "",
     });
   }
   return result as UploadedFile;

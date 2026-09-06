@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChecklistItem, Comment, User } from "@/lib/types";
+import { ChecklistItem, Comment, ResourceFile, User } from "@/lib/types";
 import { flatten } from "@/lib/checklist";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { CommentList } from "@/components/comment-thread";
@@ -12,9 +12,11 @@ interface CommentProps {
   getUser: (id: string) => User | undefined;
   canEdit: (authorId: string) => boolean;
   currentUserId: string;
-  onAddComment: (itemId: string, content: string, attachments: string[]) => void;
+  onAddComment: (itemId: string, content: string, attachments: ResourceFile[]) => void;
   onUpdateComment: (commentId: string, content: string) => void;
   onDeleteComment: (commentId: string) => void;
+  /** 첨부파일이 구글 드라이브에 올라갈 때 담길 하위 폴더 이름 (보통 업무번호). */
+  folderHint?: string;
 }
 
 interface ExpandSignal {
@@ -325,6 +327,7 @@ function ChecklistNode({
             }
             onUpdateComment={commentProps.onUpdateComment}
             onDeleteComment={commentProps.onDeleteComment}
+            folderHint={commentProps.folderHint}
           />
         </div>
       )}

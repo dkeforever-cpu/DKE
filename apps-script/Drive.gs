@@ -13,9 +13,18 @@ function getOrCreateUploadFolder_() {
   return root.createFolder(UPLOAD_FOLDER_NAME);
 }
 
+/** 공용 업로드 폴더 아래에 주어진 이름의 하위 폴더를 찾거나 만든다. */
+function getOrCreateSubfolder_(parent, name) {
+  var it = parent.getFoldersByName(name);
+  if (it.hasNext()) return it.next();
+  return parent.createFolder(name);
+}
+
 /**
- * payload: { fileName, mimeType, base64Data }
+ * payload: { fileName, mimeType, base64Data, folder }
  * base64Data는 "data:<mime>;base64," 접두사가 붙어있어도 되고 없어도 된다.
+ * folder를 주면(업무 상세에서 올릴 때는 업무번호) 공용 폴더 아래 그 이름의
+ * 하위 폴더에 저장한다 — 업무별로 첨부파일을 모아볼 수 있게 하기 위함.
  */
 function handleUploadFile_(payload) {
   var fileName = payload.fileName || "첨부파일";
@@ -30,6 +39,9 @@ function handleUploadFile_(payload) {
   var blob = Utilities.newBlob(bytes, mimeType, fileName);
 
   var folder = getOrCreateUploadFolder_();
+  if (payload.folder) {
+    folder = getOrCreateSubfolder_(folder, String(payload.folder));
+  }
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -48,7 +60,7 @@ function handleUploadFile_(payload) {
  * 요청으로 보낸다. 조각들은 스크립트 캐시(최대 6시간)에 임시 보관하다가
  * 마지막 조각이 도착하면 이어붙여서 실제 드라이브 업로드를 수행한다.
  *
- * payload: { uploadId, index, total, chunk, fileName, mimeType }
+ * payload: { uploadId, index, total, chunk, fileName, mimeType, folder }
  */
 function handleUploadFileChunk_(payload) {
   var cache = CacheService.getScriptCache();
@@ -77,6 +89,7 @@ function handleUploadFileChunk_(payload) {
     fileName: payload.fileName,
     mimeType: payload.mimeType,
     base64Data: parts.join(""),
+    folder: payload.folder,
   });
 }
 

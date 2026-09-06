@@ -57,7 +57,7 @@ export interface LogEntry {
   taskId: string;
   authorId: string;
   content: string;
-  attachments: string[];
+  attachments: ResourceFile[];
   createdAt: string; // ISO datetime
   editedAt?: string;
 }
@@ -70,7 +70,7 @@ export interface Comment {
   targetId: string; // LogEntry.id or ChecklistItem.id
   authorId: string;
   content: string;
-  attachments: string[];
+  attachments: ResourceFile[];
   createdAt: string; // ISO datetime
   editedAt?: string;
 }
