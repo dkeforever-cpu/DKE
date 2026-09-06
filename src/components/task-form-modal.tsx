@@ -53,6 +53,10 @@ export function TaskFormModal({
   const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? currentUser?.id ?? users[0]?.id ?? "");
   const [collaboratorIds, setCollaboratorIds] = useState<string[]>(task?.collaboratorIds ?? []);
   const [center, setCenter] = useState(task?.center ?? centers[0]);
+  // 센터 목록이 나중에 바뀌어도 이미 저장된 업무의 기존 값이 선택지에서
+  // 사라져 저장 시 다른 센터로 조용히 바뀌는 일이 없도록, 현재 값을
+  // 목록에 없으면 맨 앞에 끼워 넣는다.
+  const centerOptions = centers.includes(center) ? centers : [center, ...centers];
   const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate());
   const [priority, setPriority] = useState<Priority>(task?.priority ?? "보통");
   const [status, setStatus] = useState<Status>(task?.status ?? "대기");
@@ -241,7 +245,7 @@ export function TaskFormModal({
         </Field>
         <Field label="관련 센터">
           <select value={center} onChange={(e) => setCenter(e.target.value)} className={inputCls}>
-            {centers.map((c) => (
+            {centerOptions.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
