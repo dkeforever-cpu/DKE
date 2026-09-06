@@ -199,13 +199,21 @@ const BASE_TASKS: Omit<Task, "taskNumber">[] = [
   },
 ];
 
-export const SEED_TASKS: Task[] = [
-  ...BASE_TASKS.map((t, i) => ({
-    ...t,
-    taskNumber: generateTaskNumber(t.categoryLarge, t.createdAt, BASE_TASKS.slice(0, i)),
-  })),
-  ...MGMT_SUPPORT_TASKS,
-];
+function categoryCodes(teamId: string, large: string, medium: string): [string, string] {
+  const l = SEED_CATEGORIES_BY_TEAM[teamId]?.find((c) => c.name === large);
+  const m = l?.children.find((c) => c.name === medium);
+  return [l?.code ?? "", m?.code ?? ""];
+}
+
+export const SEED_TASKS: Task[] = (() => {
+  const withNumbers: Task[] = [];
+  for (const t of BASE_TASKS) {
+    const [largeCode, mediumCode] = categoryCodes(t.teamId, t.categoryLarge, t.categoryMedium);
+    const taskNumber = generateTaskNumber(largeCode, mediumCode, t.createdAt, withNumbers);
+    withNumbers.push({ ...t, taskNumber });
+  }
+  return [...withNumbers, ...MGMT_SUPPORT_TASKS];
+})();
 
 export const SEED_LOG_ENTRIES: LogEntry[] = [
   {

@@ -32,7 +32,7 @@ import {
   SEED_TEAMS,
   USERS,
 } from "./seed-data";
-import { CENTERS as SEED_CENTERS, seedCategoriesByTeam } from "./categories";
+import { CENTERS as SEED_CENTERS, nextLargeCode, nextMediumCode, seedCategoriesByTeam } from "./categories";
 import { addNode, computeProgress, deriveStatus, findNode, flatten, removeNode, updateNode } from "./checklist";
 import { generateTaskNumber } from "./format";
 import { DEFAULT_PASSWORD_HASH, sha256Hex } from "./auth";
@@ -69,6 +69,35 @@ function normalizeChecklist(items: ChecklistItem[] | undefined): ChecklistItem[]
     createdAt: item.createdAt ?? new Date().toISOString(),
     children: normalizeChecklist(item.children),
   }));
+}
+
+// Backfills CategoryLarge/Medium.code for data saved before 업무번호 코드
+// 체계가 도입되기 전 — 이미 배정된 코드는 그대로 두고, 없는 것만 채운다.
+function normalizeCategories(
+  byTeam: Record<string, CategoryLarge[]>
+): Record<string, CategoryLarge[]> {
+  const out: Record<string, CategoryLarge[]> = {};
+  for (const [teamId, larges] of Object.entries(byTeam)) {
+    const usedLarge = new Set(larges.map((l) => l.code).filter(Boolean));
+    out[teamId] = larges.map((l) => {
+      let code = l.code;
+      if (!code) {
+        code = nextLargeCode(usedLarge);
+        usedLarge.add(code);
+      }
+      const usedMedium = new Set(l.children.map((m) => m.code).filter(Boolean));
+      const children = l.children.map((m) => {
+        let mcode = m.code;
+        if (!mcode) {
+          mcode = nextMediumCode(usedMedium);
+          usedMedium.add(mcode);
+        }
+        return { ...m, code: mcode };
+      });
+      return { ...l, code, children };
+    });
+  }
+  return out;
 }
 
 function normalize(data: Partial<StoreData>): StoreData {
@@ -111,10 +140,11 @@ function normalize(data: Partial<StoreData>): StoreData {
     };
   });
 
-  const categoriesByTeam =
+  const categoriesByTeam = normalizeCategories(
     data.categoriesByTeam && Object.keys(data.categoriesByTeam).length > 0
       ? data.categoriesByTeam
-      : seedCategoriesByTeam();
+      : seedCategoriesByTeam()
+  );
 
   const boards =
     data.boards && data.boards.length > 0
@@ -392,7 +422,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const progress = computeProgress(input.checklist ?? []);
     const status = progress === 100 ? "완료" : input.status;
-    const taskNumber = generateTaskNumber(input.categoryLarge, createdAt, data.tasks);
+    const largeCat = (data.categoriesByTeam[input.teamId] ?? []).find(
+      (l) => l.name === input.categoryLarge
+    );
+    const mediumCat = largeCat?.children.find((m) => m.name === input.categoryMedium);
+    const taskNumber = generateTaskNumber(
+      largeCat?.code ?? "",
+      mediumCat?.code ?? "",
+      createdAt,
+      data.tasks
+    );
     const task: Task = { ...input, id, createdAt, progress, status, taskNumber };
     setData((prev) => ({ ...prev, tasks: [task, ...prev.tasks] }));
 
@@ -407,7 +446,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
     setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
     return id;
-  }, [data.tasks]);
+  }, [data.tasks, data.categoriesByTeam]);
 
   const updateTask = useCallback((id: string, patch: Partial<Task>) => {
     setData((prev) => ({
@@ -645,13 +684,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // --- Admin: categories ---
 
   const addCategoryLarge = useCallback((teamId: string, name: string) => {
-    setData((prev) => ({
-      ...prev,
-      categoriesByTeam: {
-        ...prev.categoriesByTeam,
-        [teamId]: [...(prev.categoriesByTeam[teamId] ?? []), { id: genId("cl"), name, children: [] }],
-      },
-    }));
+    setData((prev) => {
+      const siblings = prev.categoriesByTeam[teamId] ?? [];
+      const code = nextLargeCode(siblings.map((l) => l.code));
+      return {
+        ...prev,
+        categoriesByTeam: {
+          ...prev.categoriesByTeam,
+          [teamId]: [...siblings, { id: genId("cl"), name, code, children: [] }],
+        },
+      };
+    });
   }, []);
 
   const renameCategoryLarge = useCallback((teamId: string, id: string, name: string) => {
@@ -681,11 +724,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       categoriesByTeam: {
         ...prev.categoriesByTeam,
-        [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) =>
-          l.id === largeId
-            ? { ...l, children: [...l.children, { id: genId("cm"), name, children: [] }] }
-            : l
-        ),
+        [teamId]: (prev.categoriesByTeam[teamId] ?? []).map((l) => {
+          if (l.id !== largeId) return l;
+          const code = nextMediumCode(l.children.map((m) => m.code));
+          return { ...l, children: [...l.children, { id: genId("cm"), name, code, children: [] }] };
+        }),
       },
     }));
   }, []);

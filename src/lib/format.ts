@@ -38,21 +38,22 @@ export function isOverdue(dueDate: string, status: string): boolean {
   return status !== "완료" && daysOverdue(dueDate) > 0;
 }
 
-// 업무번호: "카테고리-등록일(YYMMDD)-일련번호". 일련번호는 같은 카테고리·같은
-// 등록일 내에서 몇 번째로 만들어졌는지로 정하고, 생성 시 한 번만 배정한 뒤
-// 이후 카테고리가 바뀌어도 번호 자체는 바뀌지 않는다.
+// 업무번호: "대분류코드_중분류코드_등록일(YYMMDD)_일련번호" (예: A_06_260906_01).
+// 일련번호는 같은 대분류·중분류·등록일 조합 내에서 몇 번째로 만들어졌는지로
+// 정하고, 생성 시 한 번만 배정한 뒤 이후 카테고리가 바뀌어도 번호 자체는
+// 바뀌지 않는다.
 export function generateTaskNumber(
-  categoryLarge: string,
+  categoryLargeCode: string,
+  categoryMediumCode: string,
   createdAt: string,
-  existingTasks: { categoryLarge: string; createdAt: string }[]
+  existingTasks: { taskNumber: string }[]
 ): string {
   const [y, m, d] = createdAt.split("-");
   const yymmdd = `${y.slice(2)}${m}${d}`;
-  const sameDayCount = existingTasks.filter(
-    (t) => t.categoryLarge === categoryLarge && t.createdAt === createdAt
-  ).length;
-  const serial = String(sameDayCount + 1).padStart(2, "0");
-  return `${categoryLarge || "미분류"}-${yymmdd}-${serial}`;
+  const prefix = `${categoryLargeCode || "X"}_${categoryMediumCode || "00"}_${yymmdd}_`;
+  const sameGroupCount = existingTasks.filter((t) => t.taskNumber.startsWith(prefix)).length;
+  const serial = String(sameGroupCount + 1).padStart(2, "0");
+  return `${prefix}${serial}`;
 }
 
 export function assigneeDisplay(

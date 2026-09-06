@@ -15,10 +15,10 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// 업무번호: 카테고리-등록일(YYMMDD)-일련번호 (src/lib/format.ts의 generateTaskNumber와 동일한 형식)
-function taskNum(category: string, createdAt: string, serial: number): string {
+// 업무번호: 대분류코드_중분류코드_등록일(YYMMDD)_일련번호 (src/lib/format.ts의 generateTaskNumber와 동일한 형식)
+function taskNum(largeCode: string, mediumCode: string, createdAt: string, serial: number): string {
   const [y, m, d] = createdAt.split("-");
-  return `${category}-${y.slice(2)}${m}${d}-${String(serial).padStart(2, "0")}`;
+  return `${largeCode}_${mediumCode}_${y.slice(2)}${m}${d}_${String(serial).padStart(2, "0")}`;
 }
 
 // 경영지원실 업무 이관: 기존 업무분장표를 쓰던 4명 모두 관리팀 소속
@@ -33,50 +33,60 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_1",
     name: "계약",
+    code: "A",
     children: [
       {
         id: "mscm_1_1",
         name: "고객사 도급계약서 검토 및 협의",
+        code: "01",
         children: [{ id: "mscs_1_1_1", name: "일반" }],
       },
       {
         id: "mscm_1_2",
         name: "협력사 도급계약서 체결 및 서류 검토",
+        code: "02",
         children: [{ id: "mscs_1_2_1", name: "일반" }],
       },
       {
         id: "mscm_1_3",
         name: "협력사 서류 점검",
+        code: "03",
         children: [{ id: "mscs_1_3_1", name: "일반" }],
       },
       {
         id: "mscm_1_4",
         name: "신규 사업 입찰 대응",
+        code: "04",
         children: [{ id: "mscs_1_4_1", name: "일반" }],
       },
       {
         id: "mscm_1_5",
         name: "추가약정서 체결",
+        code: "05",
         children: [{ id: "mscs_1_5_1", name: "일반" }],
       },
       {
         id: "mscm_1_6",
         name: "기타 계약 (협약 체결 및 사업장 시설물 공사 등)",
+        code: "06",
         children: [{ id: "mscs_1_6_1", name: "일반" }],
       },
       {
         id: "mscm_1_7",
         name: "안전보건대행 계약 연장 여부 검토 및 계약 진행",
+        code: "07",
         children: [{ id: "mscs_1_7_1", name: "일반" }],
       },
       {
         id: "mscm_1_8",
         name: "office 계약 연장 여부 검토 및 계약 진행",
+        code: "08",
         children: [{ id: "mscs_1_8_1", name: "일반" }],
       },
       {
         id: "mscm_1_9",
         name: "기타",
+        code: "09",
         children: [{ id: "mscs_1_9_1", name: "일반" }],
       },
     ],
@@ -84,60 +94,72 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_2",
     name: "인사",
+    code: "B",
     children: [
       {
         id: "mscm_2_1",
         name: "입사서류 최신화 (법령 기반)",
+        code: "01",
         children: [{ id: "mscs_2_1_1", name: "일반" }],
       },
       {
         id: "mscm_2_2",
         name: "근로계약 체결 일정 확인 (재직자)",
+        code: "02",
         children: [{ id: "mscs_2_2_1", name: "일반" }],
       },
       {
         id: "mscm_2_3",
         name: "차년도 급여 정책 검토",
+        code: "03",
         children: [{ id: "mscs_2_3_1", name: "일반" }],
       },
       {
         id: "mscm_2_4",
         name: "조직도 갱신 관리",
+        code: "04",
         children: [{ id: "mscs_2_4_1", name: "일반" }],
       },
       {
         id: "mscm_2_5",
         name: "인재육성 매니지먼트",
+        code: "05",
         children: [{ id: "mscs_2_5_1", name: "일반" }],
       },
       {
         id: "mscm_2_6",
         name: "개정 근로기준법 확인 및 당사 규정 수정(취업규칙 등)",
+        code: "06",
         children: [{ id: "mscs_2_6_1", name: "일반" }],
       },
       {
         id: "mscm_2_7",
         name: "인사발령 품의",
+        code: "07",
         children: [{ id: "mscs_2_7_1", name: "일반" }],
       },
       {
         id: "mscm_2_8",
         name: "건강검진 병원 컨택 및 진행",
+        code: "08",
         children: [{ id: "mscs_2_8_1", name: "일반" }],
       },
       {
         id: "mscm_2_9",
         name: "건강검진 병원 진행 상황",
+        code: "09",
         children: [{ id: "mscs_2_9_1", name: "일반" }],
       },
       {
         id: "mscm_2_10",
         name: "관리직 근태 정리",
+        code: "10",
         children: [{ id: "mscs_2_10_1", name: "일반" }],
       },
       {
         id: "mscm_2_11",
         name: "기타",
+        code: "11",
         children: [{ id: "mscs_2_11_1", name: "일반" }],
       },
     ],
@@ -145,35 +167,42 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_3",
     name: "노무",
+    code: "C",
     children: [
       {
         id: "mscm_3_1",
         name: "사건 히스토리 관리",
+        code: "01",
         children: [{ id: "mscs_3_1_1", name: "일반" }],
       },
       {
         id: "mscm_3_2",
         name: "사고 히스토리 관리",
+        code: "02",
         children: [{ id: "mscs_3_2_1", name: "일반" }],
       },
       {
         id: "mscm_3_3",
         name: "노무 사건 대응",
+        code: "03",
         children: [{ id: "mscs_3_3_1", name: "일반" }],
       },
       {
         id: "mscm_3_4",
         name: "산업재해(센터 내 사고, 업무상질병 등) 대응",
+        code: "04",
         children: [{ id: "mscs_3_4_1", name: "일반" }],
       },
       {
         id: "mscm_3_5",
         name: "공상처리 합의",
+        code: "05",
         children: [{ id: "mscs_3_5_1", name: "일반" }],
       },
       {
         id: "mscm_3_6",
         name: "기타",
+        code: "06",
         children: [{ id: "mscs_3_6_1", name: "일반" }],
       },
     ],
@@ -181,60 +210,72 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_4",
     name: "운영",
+    code: "D",
     children: [
       {
         id: "mscm_4_1",
         name: "각종 행사 입안/시행",
+        code: "01",
         children: [{ id: "mscs_4_1_1", name: "일반" }],
       },
       {
         id: "mscm_4_2",
         name: "신규 사업장 오픈 대응",
+        code: "02",
         children: [{ id: "mscs_4_2_1", name: "일반" }],
       },
       {
         id: "mscm_4_3",
         name: "법정의무교육 계획 수립 및 점검, 수시교육 진행",
+        code: "03",
         children: [{ id: "mscs_4_3_1", name: "일반" }],
       },
       {
         id: "mscm_4_4",
         name: "문서 공통양식 관리(팀박스)",
+        code: "04",
         children: [{ id: "mscs_4_4_1", name: "일반" }],
       },
       {
         id: "mscm_4_5",
         name: "월간 간부회의 취합 및 진행",
+        code: "05",
         children: [{ id: "mscs_4_5_1", name: "일반" }],
       },
       {
         id: "mscm_4_6",
         name: "운영기준안 관리",
+        code: "06",
         children: [{ id: "mscs_4_6_1", name: "일반" }],
       },
       {
         id: "mscm_4_7",
         name: "홈페이지 관리",
+        code: "07",
         children: [{ id: "mscs_4_7_1", name: "일반" }],
       },
       {
         id: "mscm_4_8",
         name: "Help 및 소리함 내용 취합 및 보고 ",
+        code: "08",
         children: [{ id: "mscs_4_8_1", name: "일반" }],
       },
       {
         id: "mscm_4_9",
         name: "사업장 자원현황 보고",
+        code: "09",
         children: [{ id: "mscs_4_9_1", name: "일반" }],
       },
       {
         id: "mscm_4_10",
         name: "관리직 역량 개발 교육 계획 수립",
+        code: "10",
         children: [{ id: "mscs_4_10_1", name: "일반" }],
       },
       {
         id: "mscm_4_11",
         name: "기타",
+        code: "11",
         children: [{ id: "mscs_4_11_1", name: "일반" }],
       },
     ],
@@ -242,60 +283,72 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_5",
     name: "안전",
+    code: "E",
     children: [
       {
         id: "mscm_5_1",
         name: "차년도 안전보건관리 일정 수립",
+        code: "01",
         children: [{ id: "mscs_5_1_1", name: "일반" }],
       },
       {
         id: "mscm_5_2",
         name: "안전보건 경영방침 및 목표설정",
+        code: "02",
         children: [{ id: "mscs_5_2_1", name: "일반" }],
       },
       {
         id: "mscm_5_3",
         name: "관계 법령 개정 및 확인(산안법,중처법 등)",
+        code: "03",
         children: [{ id: "mscs_5_3_1", name: "일반" }],
       },
       {
         id: "mscm_5_4",
         name: "위험성평가 실시 확인 및 점검(센터별)",
+        code: "04",
         children: [{ id: "mscs_5_4_1", name: "일반" }],
       },
       {
         id: "mscm_5_5",
         name: "비상사태훈련 실시 확인 및 점검(센터별)",
+        code: "05",
         children: [{ id: "mscs_5_5_1", name: "일반" }],
       },
       {
         id: "mscm_5_6",
         name: "안전보건교육 관련 확인 및 점검(센터별)",
+        code: "06",
         children: [{ id: "mscs_5_6_1", name: "일반" }],
       },
       {
         id: "mscm_5_7",
         name: "산업안전보건위원회 실시 및 점검(센터별)",
+        code: "07",
         children: [{ id: "mscs_5_7_1", name: "일반" }],
       },
       {
         id: "mscm_5_8",
         name: "안전보건 KPI 현황 확인 및 점검(센터별)",
+        code: "08",
         children: [{ id: "mscs_5_8_1", name: "일반" }],
       },
       {
         id: "mscm_5_9",
         name: "안전보건 점검(센터벌)",
+        code: "09",
         children: [{ id: "mscs_5_9_1", name: "일반" }],
       },
       {
         id: "mscm_5_10",
         name: "협력사안전보건협의체(센터별)",
+        code: "10",
         children: [{ id: "mscs_5_10_1", name: "일반" }],
       },
       {
         id: "mscm_5_11",
         name: "중대재해처벌법 이행사항 확인점검(13대항목)",
+        code: "11",
         children: [{ id: "mscs_5_11_1", name: "일반" }],
       },
     ],
@@ -303,45 +356,54 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_6",
     name: "총무",
+    code: "F",
     children: [
       {
         id: "mscm_6_1",
         name: "안전보호구 및 피복 구매",
+        code: "01",
         children: [{ id: "mscs_6_1_1", name: "일반" }],
       },
       {
         id: "mscm_6_2",
         name: "자산 구매 관리",
+        code: "02",
         children: [{ id: "mscs_6_2_1", name: "일반" }],
       },
       {
         id: "mscm_6_3",
         name: "안전조끼 구매",
+        code: "03",
         children: [{ id: "mscs_6_3_1", name: "일반" }],
       },
       {
         id: "mscm_6_4",
         name: "비품 구매 관리",
+        code: "04",
         children: [{ id: "mscs_6_4_1", name: "일반" }],
       },
       {
         id: "mscm_6_5",
         name: "명절 선물세트 발주 및 인원 취합 관리",
+        code: "05",
         children: [{ id: "mscs_6_5_1", name: "일반" }],
       },
       {
         id: "mscm_6_6",
         name: "기숙사 관리(계약기간, 사용유무)",
+        code: "06",
         children: [{ id: "mscs_6_6_1", name: "일반" }],
       },
       {
         id: "mscm_6_7",
         name: "사원증 관리",
+        code: "07",
         children: [{ id: "mscs_6_7_1", name: "일반" }],
       },
       {
         id: "mscm_6_8",
         name: "기타",
+        code: "08",
         children: [{ id: "mscs_6_8_1", name: "일반" }],
       },
     ],
@@ -349,40 +411,48 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_7",
     name: "협력사",
+    code: "G",
     children: [
       {
         id: "mscm_7_1",
         name: "계약 서류 점검",
+        code: "01",
         children: [{ id: "mscs_7_1_1", name: "일반" }],
       },
       {
         id: "mscm_7_2",
         name: "사고 히스토리 관리",
+        code: "02",
         children: [{ id: "mscs_7_2_1", name: "일반" }],
       },
       {
         id: "mscm_7_3",
         name: "사건 히스토리 관리",
+        code: "03",
         children: [{ id: "mscs_7_3_1", name: "일반" }],
       },
       {
         id: "mscm_7_4",
         name: "산안법 기반 관리감독자, 안전 및 보건 관리 등",
+        code: "04",
         children: [{ id: "mscs_7_4_1", name: "일반" }],
       },
       {
         id: "mscm_7_5",
         name: "인사노무 점검 (운영검토 등)",
+        code: "05",
         children: [{ id: "mscs_7_5_1", name: "일반" }],
       },
       {
         id: "mscm_7_6",
         name: "단톡방 관리 및 갱신",
+        code: "06",
         children: [{ id: "mscs_7_6_1", name: "일반" }],
       },
       {
         id: "mscm_7_7",
         name: "기타",
+        code: "07",
         children: [{ id: "mscs_7_7_1", name: "일반" }],
       },
     ],
@@ -390,10 +460,12 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_8",
     name: "부동산",
+    code: "H",
     children: [
       {
         id: "mscm_8_1",
         name: "기타",
+        code: "01",
         children: [{ id: "mscs_8_1_1", name: "일반" }],
       },
     ],
@@ -401,10 +473,12 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_9",
     name: "종묘종자",
+    code: "I",
     children: [
       {
         id: "mscm_9_1",
         name: "기타",
+        code: "01",
         children: [{ id: "mscs_9_1_1", name: "일반" }],
       },
     ],
@@ -412,45 +486,54 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_10",
     name: "사외",
+    code: "J",
     children: [
       {
         id: "mscm_10_1",
         name: "사장님 및 본부장님 지시사항 수행",
+        code: "01",
         children: [{ id: "mscs_10_1_1", name: "일반" }],
       },
       {
         id: "mscm_10_2",
         name: "회원권 관리",
+        code: "02",
         children: [{ id: "mscs_10_2_1", name: "일반" }],
       },
       {
         id: "mscm_10_3",
         name: "사택 임대차 계약 및 사후 관리",
+        code: "03",
         children: [{ id: "mscs_10_3_1", name: "일반" }],
       },
       {
         id: "mscm_10_4",
         name: "대외기관 표창 및 인증 확인",
+        code: "04",
         children: [{ id: "mscs_10_4_1", name: "일반" }],
       },
       {
         id: "mscm_10_5",
         name: "LH청약센터 분양정보 확인",
+        code: "05",
         children: [{ id: "mscs_10_5_1", name: "일반" }],
       },
       {
         id: "mscm_10_6",
         name: "대한통운 구매시스템 입찰정보 확인",
+        code: "06",
         children: [{ id: "mscs_10_6_1", name: "일반" }],
       },
       {
         id: "mscm_10_7",
         name: "중기청 중소기업 지원제도 확인",
+        code: "07",
         children: [{ id: "mscs_10_7_1", name: "일반" }],
       },
       {
         id: "mscm_10_8",
         name: "기타",
+        code: "08",
         children: [{ id: "mscs_10_8_1", name: "일반" }],
       },
     ],
@@ -458,35 +541,42 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_11",
     name: "채용",
+    code: "K",
     children: [
       {
         id: "mscm_11_1",
         name: "정규직 지원자 DB관리 및 면접 일정 조율",
+        code: "01",
         children: [{ id: "mscs_11_1_1", name: "일반" }],
       },
       {
         id: "mscm_11_2",
         name: "입퇴사자 DB 관리",
+        code: "02",
         children: [{ id: "mscs_11_2_1", name: "일반" }],
       },
       {
         id: "mscm_11_3",
         name: "채용박람회 일정 확인 및 진행",
+        code: "03",
         children: [{ id: "mscs_11_3_1", name: "일반" }],
       },
       {
         id: "mscm_11_4",
         name: "채용 알선 요청 및 진행",
+        code: "04",
         children: [{ id: "mscs_11_4_1", name: "일반" }],
       },
       {
         id: "mscm_11_5",
         name: "채용 공고 게시 및 관리",
+        code: "05",
         children: [{ id: "mscs_11_5_1", name: "일반" }],
       },
       {
         id: "mscm_11_6",
         name: "기타",
+        code: "06",
         children: [{ id: "mscs_11_6_1", name: "일반" }],
       },
     ],
@@ -494,10 +584,12 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
   {
     id: "mscl_12",
     name: "기타",
+    code: "L",
     children: [
       {
         id: "mscm_12_1",
         name: "업무표준화",
+        code: "01",
         children: [{ id: "mscs_12_1_1", name: "일반" }],
       },
     ],
@@ -507,7 +599,7 @@ export const MGMT_SUPPORT_CATEGORIES: CategoryLarge[] = [
 export const MGMT_SUPPORT_TASKS: Task[] = [
   {
     id: "tms1",
-    taskNumber: taskNum("노무", todayStr(), 1),
+    taskNumber: taskNum("C", "06", todayStr(), 1),
     title: "사건/사고 내역 확인",
     description: "",
     teamId: "관리팀",
@@ -530,7 +622,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms2",
-    taskNumber: taskNum("운영", todayStr(), 1),
+    taskNumber: taskNum("D", "09", todayStr(), 1),
     title: "전사 인원 현황 보고",
     description: "",
     teamId: "관리팀",
@@ -553,7 +645,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms3",
-    taskNumber: taskNum("운영", todayStr(), 2),
+    taskNumber: taskNum("D", "11", todayStr(), 1),
     title: "센터별 점검내역 확인",
     description: "",
     teamId: "관리팀",
@@ -576,7 +668,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms4",
-    taskNumber: taskNum("계약", "2026-07-02", 1),
+    taskNumber: taskNum("A", "08", "2026-07-02", 1),
     title: "용인푸드빌(사무실 전대)",
     description: "",
     teamId: "관리팀",
@@ -603,7 +695,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms5",
-    taskNumber: taskNum("인사", "2026-07-14", 1),
+    taskNumber: taskNum("B", "04", "2026-07-14", 1),
     title: "연락처 갱신",
     description: "",
     teamId: "관리팀",
@@ -626,7 +718,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms6",
-    taskNumber: taskNum("인사", "2026-07-14", 2),
+    taskNumber: taskNum("B", "04", "2026-07-14", 2),
     title: "조직도 갱신",
     description: "",
     teamId: "관리팀",
@@ -649,7 +741,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms7",
-    taskNumber: taskNum("인사", "2026-09-01", 1),
+    taskNumber: taskNum("B", "04", "2026-09-01", 1),
     title: "연락처 갱신(9월)",
     description: "",
     teamId: "관리팀",
@@ -673,7 +765,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms8",
-    taskNumber: taskNum("인사", "2026-09-01", 2),
+    taskNumber: taskNum("B", "10", "2026-09-01", 1),
     title: "관리직근태정리(8월)",
     description: "",
     teamId: "관리팀",
@@ -696,7 +788,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms9",
-    taskNumber: taskNum("인사", "2026-06-02", 1),
+    taskNumber: taskNum("B", "05", "2026-06-02", 1),
     title: "2분기_인재육성매니지먼트",
     description: "",
     teamId: "관리팀",
@@ -722,7 +814,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms10",
-    taskNumber: taskNum("인사", "2026-07-22", 1),
+    taskNumber: taskNum("B", "05", "2026-07-22", 1),
     title: "3분기_인재육성매니지먼트",
     description: "",
     teamId: "관리팀",
@@ -749,7 +841,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms11",
-    taskNumber: taskNum("인사", "2026-08-01", 1),
+    taskNumber: taskNum("B", "11", "2026-08-01", 1),
     title: "7월 관리자 핵심성과지표관리",
     description: "",
     teamId: "관리팀",
@@ -776,7 +868,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms12",
-    taskNumber: taskNum("인사", "2026-07-30", 1),
+    taskNumber: taskNum("B", "11", "2026-07-30", 1),
     title: "용인네이버(육아휴직 중도복귀)",
     description: "",
     teamId: "관리팀",
@@ -799,7 +891,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms13",
-    taskNumber: taskNum("인사", "2026-07-31", 1),
+    taskNumber: taskNum("B", "11", "2026-07-31", 1),
     title: "근태누락관리",
     description: "",
     teamId: "관리팀",
@@ -822,7 +914,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms14",
-    taskNumber: taskNum("인사", "2026-05-06", 1),
+    taskNumber: taskNum("B", "06", "2026-05-06", 1),
     title: "취업규칙 개정",
     description: "",
     teamId: "관리팀",
@@ -853,7 +945,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms15",
-    taskNumber: taskNum("인사", "2026-08-03", 1),
+    taskNumber: taskNum("B", "09", "2026-08-03", 1),
     title: "건강검진비대상자전환",
     description: "",
     teamId: "관리팀",
@@ -878,7 +970,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms16",
-    taskNumber: taskNum("노무", "2026-06-18", 1),
+    taskNumber: taskNum("C", "03", "2026-06-18", 1),
     title: "오산BGF(소리함 특이사항 인입)",
     description: "",
     teamId: "관리팀",
@@ -904,7 +996,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms17",
-    taskNumber: taskNum("노무", "2026-06-25", 1),
+    taskNumber: taskNum("C", "03", "2026-06-25", 1),
     title: "용인네이버(백명갑 근태누락)",
     description: "",
     teamId: "관리팀",
@@ -930,7 +1022,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms18",
-    taskNumber: taskNum("노무", "2026-07-31", 1),
+    taskNumber: taskNum("C", "03", "2026-07-31", 1),
     title: "용인네이버(고서율 근태누락)",
     description: "",
     teamId: "관리팀",
@@ -956,7 +1048,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms19",
-    taskNumber: taskNum("노무", "2026-07-13", 1),
+    taskNumber: taskNum("C", "03", "2026-07-13", 1),
     title: "평택사조(이경열 산재보상)",
     description: "",
     teamId: "관리팀",
@@ -984,7 +1076,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms20",
-    taskNumber: taskNum("노무", "2026-07-30", 1),
+    taskNumber: taskNum("C", "03", "2026-07-30", 1),
     title: "평택사조(김한별 직장내괴롭힘)",
     description: "",
     teamId: "관리팀",
@@ -1008,7 +1100,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms21",
-    taskNumber: taskNum("노무", "2026-08-12", 1),
+    taskNumber: taskNum("C", "03", "2026-08-12", 1),
     title: "오산BGF(부당해고구제신청)",
     description: "",
     teamId: "관리팀",
@@ -1037,7 +1129,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms22",
-    taskNumber: taskNum("노무", "2026-08-13", 1),
+    taskNumber: taskNum("C", "03", "2026-08-13", 1),
     title: "오산BGF(주철호출퇴근사고)",
     description: "",
     teamId: "관리팀",
@@ -1060,7 +1152,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms23",
-    taskNumber: taskNum("노무", "2026-08-26", 1),
+    taskNumber: taskNum("C", "03", "2026-08-26", 1),
     title: "용인푸드빌(이영준무단결근)",
     description: "",
     teamId: "관리팀",
@@ -1084,7 +1176,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms24",
-    taskNumber: taskNum("노무", "2026-08-28", 1),
+    taskNumber: taskNum("C", "03", "2026-08-28", 1),
     title: "오산BGF(윤한아무단결근)",
     description: "",
     teamId: "관리팀",
@@ -1109,7 +1201,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms25",
-    taskNumber: taskNum("노무", "2026-07-31", 2),
+    taskNumber: taskNum("C", "02", "2026-07-31", 1),
     title: "용인네이버(백명갑_시설물파손)",
     description: "",
     teamId: "관리팀",
@@ -1135,7 +1227,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms26",
-    taskNumber: taskNum("노무", "2026-08-11", 1),
+    taskNumber: taskNum("C", "02", "2026-08-11", 1),
     title: "동탄온라인(소방시설수리)",
     description: "",
     teamId: "관리팀",
@@ -1159,7 +1251,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms27",
-    taskNumber: taskNum("노무", "2026-08-18", 1),
+    taskNumber: taskNum("C", "02", "2026-08-18", 1),
     title: "평택사조(#44도크파손)",
     description: "",
     teamId: "관리팀",
@@ -1186,7 +1278,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms28",
-    taskNumber: taskNum("노무", "2026-08-18", 2),
+    taskNumber: taskNum("C", "02", "2026-08-18", 2),
     title: "평택사조(#42도크파손)",
     description: "",
     teamId: "관리팀",
@@ -1213,7 +1305,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms29",
-    taskNumber: taskNum("노무", "2026-08-05", 1),
+    taskNumber: taskNum("C", "02", "2026-08-05", 1),
     title: "보험처리현황보고",
     description: "",
     teamId: "관리팀",
@@ -1236,7 +1328,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms30",
-    taskNumber: taskNum("노무", "2026-08-28", 2),
+    taskNumber: taskNum("C", "06", "2026-08-28", 1),
     title: "근태누락관리(8월5주)",
     description: "",
     teamId: "관리팀",
@@ -1259,7 +1351,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms31",
-    taskNumber: taskNum("운영", "2026-07-24", 1),
+    taskNumber: taskNum("D", "11", "2026-07-24", 1),
     title: "동탄온라인(저온운영종료)",
     description: "",
     teamId: "관리팀",
@@ -1282,7 +1374,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms32",
-    taskNumber: taskNum("운영", "2026-07-23", 1),
+    taskNumber: taskNum("D", "02", "2026-07-23", 1),
     title: "용인SPC",
     description: "",
     teamId: "관리팀",
@@ -1314,7 +1406,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms33",
-    taskNumber: taskNum("운영", "2026-07-24", 2),
+    taskNumber: taskNum("D", "11", "2026-07-24", 2),
     title: "관리직 휴가 계획",
     description: "",
     teamId: "관리팀",
@@ -1338,7 +1430,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms34",
-    taskNumber: taskNum("운영", "2026-07-14", 1),
+    taskNumber: taskNum("D", "06", "2026-07-14", 1),
     title: "8월 운영기준안 갱신",
     description: "",
     teamId: "관리팀",
@@ -1365,7 +1457,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms35",
-    taskNumber: taskNum("운영", "2026-07-16", 1),
+    taskNumber: taskNum("D", "02", "2026-07-16", 1),
     title: "용인푸드빌(정규인원충원)",
     description: "",
     teamId: "관리팀",
@@ -1389,7 +1481,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms36",
-    taskNumber: taskNum("총무", "2026-07-20", 1),
+    taskNumber: taskNum("F", "02", "2026-07-20", 1),
     title: "레이저 컬러프린터 구매",
     description: "",
     teamId: "관리팀",
@@ -1413,7 +1505,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms37",
-    taskNumber: taskNum("총무", "2026-09-03", 1),
+    taskNumber: taskNum("F", "04", "2026-09-03", 1),
     title: "명함제작",
     description: "",
     teamId: "관리팀",
@@ -1436,7 +1528,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms38",
-    taskNumber: taskNum("협력사", "2026-06-21", 1),
+    taskNumber: taskNum("G", "07", "2026-06-21", 1),
     title: "협력사 관리(2분기평가)",
     description: "",
     teamId: "관리팀",
@@ -1463,7 +1555,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms39",
-    taskNumber: taskNum("부동산", "2026-07-15", 1),
+    taskNumber: taskNum("H", "01", "2026-07-15", 1),
     title: "H1임대용 브로슈어제작",
     description: "",
     teamId: "관리팀",
@@ -1498,7 +1590,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms40",
-    taskNumber: taskNum("부동산", "2026-08-24", 1),
+    taskNumber: taskNum("H", "01", "2026-08-24", 1),
     title: "SPC맞춤용 브로슈어제작",
     description: "",
     teamId: "관리팀",
@@ -1521,7 +1613,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms41",
-    taskNumber: taskNum("기타", "2026-07-24", 1),
+    taskNumber: taskNum("L", "00", "2026-07-24", 1),
     title: "재경실 스피커 수리",
     description: "",
     teamId: "관리팀",
@@ -1549,7 +1641,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms42",
-    taskNumber: taskNum("기타", "2026-09-02", 1),
+    taskNumber: taskNum("L", "00", "2026-09-02", 1),
     title: "H2차고지위반신고",
     description: "",
     teamId: "관리팀",
@@ -1572,7 +1664,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms43",
-    taskNumber: taskNum("계약", "2026-07-13", 1),
+    taskNumber: taskNum("A", "06", "2026-07-13", 1),
     title: "용인푸드빌(사무실 전대차계약)",
     description: "",
     teamId: "관리팀",
@@ -1606,7 +1698,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms44",
-    taskNumber: taskNum("계약", "2026-07-20", 1),
+    taskNumber: taskNum("A", "05", "2026-07-20", 1),
     title: "동탄온라인(이행보증금 조정)",
     description: "",
     teamId: "관리팀",
@@ -1635,7 +1727,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms45",
-    taskNumber: taskNum("계약", "2026-08-01", 1),
+    taskNumber: taskNum("A", "01", "2026-08-01", 1),
     title: "SPC 원가 분석",
     description: "",
     teamId: "관리팀",
@@ -1658,7 +1750,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms46",
-    taskNumber: taskNum("계약", "2026-07-27", 1),
+    taskNumber: taskNum("A", "09", "2026-07-27", 1),
     title: "고객사 ESG 설명회",
     description: "",
     teamId: "관리팀",
@@ -1682,7 +1774,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms47",
-    taskNumber: taskNum("계약", "2026-08-10", 1),
+    taskNumber: taskNum("A", "02", "2026-08-10", 1),
     title: "협력업체 도급계약",
     description: "",
     teamId: "관리팀",
@@ -1709,7 +1801,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms48",
-    taskNumber: taskNum("인사", "2026-08-01", 2),
+    taskNumber: taskNum("B", "03", "2026-08-01", 1),
     title: "2027년 급여 정책 검토",
     description: "",
     teamId: "관리팀",
@@ -1735,7 +1827,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms49",
-    taskNumber: taskNum("노무", "2026-04-13", 1),
+    taskNumber: taskNum("C", "06", "2026-04-13", 1),
     title: "서울푸드빌(한길웅 손해배상 소)",
     description: "",
     teamId: "관리팀",
@@ -1777,7 +1869,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms50",
-    taskNumber: taskNum("노무", "2026-05-23", 1),
+    taskNumber: taskNum("C", "03", "2026-05-23", 1),
     title: "오산BGF(박원식 부당해고)",
     description: "",
     teamId: "관리팀",
@@ -1812,7 +1904,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms51",
-    taskNumber: taskNum("노무", "2026-07-09", 1),
+    taskNumber: taskNum("C", "04", "2026-07-09", 1),
     title: "동탄저온(故 김학영 유족급여)",
     description: "",
     teamId: "관리팀",
@@ -1844,7 +1936,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms52",
-    taskNumber: taskNum("노무", "2026-08-04", 1),
+    taskNumber: taskNum("C", "03", "2026-08-04", 1),
     title: "양지올리브영(이상수 통상임금)",
     description: "",
     teamId: "관리팀",
@@ -1879,7 +1971,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms53",
-    taskNumber: taskNum("노무", "2026-08-12", 2),
+    taskNumber: taskNum("C", "03", "2026-08-12", 2),
     title: "양지올리브영(신재희 통상임금)",
     description: "",
     teamId: "관리팀",
@@ -1904,7 +1996,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms54",
-    taskNumber: taskNum("노무", "2026-08-13", 2),
+    taskNumber: taskNum("C", "06", "2026-08-13", 1),
     title: "오산BGF(하민수 실신)",
     description: "",
     teamId: "관리팀",
@@ -1929,7 +2021,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms55",
-    taskNumber: taskNum("운영", "2026-06-12", 1),
+    taskNumber: taskNum("D", "11", "2026-06-12", 1),
     title: "군포네이버(개인정보동의서)",
     description: "",
     teamId: "관리팀",
@@ -1960,7 +2052,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms56",
-    taskNumber: taskNum("운영", "2026-07-16", 2),
+    taskNumber: taskNum("D", "02", "2026-07-16", 2),
     title: "용인푸드빌(채용진행 클레임)",
     description: "",
     teamId: "관리팀",
@@ -1987,7 +2079,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms57",
-    taskNumber: taskNum("운영", "2026-07-14", 2),
+    taskNumber: taskNum("D", "11", "2026-07-14", 1),
     title: "동탄저온(올가홀푸드 SLA합의서)",
     description: "",
     teamId: "관리팀",
@@ -2018,7 +2110,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms58",
-    taskNumber: taskNum("운영", "2026-07-08", 1),
+    taskNumber: taskNum("D", "11", "2026-07-08", 1),
     title: "관리팀(워크시트)",
     description: "",
     teamId: "관리팀",
@@ -2050,7 +2142,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms59",
-    taskNumber: taskNum("운영", "2026-07-08", 2),
+    taskNumber: taskNum("D", "11", "2026-07-08", 2),
     title: "14차 결재기준 ",
     description: "",
     teamId: "관리팀",
@@ -2078,7 +2170,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms60",
-    taskNumber: taskNum("운영", "2026-07-21", 1),
+    taskNumber: taskNum("D", "11", "2026-07-21", 1),
     title: "26년 상반기 클레임 보고",
     description: "",
     teamId: "관리팀",
@@ -2102,7 +2194,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms61",
-    taskNumber: taskNum("운영", "2026-07-21", 2),
+    taskNumber: taskNum("D", "11", "2026-07-21", 2),
     title: "용인푸드빌(손익 보고)",
     description: "",
     teamId: "관리팀",
@@ -2125,7 +2217,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms62",
-    taskNumber: taskNum("운영", "2026-07-29", 1),
+    taskNumber: taskNum("D", "11", "2026-07-29", 1),
     title: "성남씨푸드(파트직 퇴충금)",
     description: "",
     teamId: "관리팀",
@@ -2151,7 +2243,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms63",
-    taskNumber: taskNum("운영", "2026-07-30", 1),
+    taskNumber: taskNum("D", "02", "2026-07-30", 1),
     title: "용인 SPC",
     description: "",
     teamId: "관리팀",
@@ -2176,7 +2268,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms64",
-    taskNumber: taskNum("운영", "2026-07-31", 1),
+    taskNumber: taskNum("D", "11", "2026-07-31", 1),
     title: "오산삼양센터(현황조사 협조)",
     description: "",
     teamId: "관리팀",
@@ -2201,7 +2293,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms65",
-    taskNumber: taskNum("운영", "2026-08-07", 1),
+    taskNumber: taskNum("D", "11", "2026-08-07", 1),
     title: "군포네이버(패트롤)",
     description: "",
     teamId: "관리팀",
@@ -2224,7 +2316,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms66",
-    taskNumber: taskNum("안전", "2026-08-05", 1),
+    taskNumber: taskNum("E", "00", "2026-08-05", 1),
     title: "사고처리 프로세스 검토",
     description: "",
     teamId: "관리팀",
@@ -2249,7 +2341,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms67",
-    taskNumber: taskNum("총무", "2026-05-01", 1),
+    taskNumber: taskNum("F", "06", "2026-05-01", 1),
     title: "익산 사택 계약 해지",
     description: "",
     teamId: "관리팀",
@@ -2277,7 +2369,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms68",
-    taskNumber: taskNum("부동산", "2026-07-21", 1),
+    taskNumber: taskNum("H", "01", "2026-07-21", 1),
     title: "THE H1 및 엠디센터프라자 임대료 조사",
     description: "",
     teamId: "관리팀",
@@ -2302,7 +2394,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms69",
-    taskNumber: taskNum("부동산", "2026-07-30", 1),
+    taskNumber: taskNum("H", "01", "2026-07-30", 1),
     title: "THE H1 콩카페",
     description: "",
     teamId: "관리팀",
@@ -2327,7 +2419,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms70",
-    taskNumber: taskNum("인사", "2026-07-08", 1),
+    taskNumber: taskNum("B", "07", "2026-07-08", 1),
     title: "조직 폐지/신설 및 승진자 품의",
     description: "",
     teamId: "관리팀",
@@ -2350,7 +2442,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms71",
-    taskNumber: taskNum("인사", "2026-07-06", 1),
+    taskNumber: taskNum("B", "11", "2026-07-06", 1),
     title: "무단결근 처리(양지OY 김윤철)",
     description: "",
     teamId: "관리팀",
@@ -2375,7 +2467,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms72",
-    taskNumber: taskNum("인사", "2026-07-08", 2),
+    taskNumber: taskNum("B", "11", "2026-07-08", 1),
     title: "보건관리자 선임(양지OY 황지성)",
     description: "",
     teamId: "관리팀",
@@ -2398,7 +2490,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms73",
-    taskNumber: taskNum("인사", "2026-09-04", 1),
+    taskNumber: taskNum("B", "11", "2026-09-04", 1),
     title: "보건관리자 해임(양지OY 윤예지)",
     description: "",
     teamId: "관리팀",
@@ -2421,7 +2513,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms74",
-    taskNumber: taskNum("인사", "2026-07-15", 1),
+    taskNumber: taskNum("B", "11", "2026-07-15", 1),
     title: "장기결근자 처리(군포네이버 김보희)",
     description: "",
     teamId: "관리팀",
@@ -2448,7 +2540,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms75",
-    taskNumber: taskNum("인사", "2026-07-29", 1),
+    taskNumber: taskNum("B", "11", "2026-07-29", 1),
     title: "무단결근 처리(성남씨푸드 강성필)",
     description: "",
     teamId: "관리팀",
@@ -2472,7 +2564,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms76",
-    taskNumber: taskNum("인사", "2026-07-23", 1),
+    taskNumber: taskNum("B", "07", "2026-07-23", 1),
     title: "8월 정기 인사발령 품의",
     description: "",
     teamId: "관리팀",
@@ -2495,7 +2587,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms77",
-    taskNumber: taskNum("인사", "2026-08-24", 1),
+    taskNumber: taskNum("B", "07", "2026-08-24", 1),
     title: "9월 정기 인사발령 품의",
     description: "",
     teamId: "관리팀",
@@ -2518,7 +2610,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms78",
-    taskNumber: taskNum("인사", "2026-08-19", 1),
+    taskNumber: taskNum("B", "06", "2026-08-19", 1),
     title: "비엘피 취업규칙 변경 신고",
     description: "",
     teamId: "관리팀",
@@ -2541,7 +2633,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms79",
-    taskNumber: taskNum("노무", "2026-07-27", 1),
+    taskNumber: taskNum("C", "04", "2026-07-27", 1),
     title: "대물 사고 처리(평택사조)",
     description: "",
     teamId: "관리팀",
@@ -2564,7 +2656,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms80",
-    taskNumber: taskNum("노무", "2026-07-28", 1),
+    taskNumber: taskNum("C", "05", "2026-07-28", 1),
     title: "단순 부상자 공상처리(용인네이버 엄태원)",
     description: "",
     teamId: "관리팀",
@@ -2587,7 +2679,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms81",
-    taskNumber: taskNum("노무", "2026-07-28", 2),
+    taskNumber: taskNum("C", "05", "2026-07-28", 2),
     title: "단순 부상자 공상처리(용인네이버 이연주)",
     description: "",
     teamId: "관리팀",
@@ -2610,7 +2702,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms82",
-    taskNumber: taskNum("노무", "2026-08-04", 2),
+    taskNumber: taskNum("C", "03", "2026-08-04", 2),
     title: "고용노동부 진정(양지올리브영 이상수)",
     description: "",
     teamId: "관리팀",
@@ -2638,7 +2730,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms83",
-    taskNumber: taskNum("노무", "2026-08-05", 2),
+    taskNumber: taskNum("C", "03", "2026-08-05", 1),
     title: "산재보상신청(양지올리브영 장진택)",
     description: "",
     teamId: "관리팀",
@@ -2663,7 +2755,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms84",
-    taskNumber: taskNum("노무", "2026-07-23", 1),
+    taskNumber: taskNum("C", "06", "2026-07-23", 1),
     title: "사건사고 취합",
     description: "",
     teamId: "관리팀",
@@ -2687,7 +2779,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms85",
-    taskNumber: taskNum("안전", "2026-07-24", 1),
+    taskNumber: taskNum("E", "00", "2026-07-24", 1),
     title: "보호구 인증 여부 확인",
     description: "",
     teamId: "관리팀",
@@ -2710,7 +2802,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms86",
-    taskNumber: taskNum("총무", "2026-07-01", 1),
+    taskNumber: taskNum("F", "01", "2026-07-01", 1),
     title: "피복 구매",
     description: "",
     teamId: "관리팀",
@@ -2734,7 +2826,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms87",
-    taskNumber: taskNum("총무", "2026-08-05", 1),
+    taskNumber: taskNum("F", "01", "2026-08-05", 1),
     title: "피복 재고 실사",
     description: "",
     teamId: "관리팀",
@@ -2758,7 +2850,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms88",
-    taskNumber: taskNum("총무", "2026-07-06", 1),
+    taskNumber: taskNum("F", "02", "2026-07-06", 1),
     title: "법인차량관리",
     description: "",
     teamId: "관리팀",
@@ -2783,7 +2875,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms89",
-    taskNumber: taskNum("총무", "2026-07-21", 1),
+    taskNumber: taskNum("F", "04", "2026-07-21", 1),
     title: "관리팀 소모품 구매",
     description: "",
     teamId: "관리팀",
@@ -2808,7 +2900,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms90",
-    taskNumber: taskNum("총무", "2026-07-21", 2),
+    taskNumber: taskNum("F", "07", "2026-07-21", 1),
     title: "사원증 제작",
     description: "",
     teamId: "관리팀",
@@ -2831,7 +2923,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms91",
-    taskNumber: taskNum("총무", "2026-08-11", 1),
+    taskNumber: taskNum("F", "07", "2026-08-11", 1),
     title: "공제 금액 확인",
     description: "",
     teamId: "관리팀",
@@ -2854,7 +2946,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms92",
-    taskNumber: taskNum("총무", "2026-07-21", 3),
+    taskNumber: taskNum("F", "01", "2026-07-21", 1),
     title: "피복 구매 관련 미팅",
     description: "",
     teamId: "관리팀",
@@ -2877,7 +2969,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms93",
-    taskNumber: taskNum("총무", "2026-07-28", 1),
+    taskNumber: taskNum("F", "01", "2026-07-28", 1),
     title: "피복 구매 프로세스 및 관리 기준 재설정",
     description: "",
     teamId: "관리팀",
@@ -2900,7 +2992,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms94",
-    taskNumber: taskNum("총무", "2026-08-11", 2),
+    taskNumber: taskNum("F", "01", "2026-08-11", 1),
     title: "거점 센터별 관리 품목 지정",
     description: "",
     teamId: "관리팀",
@@ -2923,7 +3015,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms95",
-    taskNumber: taskNum("종묘종자", "2026-07-08", 1),
+    taskNumber: taskNum("I", "00", "2026-07-08", 1),
     title: "AGT SAU0010268",
     description: "",
     teamId: "관리팀",
@@ -2966,7 +3058,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms96",
-    taskNumber: taskNum("종묘종자", "2026-07-01", 1),
+    taskNumber: taskNum("I", "00", "2026-07-01", 1),
     title: "광주축협 공급 계약",
     description: "",
     teamId: "관리팀",
@@ -2995,7 +3087,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms97",
-    taskNumber: taskNum("종묘종자", "2026-07-16", 1),
+    taskNumber: taskNum("I", "00", "2026-07-16", 1),
     title: "신규 구매 계약 준비",
     description: "",
     teamId: "관리팀",
@@ -3019,7 +3111,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms98",
-    taskNumber: taskNum("종묘종자", "2026-08-05", 1),
+    taskNumber: taskNum("I", "00", "2026-08-05", 1),
     title: "농협사료 입찰 준비",
     description: "",
     teamId: "관리팀",
@@ -3046,7 +3138,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms99",
-    taskNumber: taskNum("종묘종자", "2026-07-10", 1),
+    taskNumber: taskNum("I", "00", "2026-07-10", 1),
     title: "필지 관리",
     description: "",
     teamId: "관리팀",
@@ -3070,7 +3162,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms100",
-    taskNumber: taskNum("종묘종자", "2026-07-23", 1),
+    taskNumber: taskNum("I", "01", "2026-07-23", 1),
     title: "종묘/종자 리뷰자료 준비",
     description: "",
     teamId: "관리팀",
@@ -3093,7 +3185,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms101",
-    taskNumber: taskNum("채용", "2026-07-03", 1),
+    taskNumber: taskNum("K", "06", "2026-07-03", 1),
     title: "직접 채용 센터 관리",
     description: "",
     teamId: "관리팀",
@@ -3118,7 +3210,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms102",
-    taskNumber: taskNum("채용", "2026-07-10", 1),
+    taskNumber: taskNum("K", "06", "2026-07-10", 1),
     title: "업무 인수인계",
     description: "",
     teamId: "관리팀",
@@ -3141,7 +3233,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms103",
-    taskNumber: taskNum("채용", "2026-07-22", 1),
+    taskNumber: taskNum("K", "06", "2026-07-22", 1),
     title: "채용방 정리",
     description: "",
     teamId: "관리팀",
@@ -3164,7 +3256,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms104",
-    taskNumber: taskNum("채용", "2026-07-30", 1),
+    taskNumber: taskNum("K", "05", "2026-07-30", 1),
     title: "장애인 채용 공고 게시",
     description: "",
     teamId: "관리팀",
@@ -3188,7 +3280,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms105",
-    taskNumber: taskNum("채용", "2026-07-28", 1),
+    taskNumber: taskNum("K", "05", "2026-07-28", 1),
     title: "개별 유료상품 적용(양지올리브영)",
     description: "",
     teamId: "관리팀",
@@ -3213,7 +3305,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms106",
-    taskNumber: taskNum("기타", "2026-07-02", 1),
+    taskNumber: taskNum("L", "00", "2026-07-02", 1),
     title: "사장님지시(H2 바디프렌드 이전설치)",
     description: "",
     teamId: "관리팀",
@@ -3236,7 +3328,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms107",
-    taskNumber: taskNum("기타", "2026-07-08", 1),
+    taskNumber: taskNum("L", "00", "2026-07-08", 1),
     title: "사장님지시(체크리스트작성)",
     description: "",
     teamId: "관리팀",
@@ -3262,7 +3354,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms108",
-    taskNumber: taskNum("안전", "2026-06-30", 1),
+    taskNumber: taskNum("E", "09", "2026-06-30", 1),
     title: "센터방문계획",
     description: "",
     teamId: "관리팀",
@@ -3286,7 +3378,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms109",
-    taskNumber: taskNum("안전", "2026-07-01", 1),
+    taskNumber: taskNum("E", "00", "2026-07-01", 1),
     title: "센터안전점검확인(일지,교육)",
     description: "",
     teamId: "관리팀",
@@ -3312,7 +3404,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms110",
-    taskNumber: taskNum("안전", "2026-07-01", 2),
+    taskNumber: taskNum("E", "09", "2026-07-01", 1),
     title: "안성 올리브영 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3337,7 +3429,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms111",
-    taskNumber: taskNum("안전", "2026-07-06", 1),
+    taskNumber: taskNum("E", "09", "2026-07-06", 1),
     title: "양지 올리브영 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3362,7 +3454,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms112",
-    taskNumber: taskNum("안전", "2026-07-08", 1),
+    taskNumber: taskNum("E", "09", "2026-07-08", 1),
     title: "동탄 온라인·저온 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3387,7 +3479,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms113",
-    taskNumber: taskNum("안전", "2026-07-13", 1),
+    taskNumber: taskNum("E", "09", "2026-07-13", 1),
     title: "용인 네이버 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3412,7 +3504,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms114",
-    taskNumber: taskNum("안전", "2026-07-14", 1),
+    taskNumber: taskNum("E", "09", "2026-07-14", 1),
     title: "용인 푸드빌 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3436,7 +3528,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms115",
-    taskNumber: taskNum("안전", "2026-07-14", 2),
+    taskNumber: taskNum("E", "09", "2026-07-14", 2),
     title: " ",
     description: "",
     teamId: "관리팀",
@@ -3459,7 +3551,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms116",
-    taskNumber: taskNum("안전", "2026-07-15", 1),
+    taskNumber: taskNum("E", "00", "2026-07-15", 1),
     title: "고객사 점검(용인네이버)",
     description: "",
     teamId: "관리팀",
@@ -3488,7 +3580,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms117",
-    taskNumber: taskNum("안전", "2026-07-20", 1),
+    taskNumber: taskNum("E", "09", "2026-07-20", 1),
     title: "군포 네이버 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3513,7 +3605,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms118",
-    taskNumber: taskNum("안전", "2026-07-21", 1),
+    taskNumber: taskNum("E", "09", "2026-07-21", 1),
     title: "성남 씨푸드 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3538,7 +3630,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms119",
-    taskNumber: taskNum("안전", "2026-07-22", 1),
+    taskNumber: taskNum("E", "09", "2026-07-22", 1),
     title: "오산 투썸·삼양·BGF 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3563,7 +3655,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms120",
-    taskNumber: taskNum("안전", "2026-07-23", 1),
+    taskNumber: taskNum("E", "09", "2026-07-23", 1),
     title: "평택 사조 센터 방문",
     description: "",
     teamId: "관리팀",
@@ -3589,7 +3681,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms121",
-    taskNumber: taskNum("안전", "2026-07-27", 1),
+    taskNumber: taskNum("E", "00", "2026-07-27", 1),
     title: "업무 현황 보고",
     description: "",
     teamId: "관리팀",
@@ -3617,7 +3709,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms122",
-    taskNumber: taskNum("안전", "2026-08-01", 1),
+    taskNumber: taskNum("E", "00", "2026-08-01", 1),
     title: "08월 센터 안전점검확인",
     description: "",
     teamId: "관리팀",
@@ -3640,7 +3732,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms123",
-    taskNumber: taskNum("안전", "2026-07-30", 1),
+    taskNumber: taskNum("E", "00", "2026-07-30", 1),
     title: "사고프로세스 개정",
     description: "",
     teamId: "관리팀",
@@ -3677,7 +3769,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms124",
-    taskNumber: taskNum("안전", "2026-08-05", 2),
+    taskNumber: taskNum("E", "00", "2026-08-05", 2),
     title: "비상훈련 프로세스",
     description: "",
     teamId: "관리팀",
@@ -3704,7 +3796,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms125",
-    taskNumber: taskNum("안전", "2026-08-05", 3),
+    taskNumber: taskNum("E", "00", "2026-08-05", 3),
     title: "건강검진 업무",
     description: "",
     teamId: "관리팀",
@@ -3731,7 +3823,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms126",
-    taskNumber: taskNum("안전", "2026-08-13", 1),
+    taskNumber: taskNum("E", "00", "2026-08-13", 1),
     title: "건강검진 대상자 업무",
     description: "",
     teamId: "관리팀",
@@ -3754,7 +3846,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms127",
-    taskNumber: taskNum("노무", "2026-08-13", 3),
+    taskNumber: taskNum("C", "01", "2026-08-13", 1),
     title: "사고관련 업무",
     description: "",
     teamId: "관리팀",
@@ -3777,7 +3869,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms128",
-    taskNumber: taskNum("안전", "2026-08-19", 1),
+    taskNumber: taskNum("E", "09", "2026-08-19", 1),
     title: "센터점검계획",
     description: "",
     teamId: "관리팀",
@@ -3811,7 +3903,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms129",
-    taskNumber: taskNum("안전", "2026-08-14", 1),
+    taskNumber: taskNum("E", "00", "2026-08-14", 1),
     title: "배치 전 검진업무",
     description: "",
     teamId: "관리팀",
@@ -3837,7 +3929,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms130",
-    taskNumber: taskNum("노무", "2026-08-18", 3),
+    taskNumber: taskNum("C", "01", "2026-08-18", 1),
     title: "사고관련 업무(평택사조)",
     description: "",
     teamId: "관리팀",
@@ -3862,7 +3954,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms131",
-    taskNumber: taskNum("노무", "2026-08-18", 4),
+    taskNumber: taskNum("C", "01", "2026-08-18", 2),
     title: "사고관련 업무(군포네이버)",
     description: "",
     teamId: "관리팀",
@@ -3889,7 +3981,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms132",
-    taskNumber: taskNum("노무", "2026-08-18", 5),
+    taskNumber: taskNum("C", "01", "2026-08-18", 3),
     title: "사고관련 업무(용인네이버)",
     description: "",
     teamId: "관리팀",
@@ -3915,7 +4007,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms133",
-    taskNumber: taskNum("안전", "2026-08-18", 1),
+    taskNumber: taskNum("E", "00", "2026-08-18", 1),
     title: "고객사 점검(성남씨푸드)",
     description: "",
     teamId: "관리팀",
@@ -3942,7 +4034,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms134",
-    taskNumber: taskNum("안전", "2026-08-19", 2),
+    taskNumber: taskNum("E", "00", "2026-08-19", 1),
     title: "고객사 점검(군포네이버)",
     description: "",
     teamId: "관리팀",
@@ -3967,7 +4059,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms135",
-    taskNumber: taskNum("안전", "2026-08-24", 1),
+    taskNumber: taskNum("E", "00", "2026-08-24", 1),
     title: "고객사 점검(오산투썸)",
     description: "",
     teamId: "관리팀",
@@ -3994,7 +4086,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms136",
-    taskNumber: taskNum("노무", "2026-08-24", 1),
+    taskNumber: taskNum("C", "01", "2026-08-24", 1),
     title: "사고관련 업무_2(평택사조)",
     description: "",
     teamId: "관리팀",
@@ -4020,7 +4112,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms137",
-    taskNumber: taskNum("노무", "2026-08-25", 1),
+    taskNumber: taskNum("C", "01", "2026-08-25", 1),
     title: "사고관련 업무(동탄저온)",
     description: "",
     teamId: "관리팀",
@@ -4045,7 +4137,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms138",
-    taskNumber: taskNum("노무", "2026-08-26", 2),
+    taskNumber: taskNum("C", "01", "2026-08-26", 1),
     title: "사고관련 업무_2(용인네이버)",
     description: "",
     teamId: "관리팀",
@@ -4071,7 +4163,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms139",
-    taskNumber: taskNum("노무", "2026-08-27", 1),
+    taskNumber: taskNum("C", "01", "2026-08-27", 1),
     title: "사고관련 업무_3(평택사조)",
     description: "",
     teamId: "관리팀",
@@ -4097,7 +4189,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms140",
-    taskNumber: taskNum("노무", "2026-08-31", 1),
+    taskNumber: taskNum("C", "01", "2026-08-31", 1),
     title: "사고관련 업무(안성 올리브영)",
     description: "",
     teamId: "관리팀",
@@ -4122,7 +4214,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms141",
-    taskNumber: taskNum("안전", "2026-08-31", 1),
+    taskNumber: taskNum("E", "00", "2026-08-31", 1),
     title: "고객사 업무(안전수칙 위반)",
     description: "",
     teamId: "관리팀",
@@ -4151,7 +4243,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms142",
-    taskNumber: taskNum("안전", "2026-09-01", 1),
+    taskNumber: taskNum("E", "00", "2026-09-01", 1),
     title: "09월 센터 안전점검확인",
     description: "",
     teamId: "관리팀",
@@ -4174,7 +4266,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms143",
-    taskNumber: taskNum("안전", "2026-09-02", 1),
+    taskNumber: taskNum("E", "09", "2026-09-02", 1),
     title: "09월 센터점검계획",
     description: "",
     teamId: "관리팀",
@@ -4199,7 +4291,7 @@ export const MGMT_SUPPORT_TASKS: Task[] = [
   },
   {
     id: "tms144",
-    taskNumber: taskNum("안전", "2026-09-03", 1),
+    taskNumber: taskNum("E", "00", "2026-09-03", 1),
     title: "고객사 업무(삼양)",
     description: "",
     teamId: "관리팀",
