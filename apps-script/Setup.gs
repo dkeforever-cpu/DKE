@@ -44,6 +44,11 @@ function ensureSheet_(name, headers) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.setFrozenRows(1);
   }
+  // 날짜처럼 생긴 문자열(created At 등)을 구글 시트가 멋대로 "날짜" 타입
+  // 셀로 재해석하지 못하도록, 데이터 영역 전체를 일반 텍스트 서식으로
+  // 고정한다. 이미 만들어진 시트에 "1. 초기 설정"을 다시 실행해도 적용되게
+  // 매번 호출한다 (신규 생성 여부와 무관하게).
+  forceTextFormat_(sheet);
   return sheet;
 }
 

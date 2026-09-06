@@ -4,6 +4,18 @@
  * create/update/delete가 이 함수들만으로 모든 엔티티를 처리한다.
  */
 
+/**
+ * 시트 데이터 영역 전체를 일반 텍스트(@) 서식으로 고정한다. 이걸 안 하면
+ * "2026-09-05" 같은 문자열을 셀에 쓸 때 구글 시트가 자동으로 날짜 타입
+ * 셀로 재해석해버려서, 나중에 읽어올 때 원래 문자열이 아니라 시트 표시
+ * 로캘 기준으로 다시 포맷된 값(딴 시간대 적용된 Date 객체)이 나온다.
+ */
+function forceTextFormat_(sheet) {
+  var rows = Math.max(sheet.getMaxRows(), 2);
+  var cols = Math.max(sheet.getMaxColumns(), 1);
+  sheet.getRange(1, 1, rows, cols).setNumberFormat("@");
+}
+
 function getSheet_(name) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(name);
@@ -11,6 +23,18 @@ function getSheet_(name) {
     throw new Error("시트를 찾을 수 없습니다: " + name + " (먼저 setup()을 실행하세요)");
   }
   return sheet;
+}
+
+/**
+ * 혹시 텍스트 서식 고정보다 먼저 셀에 값이 들어가서 구글 시트가 날짜
+ * 타입으로 재해석해버린 셀이 있어도, 읽을 때만큼은 원래 있어야 할 문자열
+ * 형태(ISO 문자열)로 정규화해 돌려준다. forceTextFormat_로 애초에
+ * 재해석을 막는 게 근본 대책이고, 이건 그래도 남을 수 있는 경우를 위한
+ * 보험이다.
+ */
+function normalizeCellValue_(v) {
+  if (v instanceof Date) return v.toISOString();
+  return v;
 }
 
 /** 헤더 행을 제외한 모든 데이터 행을 평범한 객체 배열로 읽어온다. */
@@ -26,7 +50,7 @@ function sheetToObjects_(sheet) {
     .map(function (row) {
       var obj = {};
       headers.forEach(function (h, i) {
-        obj[h] = row[i];
+        obj[h] = normalizeCellValue_(row[i]);
       });
       return obj;
     });
