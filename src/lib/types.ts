@@ -6,6 +6,8 @@ export interface Team {
 export interface User {
   id: string;
   name: string;
+  username: string; // 로그인 아이디
+  passwordHash: string; // SHA-256 hex digest (client-only 저장이라 진짜 보안은 아님, 평문 노출만 방지)
   teamId: string; // primary/home team, used when creating tasks
   viewTeamIds: string[]; // teams this user is permitted to view (defaults to [teamId])
   level: number; // minimum Task.level this user may view (1 = can view everything)

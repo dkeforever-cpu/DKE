@@ -29,31 +29,14 @@ function medium(name: string, children: string[]) {
   return { id: nid("cm"), name, children: children.map((n) => ({ id: nid("cs"), name: n })) };
 }
 
-/** Seed category taxonomy for the two default teams, admin-editable afterward. */
+/**
+ * Seed category taxonomy per team, admin-editable afterward. 관리팀은 이제
+ * seed-data-mgmt-support.ts에서 만든 실제 카테고리(MGMT_SUPPORT_CATEGORIES)를
+ * 쓰므로 여기서는 빈 배열로 시작한다 — 예전 예시용 카테고리는 삭제됨.
+ */
 export function seedCategoriesByTeam(): Record<string, CategoryLarge[]> {
   return {
-    관리팀: [
-      large("시설/자산관리", [
-        medium("설비점검", ["소방안전점검", "전기안전점검", "냉동설비점검"]),
-        medium("자산관리", ["비품관리", "차량관리"]),
-      ]),
-      large("계약관리", [
-        medium("임차계약", ["갱신협상", "신규계약"]),
-        medium("용역계약", ["경비/미화", "물류대행"]),
-      ]),
-      large("인사지원", [
-        medium("채용지원", ["면접일정", "서류심사"]),
-        medium("근태/복지", ["연차관리", "복지몰"]),
-      ]),
-      large("문서/공문관리", [
-        medium("공문발송", ["대외공문", "대내공문"]),
-        medium("문서보관", ["계약서보관", "인허가서류"]),
-      ]),
-      large("센터운영관리", [
-        medium("실사/점검", ["재고실사", "안전점검"]),
-        medium("예산취합", ["센터별예산", "인력운영계획"]),
-      ]),
-    ],
+    관리팀: [],
     재경팀: [
       large("예산관리", [
         medium("연간예산", ["센터별예산", "인건비예산"]),

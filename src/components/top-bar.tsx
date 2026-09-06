@@ -6,12 +6,14 @@ import { useStore } from "@/lib/store";
 import { useTheme, ViewMode } from "@/lib/theme";
 import { Avatar } from "@/components/avatar";
 import { ThemeSettingsModal } from "@/components/theme-settings-modal";
+import { ChangePasswordModal } from "@/components/change-password-modal";
 
 export function TopBar() {
   const { currentUser, teams, logout } = useStore();
   const { mode, toggleMode, viewMode, setViewMode } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const teamName = teams.find((t) => t.id === currentUser?.teamId)?.name ?? "-";
 
   function handleLogout() {
@@ -89,6 +91,12 @@ export function TopBar() {
             </div>
           </div>
           <button
+            onClick={() => setPasswordOpen(true)}
+            className="flex-none whitespace-nowrap text-[10.5px] text-[var(--text-faint)] hover:text-[var(--text)]"
+          >
+            비밀번호 변경
+          </button>
+          <button
             onClick={handleLogout}
             className="flex-none whitespace-nowrap text-[10.5px] text-[var(--text-faint)] hover:text-[var(--text)]"
           >
@@ -97,6 +105,7 @@ export function TopBar() {
         </div>
       )}
       {settingsOpen && <ThemeSettingsModal onClose={() => setSettingsOpen(false)} />}
+      {passwordOpen && <ChangePasswordModal onClose={() => setPasswordOpen(false)} />}
     </div>
   );
 }

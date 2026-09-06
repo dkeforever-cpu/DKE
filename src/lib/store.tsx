@@ -35,6 +35,7 @@ import {
 import { CENTERS as SEED_CENTERS, seedCategoriesByTeam } from "./categories";
 import { addNode, computeProgress, deriveStatus, findNode, flatten, removeNode, updateNode } from "./checklist";
 import { generateTaskNumber } from "./format";
+import { DEFAULT_PASSWORD_HASH, sha256Hex } from "./auth";
 
 const STORAGE_KEY = "dke-task-system-v2";
 const SESSION_KEY = "dke-task-system-current-user";
@@ -90,6 +91,8 @@ function normalize(data: Partial<StoreData>): StoreData {
     return {
       id: u.id,
       name: u.name,
+      username: u.username ?? u.name,
+      passwordHash: u.passwordHash ?? DEFAULT_PASSWORD_HASH,
       teamId,
       viewTeamIds: u.viewTeamIds && u.viewTeamIds.length > 0 ? u.viewTeamIds : [teamId],
       level: u.level ?? 1,
@@ -222,8 +225,9 @@ interface StoreContextValue {
   currentUser: User | null;
   ready: boolean;
 
-  login: (userId: string) => void;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  changePassword: (userId: string, currentPassword: string, newPassword: string) => Promise<boolean>;
 
   addTask: (input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber">) => string;
   updateTask: (id: string, patch: Partial<Task>) => void;
@@ -327,15 +331,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [data, ready]);
 
-  const login = useCallback((userId: string) => {
-    setCurrentUserId(userId);
-    window.localStorage.setItem(SESSION_KEY, userId);
-  }, []);
+  const login = useCallback(
+    async (username: string, password: string) => {
+      const user = data.users.find((u) => u.username === username);
+      if (!user) return false;
+      const hash = await sha256Hex(password);
+      if (hash !== user.passwordHash) return false;
+      setCurrentUserId(user.id);
+      window.localStorage.setItem(SESSION_KEY, user.id);
+      return true;
+    },
+    [data.users]
+  );
 
   const logout = useCallback(() => {
     setCurrentUserId(null);
     window.localStorage.removeItem(SESSION_KEY);
   }, []);
+
+  const changePassword = useCallback(
+    async (userId: string, currentPassword: string, newPassword: string) => {
+      const user = data.users.find((u) => u.id === userId);
+      if (!user) return false;
+      const currentHash = await sha256Hex(currentPassword);
+      if (currentHash !== user.passwordHash) return false;
+      const newHash = await sha256Hex(newPassword);
+      setData((prev) => ({
+        ...prev,
+        users: prev.users.map((u) => (u.id === userId ? { ...u, passwordHash: newHash } : u)),
+      }));
+      return true;
+    },
+    [data.users]
+  );
 
   const currentUser = useMemo(
     () => data.users.find((u) => u.id === currentUserId) ?? null,
@@ -816,7 +844,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const id = genId("u");
     setData((prev) => ({
       ...prev,
-      users: [...prev.users, { id, name, teamId, viewTeamIds: [teamId], level: 1, isAdmin: false }],
+      users: [
+        ...prev.users,
+        {
+          id,
+          name,
+          username: name,
+          passwordHash: DEFAULT_PASSWORD_HASH,
+          teamId,
+          viewTeamIds: [teamId],
+          level: 1,
+          isAdmin: false,
+        },
+      ],
     }));
   }, []);
 
@@ -883,6 +923,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     ready,
     login,
     logout,
+    changePassword,
     addTask,
     updateTask,
     deleteTask,

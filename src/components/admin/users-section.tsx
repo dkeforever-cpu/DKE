@@ -138,6 +138,10 @@ export function UsersSection() {
           사용자 추가
         </button>
       </div>
+      <div className="text-[9.5px] text-[var(--text-faintest)]">
+        새 사용자의 로그인 아이디는 이름과 동일하게 자동 지정되고, 초기 비밀번호는 blp00487로
+        설정됩니다. 로그인 후 본인이 직접 비밀번호를 바꿀 수 있습니다.
+      </div>
     </div>
   );
 }
