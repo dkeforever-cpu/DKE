@@ -109,7 +109,9 @@ function importExportedJson(jsonText) {
   var counts = {};
 
   Object.keys(SCHEMA).forEach(function (entity) {
-    clearSheetRows_(getSheet_(SCHEMA[entity].sheet));
+    var sheet = getSheet_(SCHEMA[entity].sheet);
+    clearSheetRows_(sheet);
+    forceTextFormat_(sheet);
   });
 
   batchCreate_("teams", data.teams || []);
