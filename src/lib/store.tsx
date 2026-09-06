@@ -367,6 +367,7 @@ interface StoreContextValue {
     patch: Partial<Pick<User, "teamId" | "viewTeamIds" | "level" | "isAdmin">>
   ) => void;
   deleteUser: (id: string) => boolean;
+  resetUserPassword: (id: string) => void;
 
   resetDemoData: () => void;
 }
@@ -881,6 +882,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  // 관리자 전용: 본인 인증 없이 지정한 사용자의 비밀번호를 기본값(초기
+  // 비밀번호)으로 되돌린다 — 계정을 잠근 사용자를 관리자가 구제할 때 사용.
+  const resetUserPassword = useCallback((id: string) => {
+    setData((prev) => ({
+      ...prev,
+      users: prev.users.map((u) => (u.id === id ? { ...u, passwordHash: DEFAULT_PASSWORD_HASH } : u)),
+    }));
+  }, []);
+
   const deleteUser = useCallback(
     (id: string) => {
       if (currentUser?.id === id) return false; // can't delete the account you're logged in as
@@ -973,6 +983,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addUser,
     updateUser,
     deleteUser,
+    resetUserPassword,
     resetDemoData,
   };
 

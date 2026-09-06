@@ -5,7 +5,7 @@ import { useStore } from "@/lib/store";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 
 export function UsersSection() {
-  const { users, teams, addUser, updateUser, deleteUser } = useStore();
+  const { users, teams, addUser, updateUser, deleteUser, resetUserPassword } = useStore();
   const { confirm, alertUser } = useConfirmDialog();
   const [newName, setNewName] = useState("");
   const [newTeamId, setNewTeamId] = useState(teams[0]?.id ?? "");
@@ -35,6 +35,12 @@ export function UsersSection() {
     }
   }
 
+  async function handleResetPassword(u: (typeof users)[number]) {
+    if (!(await confirm(`'${u.name}'의 비밀번호를 초기 비밀번호(blp00487)로 되돌릴까요?`))) return;
+    resetUserPassword(u.id);
+    await alertUser(`'${u.name}'의 비밀번호를 초기화했습니다.`);
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="text-[11px] text-[var(--text-faint)]">
@@ -44,8 +50,8 @@ export function UsersSection() {
       </div>
 
       <div className="overflow-x-auto border border-[var(--border)]">
-        <div className="min-w-[720px]">
-          <div className="grid grid-cols-[100px_100px_1fr_80px_70px_56px] gap-2 border-b border-[var(--border-strong)] bg-[var(--surface-alt)] px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-faint)]">
+        <div className="min-w-[800px]">
+          <div className="grid grid-cols-[100px_100px_1fr_80px_70px_190px] gap-2 border-b border-[var(--border-strong)] bg-[var(--surface-alt)] px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-faint)]">
             <div>이름</div>
             <div>소속팀</div>
             <div>조회 가능 팀</div>
@@ -56,7 +62,7 @@ export function UsersSection() {
           {users.map((u) => (
             <div
               key={u.id}
-              className="grid grid-cols-[100px_100px_1fr_80px_70px_56px] items-center gap-2 border-b border-[var(--divider)] px-2.5 py-1.5 last:border-0"
+              className="grid grid-cols-[100px_100px_1fr_80px_70px_190px] items-center gap-2 border-b border-[var(--divider)] px-2.5 py-1.5 last:border-0"
             >
               <div className="truncate text-[11px] font-semibold text-[var(--text)]">{u.name}</div>
               <select
@@ -99,13 +105,22 @@ export function UsersSection() {
                 />
                 관리자
               </label>
-              <button
-                onClick={() => handleDelete(u)}
-                className="h-6 flex-none rounded-[2px] border px-2 text-[10px]"
-                style={{ borderColor: "var(--danger-soft-bg)", color: "var(--danger)" }}
-              >
-                삭제
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleResetPassword(u)}
+                  className="h-6 flex-none rounded-[2px] border px-2 text-[10px] text-[var(--text-muted)]"
+                  style={{ borderColor: "var(--border-strong)" }}
+                >
+                  비밀번호 초기화
+                </button>
+                <button
+                  onClick={() => handleDelete(u)}
+                  className="h-6 flex-none rounded-[2px] border px-2 text-[10px]"
+                  style={{ borderColor: "var(--danger-soft-bg)", color: "var(--danger)" }}
+                >
+                  삭제
+                </button>
+              </div>
             </div>
           ))}
         </div>
