@@ -221,10 +221,7 @@ function ChecklistNode({
             onClick={() => !readOnly && setEditingLabel(true)}
             disabled={readOnly}
             className="min-w-0 flex-1 truncate text-left text-[11px]"
-            style={{
-              color: done ? "var(--text-faintest)" : "var(--text)",
-              textDecoration: done ? "line-through" : "none",
-            }}
+            style={{ color: "var(--text)" }}
           >
             {item.label}
           </button>
