@@ -98,16 +98,38 @@ function getUploadUrl(token, fileName, mimeType, folder) {
 }
 
 /**
- * google.script.run으로 호출된다. getUploadUrl로 받은 주소에 브라우저가
- * 직접 업로드를 끝낸 뒤, 그 파일을 "링크가 있는 사람은 볼 수 있음"으로
- * 공유 설정하고 뷰 링크를 돌려준다 (드라이브 API의 직접 업로드 자체는
- * 공유 설정을 하지 않으므로 이 단계가 별도로 필요하다).
+ * google.script.run으로 호출된다. 브라우저가 getUploadUrl 주소로 파일
+ * 바이너리를 PUT으로 직접 보내면 실제로는 정상적으로 업로드되지만,
+ * 그 응답을 브라우저 자바스크립트가 읽는 것 자체는 CORS 정책에 막혀
+ * "Failed to fetch"로 보인다(요청 자체는 구글 서버까지 전달되어 처리됨 —
+ * CORS는 응답을 "읽는 것"만 막지 요청 자체를 막지는 않는다). 그래서
+ * 브라우저가 업로드 세션 주소를 이걸로 다시 넘기면, 서버(관리자 권한,
+ * UrlFetchApp — 여기는 CORS 제약이 없다)가 그 세션 상태를 대신 조회해서
+ * ("Content-Range: bytes 별표 별표" 헤더는 "이미 다 됐으면 결과를 달라"는
+ * 상태 확인 요청이다) 실제로 만들어진 파일을 찾아 공유 설정까지 끝내고
+ * 정보를 돌려준다.
  */
-function finalizeUploadSharing(token, driveFileId) {
+function finalizeDirectUpload(token, uploadSessionUrl) {
   checkToken_(token);
-  var file = DriveApp.getFileById(driveFileId);
+  var response = UrlFetchApp.fetch(uploadSessionUrl, {
+    method: "put",
+    headers: { "Content-Range": "bytes */*" },
+    muteHttpExceptions: true,
+  });
+  var code = response.getResponseCode();
+  if (code !== 200 && code !== 201) {
+    throw new Error("업로드 완료 확인 실패 (" + code + "): " + response.getContentText());
+  }
+  var data = JSON.parse(response.getContentText());
+  var file = DriveApp.getFileById(data.id);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return { url: "https://drive.google.com/file/d/" + driveFileId + "/view" };
+  return {
+    name: file.getName(),
+    mimeType: file.getMimeType(),
+    size: file.getSize(),
+    driveFileId: data.id,
+    url: "https://drive.google.com/file/d/" + data.id + "/view",
+  };
 }
 
 /** payload: { driveFileId } — 자료 삭제 시 드라이브의 실제 파일도 함께 정리한다. */

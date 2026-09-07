@@ -105,7 +105,7 @@ interface GoogleScriptRun {
   withSuccessHandler: (cb: (result: unknown) => void) => GoogleScriptRun;
   withFailureHandler: (cb: (err: Error) => void) => GoogleScriptRun;
   getUploadUrl: (token: string, fileName: string, mimeType: string, folder: string) => void;
-  finalizeUploadSharing: (token: string, driveFileId: string) => void;
+  finalizeDirectUpload: (token: string, uploadSessionUrl: string) => void;
 }
 
 function getScriptRun(): GoogleScriptRun | undefined {
@@ -156,33 +156,25 @@ async function uploadFile(
   }
 
   const bytes = base64ToBytes(base64Data);
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": mimeType },
-    body: bytes as unknown as BodyInit,
-  });
-  if (!res.ok) {
-    throw new GasApiError(`드라이브 업로드 실패 (${res.status})`);
-  }
-  const data = (await res.json()) as { id: string; name?: string; mimeType?: string; size?: string };
-
-  // 파일은 이미 올라갔으니, 공유 설정만 실패해도 다시 올리지 않는다 —
-  // 그 경우 드라이브 링크 형식은 같지만 관리자 외에는 못 열 수 있다.
-  let url = `https://drive.google.com/file/d/${data.id}/view`;
   try {
-    const shared = await scriptRun<{ url: string }>((run) => run.finalizeUploadSharing(cfg.token, data.id));
-    url = shared.url;
-  } catch (err) {
-    console.warn("업로드된 파일의 공유 설정에 실패했습니다:", err);
+    await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": mimeType },
+      body: bytes as unknown as BodyInit,
+    });
+  } catch {
+    // 이 PUT의 응답은 브라우저가 못 읽을 수 있다(CORS) — 업로드 세션을
+    // 서버(관리자 권한)가 미리 만들어줘서, 이 요청의 실제 응답에는 우리
+    // 화면의 origin을 허용하는 CORS 헤더가 없기 때문이다. 하지만 요청
+    // 자체(파일 바이너리)는 구글 서버까지 정상적으로 전달되어 처리된다
+    // — CORS는 "응답을 읽는 것"만 막지 요청 자체를 막지 않는다. 그래서
+    // 여기서 실패로 끝내지 않고, 아래에서 서버에게 확인을 맡긴다.
   }
 
-  return {
-    name: data.name || fileName,
-    mimeType: data.mimeType || mimeType,
-    size: data.size ? Number(data.size) : bytes.length,
-    driveFileId: data.id,
-    url,
-  };
+  // 서버(UrlFetchApp, CORS 제약 없음)가 업로드 세션 상태를 대신 조회해서
+  // 실제로 만들어진 파일을 찾고, 공유 설정까지 함께 끝낸다.
+  const result = await scriptRun<UploadedFile>((run) => run.finalizeDirectUpload(cfg.token, uploadUrl));
+  return result;
 }
 
 export const gas = {
