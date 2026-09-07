@@ -27,70 +27,24 @@ function doGet(e) {
 }
 
 /**
- * 번들된 앱 JS(수백 KB)를 Apps Script 편집기에 직접 붙여넣으면 크기와
- * 무관하게 붙여넣기 도중 내용이 손상되는 사고가 반복돼(파일을 줄여도,
- * 줄을 나눠도, 여러 파일로 쪼개도 매번 다른 위치에서 재발) — 편집기에
- * 붙여넣는 자체가 문제였던 것으로 보고, 이 저장소(공개 저장소)에서 서버가
- * 직접 받아오도록 바꾼다. 이러면 편집기에는 App.html 껍데기(CSS만 있고
- * 몇십 KB)와 이 짧은 코드만 붙여넣으면 되고, 실제 앱 코드가 바뀔 때도
- * 다시 붙여넣을 필요 없이 저장소에 올리기만 하면 (캐시 만료 후) 바로
- * 반영된다.
- *
- * 캐시 항목 하나의 최대 크기(100KB) 제한 때문에 여러 조각으로 나눠 넣고
- * 합쳐서 돌려준다. 5분(=깃허브 raw 자체 CDN 캐시 주기와 비슷하게)만
- * 캐시해서, 업데이트가 너무 오래 묵지 않게 한다.
+ * 화면은 App.html(뼈대) / Style.html(CSS) / Function.html(번들된 JS,
+ * 약 500KB) 세 파일로 나눠 저장한다 — Apps Script 편집기에 큰 텍스트를
+ * 한 번에 붙여넣으면 붙여넣기 도중 내용이 잘려나가는 사고가 반복돼서,
+ * 그나마 위험이 남는 부분(JS)을 별도 파일로 분리해 App.html 자체는
+ * 작게 유지한다. include()는 그 파일을 그대로(가공 없이) 읽어오는
+ * 헬퍼이고, App.html은 <?!= include('Style'); ?> / <?!= include('Function'); ?>
+ * 스크립틀릿으로 그 내용을 끼워 넣는다 — 이어붙이기는 서버(이 함수)에서
+ * 끝나므로, 브라우저는 하나로 합쳐진 완성된 화면을 그대로 받는다.
+ * 그래서 createHtmlOutputFromFile 대신 createTemplateFromFile로 평가해야
+ * 스크립틀릿이 실행된다.
  */
-var APP_BUNDLE_URL =
-  "https://raw.githubusercontent.com/dkeforever-cpu/dke/claude/internal-task-management-system-ei53xq/apps-script/bundle.js";
-var APP_BUNDLE_CACHE_CHUNK = 90000;
-var APP_BUNDLE_CACHE_TTL = 300;
-
-function fetchAppBundle_() {
-  var cache = CacheService.getScriptCache();
-  var countStr = cache.get("bundle_count");
-  if (countStr !== null) {
-    var count = Number(countStr);
-    var parts = [];
-    for (var i = 0; i < count; i++) {
-      var part = cache.get("bundle_" + i);
-      if (part === null) {
-        parts = null;
-        break;
-      }
-      parts.push(part);
-    }
-    if (parts) return parts.join("");
-  }
-
-  var response = UrlFetchApp.fetch(APP_BUNDLE_URL, { muteHttpExceptions: true });
-  if (response.getResponseCode() !== 200) {
-    throw new Error("앱 번들을 가져오지 못했습니다 (" + response.getResponseCode() + "). 잠시 후 다시 시도해주세요.");
-  }
-  var content = response.getContentText();
-
-  var total = Math.ceil(content.length / APP_BUNDLE_CACHE_CHUNK) || 1;
-  for (var j = 0; j < total; j++) {
-    cache.put(
-      "bundle_" + j,
-      content.slice(j * APP_BUNDLE_CACHE_CHUNK, (j + 1) * APP_BUNDLE_CACHE_CHUNK),
-      APP_BUNDLE_CACHE_TTL
-    );
-  }
-  cache.put("bundle_count", String(total), APP_BUNDLE_CACHE_TTL);
-
-  return content;
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 /** 이 배포의 안정적인 웹 앱 주소(재배포해도 바뀌지 않음)를 앱 화면에 심어준다. */
 function serveApp_() {
-  var shellHtml = HtmlService.createHtmlOutputFromFile("App").getContent();
-  var bundleJs = fetchAppBundle_();
-  // String.replace에 문자열을 그대로 넣으면 $&, $1 같은 패턴을 특수하게
-  // 해석해버린다 — 압축된 JS에는 $ 문자가 흔해서 실제로 내용이 깨진다.
-  // 함수형 치환을 쓰면 그 해석 없이 있는 그대로 들어간다.
-  var appHtml = shellHtml.replace("__APP_BUNDLE__", function () {
-    return bundleJs;
-  });
+  var appHtml = HtmlService.createTemplateFromFile("App").evaluate().getContent();
   var backendUrl = ScriptApp.getService().getUrl();
   var bootstrap = "<script>window.__DKE_BACKEND_URL__=" + JSON.stringify(backendUrl) + ";</script>";
   var withBootstrap = appHtml.replace("<head>", "<head>" + bootstrap);
