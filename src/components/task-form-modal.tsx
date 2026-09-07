@@ -297,12 +297,12 @@ export function TaskFormModal({
       </div>
 
       <Field label="캘린더 색상 (미지정 시 자동 배정)">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
             onClick={() => setColor(undefined)}
             title="자동"
-            className="flex h-6 items-center rounded-[3px] border px-2 text-[10px] font-semibold"
+            className="flex h-[18px] flex-none items-center rounded-[3px] border px-1.5 text-[9px] font-semibold"
             style={
               color === undefined
                 ? { borderColor: "var(--accent)", background: "var(--accent-soft-bg)", color: "var(--accent-soft-fg)" }
@@ -317,7 +317,7 @@ export function TaskFormModal({
               type="button"
               onClick={() => setColor(c.value)}
               title={c.name}
-              className="h-6 w-6 flex-none rounded-full border"
+              className="h-[18px] w-[18px] flex-none rounded-full border"
               style={{
                 background: c.value,
                 borderColor: color === c.value ? "var(--text)" : "transparent",
