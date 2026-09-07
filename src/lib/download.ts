@@ -14,8 +14,12 @@
 // original file via a plain click, which works there because it isn't
 // running inside this sandboxed iframe.
 
-export const MAX_FILE_BYTES = 3 * 1024 * 1024; // keeps total localStorage usage safe
-export const MAX_FILE_SIZE_LABEL = "3MB";
+// 구글 드라이브 직접 업로드 연동 후 20MB로 상향 — 연동 안 된 로컬 저장
+// (localStorage) 모드에서는 브라우저 저장 용량 제한(보통 5~10MB) 때문에
+// 이 정도 큰 파일은 오히려 실패할 수 있지만, 실제 사용은 항상 연동
+// 상태(드라이브 업로드)라 이 값을 그대로 상한으로 쓴다.
+export const MAX_FILE_BYTES = 20 * 1024 * 1024;
+export const MAX_FILE_SIZE_LABEL = "20MB";
 
 export function readFileAsBase64(
   file: File
