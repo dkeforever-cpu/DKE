@@ -134,6 +134,11 @@ export function FloatingWindow({
     setMaximized(false);
   }
 
+  // 마우스를 빠르게 움직이면 브라우저가 pointerup 대신 pointercancel을 보낼
+  // 수 있다(포인터 캡처가 브라우저 내부적으로 끊기는 경우 — 트랙패드
+  // 제스처로 재해석되거나, 다른 시스템 레벨 동작과 충돌할 때 등). 이 경우도
+  // pointerup과 똑같이 처리하지 않으면 "드래그/리사이즈 중" 상태가 풀리지
+  // 않은 채로 남아있을 수 있다.
   function handleDragEnd() {
     dragState.current = null;
   }
@@ -181,6 +186,7 @@ export function FloatingWindow({
             onPointerDown={handleDragStart}
             onPointerMove={handleDragMove}
             onPointerUp={handleDragEnd}
+            onPointerCancel={handleDragEnd}
             onDoubleClick={toggleMaximize}
             className="flex h-10 flex-none cursor-move select-none items-center justify-between border-b border-[var(--divider)] px-5 touch-none"
             title="드래그해서 이동 (더블클릭: 화면에 꽉 채우기)"
@@ -227,6 +233,7 @@ export function FloatingWindow({
             onPointerDown={handleResizeStart}
             onPointerMove={handleResizeMove}
             onPointerUp={handleResizeEnd}
+            onPointerCancel={handleResizeEnd}
             title="크기 조절"
             className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize touch-none"
           >
