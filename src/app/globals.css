@@ -81,7 +81,8 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI",
+    "Malgun Gothic", sans-serif;
   transition: background-color 120ms ease, color 120ms ease;
 }
 
