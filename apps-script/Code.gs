@@ -26,9 +26,23 @@ function doGet(e) {
   return serveApp_();
 }
 
+/**
+ * App.html은 번들된 JS가 너무 커서(약 900KB) Apps Script 편집기에 한 번에
+ * 붙여넣으면 내용이 잘려나가는 사고가 반복되어, 여러 개의 작은 Bundle*.html
+ * 조각 파일로 나눠 저장한다. include()는 그 조각을 그대로(가공 없이)
+ * 읽어오는 헬퍼이고, App.html은 <?!= include('Bundle1'); ?> 같은 스크립틀릿
+ * 으로 조각들을 순서대로 이어붙인다 — 이어붙이기는 서버(이 함수)에서
+ * 끝나므로, 브라우저는 예전과 동일하게 하나로 합쳐진 스크립트 하나만 받는다.
+ * 그래서 createHtmlOutputFromFile 대신 createTemplateFromFile로 평가해야
+ * 스크립틀릿이 실행된다.
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
 /** 이 배포의 안정적인 웹 앱 주소(재배포해도 바뀌지 않음)를 앱 화면에 심어준다. */
 function serveApp_() {
-  var appHtml = HtmlService.createHtmlOutputFromFile("App").getContent();
+  var appHtml = HtmlService.createTemplateFromFile("App").evaluate().getContent();
   var backendUrl = ScriptApp.getService().getUrl();
   var bootstrap = "<script>window.__DKE_BACKEND_URL__=" + JSON.stringify(backendUrl) + ";</script>";
   var withBootstrap = appHtml.replace("<head>", "<head>" + bootstrap);
