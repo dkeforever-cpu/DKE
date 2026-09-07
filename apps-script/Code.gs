@@ -136,6 +136,17 @@ function handleDelete_(entity, id) {
   var schema = schemaFor_(entity);
   var sheet = getSheet_(schema.sheet);
   var idField = schema.idField || "id";
+
+  // 댓글/진행 일지 자체가 지워질 때 그 첨부파일도 삭제예정 폴더로 옮긴다
+  // (업무·체크리스트 삭제로 인한 연쇄 삭제는 각 cascadeDelete*_ 함수가
+  // 처리한다).
+  if (entity === "comments" || entity === "logEntries") {
+    var target = sheetToObjects_(sheet).find(function (r) {
+      return r[idField] === id;
+    });
+    if (target) moveRowAttachmentsToPendingDelete_(target.attachments);
+  }
+
   deleteRowByField_(sheet, schema.headers, idField, id);
 
   // 하위 데이터도 함께 정리한다 (프론트엔드 store.tsx의 로컬 삭제 로직과
@@ -170,6 +181,7 @@ function cascadeDeleteTask_(taskId) {
     return r.taskId === taskId;
   });
   logRows.forEach(function (r) {
+    moveRowAttachmentsToPendingDelete_(r.attachments);
     deleteRowByField_(logSheet, logSchema.headers, "id", r.id);
     cascadeDeleteCommentsFor_("log", r.id);
   });
@@ -203,6 +215,7 @@ function cascadeDeleteCommentsFor_(targetType, targetId) {
   var sheet = getSheet_(schema.sheet);
   sheetToObjects_(sheet).forEach(function (c) {
     if (c.targetType === targetType && c.targetId === targetId) {
+      moveRowAttachmentsToPendingDelete_(c.attachments);
       deleteRowByField_(sheet, schema.headers, "id", c.id);
     }
   });

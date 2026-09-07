@@ -5,12 +5,55 @@
  */
 
 var UPLOAD_FOLDER_NAME = "물류센터 업무관리 - 첨부파일";
+var PENDING_DELETE_FOLDER_NAME = "물류센터 업무관리 - 삭제예정";
 
 function getOrCreateUploadFolder_() {
   var root = DriveApp.getRootFolder();
   var it = root.getFoldersByName(UPLOAD_FOLDER_NAME);
   if (it.hasNext()) return it.next();
   return root.createFolder(UPLOAD_FOLDER_NAME);
+}
+
+function getOrCreatePendingDeleteFolder_() {
+  var root = DriveApp.getRootFolder();
+  var it = root.getFoldersByName(PENDING_DELETE_FOLDER_NAME);
+  if (it.hasNext()) return it.next();
+  return root.createFolder(PENDING_DELETE_FOLDER_NAME);
+}
+
+/**
+ * 댓글/진행 일지/자료실 등에서 첨부파일이 삭제될 때, 실제로 지우는 대신
+ * "삭제예정" 폴더로 옮긴다 — 바로 지워버리면 실수로 지운 경우 복구할
+ * 방법이 없어서, 검토 후 정말 필요 없을 때 그 폴더에서 수동으로 정리할
+ * 수 있게 한다.
+ */
+function moveFileToPendingDelete_(driveFileId) {
+  var file = DriveApp.getFileById(driveFileId);
+  var dest = getOrCreatePendingDeleteFolder_();
+  var parents = file.getParents();
+  while (parents.hasNext()) {
+    parents.next().removeFile(file);
+  }
+  dest.addFile(file);
+}
+
+/**
+ * 댓글/진행 일지 같은 레코드 하나가 지워질 때(직접 삭제든, 상위 업무·
+ * 체크리스트 삭제로 인한 연쇄 삭제든) 그 레코드의 attachments 목록에
+ * 있는 파일들을 전부 삭제예정 폴더로 옮긴다. attachmentsRaw는 시트에
+ * 저장된 그대로(JSON 문자열)이거나 이미 배열이어도 된다.
+ */
+function moveRowAttachmentsToPendingDelete_(attachmentsRaw) {
+  var list = parseJsonField_(attachmentsRaw, []);
+  (list || []).forEach(function (a) {
+    if (a && a.driveFileId) {
+      try {
+        moveFileToPendingDelete_(a.driveFileId);
+      } catch (e) {
+        // 이미 옮겨졌거나 접근할 수 없는 파일은 조용히 넘어간다.
+      }
+    }
+  });
 }
 
 /** 공용 업로드 폴더 아래에 주어진 이름의 하위 폴더를 찾거나 만든다. */
@@ -132,12 +175,17 @@ function finalizeDirectUpload(token, uploadSessionUrl) {
   };
 }
 
-/** payload: { driveFileId } — 자료 삭제 시 드라이브의 실제 파일도 함께 정리한다. */
+/**
+ * payload: { driveFileId } — 자료 삭제 시 드라이브의 실제 파일을 바로
+ * 지우지 않고 "삭제예정" 폴더로 옮긴다(moveFileToPendingDelete_) — 실수로
+ * 지운 걸 나중에 되찾을 수 있게 하기 위함. 정말 필요 없는 파일은 그
+ * 폴더에서 나중에 수동으로 정리하면 된다.
+ */
 function handleDeleteFile_(payload) {
   var id = payload.driveFileId;
   if (!id) return { deleted: false };
   try {
-    DriveApp.getFileById(id).setTrashed(true);
+    moveFileToPendingDelete_(id);
     return { deleted: true };
   } catch (e) {
     return { deleted: false, error: String(e) };
