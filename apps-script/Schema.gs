@@ -82,6 +82,16 @@ var SCHEMA = {
     headers: ["id", "title", "description", "category", "files", "uploadedBy", "createdAt"],
     json: ["files"],
   },
+
+  // 내 업무(담당자·협업자)에 누가 댓글을 남기면 생기는 알림.
+  notifications: {
+    sheet: "Notifications",
+    headers: [
+      "id", "recipientId", "actorId", "taskId", "targetType", "targetId",
+      "commentId", "contentPreview", "read", "createdAt",
+    ],
+    json: [],
+  },
 };
 
 function schemaFor_(entity) {

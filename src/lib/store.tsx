@@ -13,8 +13,10 @@ import {
   CategoryLarge,
   ChecklistItem,
   Comment,
+  CommentTargetType,
   CustomFieldDef,
   LogEntry,
+  Notification,
   ResourceDoc,
   ResourceFile,
   Task,
@@ -52,12 +54,31 @@ interface StoreData {
   logEntries: LogEntry[];
   comments: Comment[];
   resources: ResourceDoc[];
+  notifications: Notification[];
 }
 
 function genId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random()
     .toString(36)
     .slice(2, 8)}`;
+}
+
+// 댓글이 어느 업무에 달렸는지 찾는다 — 진행 일지 댓글은 LogEntry.taskId로
+// 바로 알 수 있고, 체크리스트 댓글은 그 항목을 담고 있는 업무를 트리에서
+// 찾아야 한다.
+function findTaskIdForCommentTarget(
+  targetType: CommentTargetType,
+  targetId: string,
+  tasks: Task[],
+  logEntries: LogEntry[]
+): string | null {
+  if (targetType === "log") {
+    return logEntries.find((l) => l.id === targetId)?.taskId ?? null;
+  }
+  for (const task of tasks) {
+    if (findNode(task.checklist ?? [], targetId)) return task.id;
+  }
+  return null;
 }
 
 function errorMessage(err: unknown): string {
@@ -258,7 +279,21 @@ function normalize(data: Partial<StoreData>): StoreData {
     if (u.viewTeamIds.length === 0 && teams[0]) u.viewTeamIds = [teams[0].id];
   });
 
-  return { teams, centers, categoriesByTeam, boards, customFields, users, tasks, logEntries, comments, resources };
+  const notifications = data.notifications ?? [];
+
+  return {
+    teams,
+    centers,
+    categoriesByTeam,
+    boards,
+    customFields,
+    users,
+    tasks,
+    logEntries,
+    comments,
+    resources,
+    notifications,
+  };
 }
 
 function loadLocalData(): StoreData {
@@ -274,6 +309,7 @@ function loadLocalData(): StoreData {
       logEntries: SEED_LOG_ENTRIES,
       comments: SEED_COMMENTS,
       resources: [],
+      notifications: [],
     };
   }
   try {
@@ -293,6 +329,7 @@ function loadLocalData(): StoreData {
     logEntries: SEED_LOG_ENTRIES,
     comments: SEED_COMMENTS,
     resources: [],
+    notifications: [],
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
   return seeded;
@@ -315,6 +352,7 @@ interface StoreContextValue {
   logEntries: LogEntry[];
   comments: Comment[];
   resources: ResourceDoc[];
+  notifications: Notification[];
   currentUser: User | null;
   ready: boolean;
 
@@ -348,6 +386,8 @@ interface StoreContextValue {
   addComment: (input: Omit<Comment, "id" | "createdAt">) => string;
   updateComment: (id: string, content: string) => void;
   deleteComment: (id: string) => void;
+
+  markNotificationRead: (id: string, read: boolean) => void;
 
   addResource: (input: Omit<ResourceDoc, "id" | "createdAt">) => string;
   deleteResource: (id: string) => void;
@@ -404,6 +444,7 @@ const EMPTY_DATA: StoreData = {
   logEntries: [],
   comments: [],
   resources: [],
+  notifications: [],
 };
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -690,6 +731,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         comments: prev.comments.filter(
           (c) => !(c.targetType === "checklist" && removedIds.has(c.targetId))
         ),
+        notifications: prev.notifications.filter(
+          (n) => !(n.targetType === "checklist" && removedIds.has(n.targetId))
+        ),
       }));
       pushDelete("checklistItems", itemId); // 서버가 하위 항목·관련 댓글까지 함께 정리한다
       pushUpdate("tasks", taskId, {
@@ -730,6 +774,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         logEntries: prev.logEntries.filter((l) => l.id !== id),
         comments: prev.comments.filter((c) => !(c.targetType === "log" && c.targetId === id)),
+        notifications: prev.notifications.filter((n) => !(n.targetType === "log" && n.targetId === id)),
       }));
       pushDelete("logEntries", id); // 서버가 관련 댓글까지 함께 정리한다
     },
@@ -742,9 +787,37 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const comment: Comment = { ...input, id, createdAt: new Date().toISOString() };
       setData((prev) => ({ ...prev, comments: [...prev.comments, comment] }));
       pushCreate("comments", comment);
+
+      // 이 댓글이 달린 업무의 담당자·협업자에게 알림을 남긴다(작성자
+      // 본인은 제외) — "내 업무"에 누가 신경 쓰고 있는지 놓치지 않도록.
+      const taskId = findTaskIdForCommentTarget(input.targetType, input.targetId, data.tasks, data.logEntries);
+      const task = taskId ? data.tasks.find((t) => t.id === taskId) : undefined;
+      if (task) {
+        const recipients = new Set([task.assigneeId, ...task.collaboratorIds]);
+        recipients.delete(input.authorId);
+        const preview = input.content.length > 80 ? `${input.content.slice(0, 80)}…` : input.content;
+        const newNotifications: Notification[] = [...recipients]
+          .filter((recipientId) => !!recipientId)
+          .map((recipientId) => ({
+            id: genId("n"),
+            recipientId,
+            actorId: input.authorId,
+            taskId: task.id,
+            targetType: input.targetType,
+            targetId: input.targetId,
+            commentId: id,
+            contentPreview: preview,
+            read: false,
+            createdAt: comment.createdAt,
+          }));
+        if (newNotifications.length > 0) {
+          setData((prev) => ({ ...prev, notifications: [...prev.notifications, ...newNotifications] }));
+          newNotifications.forEach((n) => pushCreate("notifications", n));
+        }
+      }
       return id;
     },
-    [pushCreate]
+    [data.tasks, data.logEntries, pushCreate]
   );
 
   const updateComment = useCallback(
@@ -764,10 +837,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setData((prev) => ({
         ...prev,
         comments: prev.comments.filter((c) => c.id !== id),
+        notifications: prev.notifications.filter((n) => n.commentId !== id),
       }));
       pushDelete("comments", id);
     },
     [pushDelete]
+  );
+
+  const markNotificationRead = useCallback(
+    (id: string, read: boolean) => {
+      setData((prev) => ({
+        ...prev,
+        notifications: prev.notifications.map((n) => (n.id === id ? { ...n, read } : n)),
+      }));
+      pushUpdate("notifications", id, { read });
+    },
+    [pushUpdate]
   );
 
   const addResource = useCallback(
@@ -1153,6 +1238,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       logEntries: SEED_LOG_ENTRIES,
       comments: SEED_COMMENTS,
       resources: [],
+      notifications: [],
     };
     setData(seeded);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
@@ -1171,6 +1257,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     logEntries: data.logEntries,
     comments: data.comments,
     resources: data.resources,
+    notifications: data.notifications,
     currentUser,
     ready,
     backendConfigured,
@@ -1193,6 +1280,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addComment,
     updateComment,
     deleteComment,
+    markNotificationRead,
     addResource,
     deleteResource,
     getUser,

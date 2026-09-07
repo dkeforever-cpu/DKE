@@ -143,7 +143,7 @@ function decodeRow_(schema, row) {
     var v = row[h];
     if (schema.json.indexOf(h) !== -1) {
       out[h] = parseJsonField_(v, h === "attachments" || h === "collaboratorIds" || h === "viewTeamIds" ? [] : undefined);
-    } else if (h === "isAdmin" || h === "reported") {
+    } else if (h === "isAdmin" || h === "reported" || h === "read") {
       out[h] = v === true || v === "TRUE" || v === "true";
     } else {
       out[h] = v === "" ? undefined : v;

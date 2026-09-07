@@ -16,7 +16,7 @@ import { Sidebar, Selection } from "@/components/sidebar";
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const viewportHeight = useZoomCorrectedViewportHeight();
-  const { boards, categoriesByTeam, tasks, currentUser } = useStore();
+  const { boards, categoriesByTeam, tasks, currentUser, notifications } = useStore();
   const {
     teamTab,
     boardId,
@@ -46,6 +46,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     for (const t of teamTasks) map[t.categoryLarge] = (map[t.categoryLarge] ?? 0) + 1;
     return map;
   }, [teamTasks]);
+  const unreadNotificationCount = notifications.filter(
+    (n) => n.recipientId === currentUser?.id && !n.read
+  ).length;
 
   function handleSelect(s: Selection) {
     setSelection(s);
@@ -97,6 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               calendarActive={view === "calendar"}
               onOpenCalendar={handleOpenCalendar}
               onCollapse={() => setSidebarCollapsed(true)}
+              unreadNotificationCount={unreadNotificationCount}
             />
           </div>
         )}

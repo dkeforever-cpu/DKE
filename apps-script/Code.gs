@@ -138,6 +138,10 @@ function handleDelete_(entity, id) {
     });
     if (target) moveRowAttachmentsToPendingDelete_(target.attachments);
   }
+  // 댓글이 지워지면 그 댓글 때문에 생긴 알림도 함께 지운다.
+  if (entity === "comments") {
+    deleteNotificationsForComment_(id);
+  }
 
   deleteRowByField_(sheet, schema.headers, idField, id);
 
@@ -208,9 +212,23 @@ function cascadeDeleteCommentsFor_(targetType, targetId) {
   sheetToObjects_(sheet).forEach(function (c) {
     if (c.targetType === targetType && c.targetId === targetId) {
       moveRowAttachmentsToPendingDelete_(c.attachments);
+      deleteNotificationsForComment_(c.id);
       deleteRowByField_(sheet, schema.headers, "id", c.id);
     }
   });
+}
+
+/** 댓글 하나가 지워질 때, 그 댓글 때문에 만들어진 알림들을 함께 지운다. */
+function deleteNotificationsForComment_(commentId) {
+  var schema = schemaFor_("notifications");
+  var sheet = getSheet_(schema.sheet);
+  sheetToObjects_(sheet)
+    .filter(function (n) {
+      return n.commentId === commentId;
+    })
+    .forEach(function (n) {
+      deleteRowByField_(sheet, schema.headers, "id", n.id);
+    });
 }
 
 function cascadeDeleteCategoryLarge_(largeId) {
@@ -285,6 +303,9 @@ function handleBootstrap_() {
   var resources = sheetToObjects_(getSheet_(schemaFor_("resources").sheet)).map(function (r) {
     return decodeRow_(schemaFor_("resources"), r);
   });
+  var notifications = sheetToObjects_(getSheet_(schemaFor_("notifications").sheet)).map(function (r) {
+    return decodeRow_(schemaFor_("notifications"), r);
+  });
 
   return {
     teams: teams,
@@ -297,6 +318,7 @@ function handleBootstrap_() {
     logEntries: logEntries,
     comments: comments,
     resources: resources,
+    notifications: notifications,
   };
 }
 

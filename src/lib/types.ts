@@ -75,6 +75,21 @@ export interface Comment {
   editedAt?: string;
 }
 
+// --- 알림: 내가 담당자·협업자인 업무에 누가 댓글을 남기면 생성됨 ---
+
+export interface Notification {
+  id: string;
+  recipientId: string; // 이 알림을 봐야 하는 사람 (업무 담당자/협업자)
+  actorId: string; // 댓글을 남긴 사람
+  taskId: string; // 눌렀을 때 이동할 업무
+  targetType: CommentTargetType; // 댓글이 달린 곳 — 진행 일지 or 체크리스트
+  targetId: string; // LogEntry.id or ChecklistItem.id
+  commentId: string;
+  contentPreview: string; // 댓글 내용 일부(목록에 바로 보여주기 위함)
+  read: boolean;
+  createdAt: string; // ISO datetime
+}
+
 // --- 자료실: user-uploaded reference documents (e.g. self-authored work manuals) ---
 
 export interface ResourceFile {

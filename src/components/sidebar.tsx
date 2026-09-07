@@ -27,6 +27,7 @@ export function Sidebar({
   calendarActive,
   onOpenCalendar,
   onCollapse,
+  unreadNotificationCount,
 }: {
   teamSelected: boolean;
   categories: CategoryLarge[];
@@ -41,6 +42,7 @@ export function Sidebar({
   calendarActive: boolean;
   onOpenCalendar: () => void;
   onCollapse: () => void;
+  unreadNotificationCount: number;
 }) {
   const currentKey = selectionKey(selection);
   const router = useRouter();
@@ -96,6 +98,18 @@ export function Sidebar({
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="3" y="4.5" width="18" height="16" rx="1.5" />
               <path d="M3 9.5h18M8 3v3M16 3v3" />
+            </svg>
+          }
+        />
+        <SidebarItem
+          label="알림"
+          badgeCount={unreadNotificationCount}
+          active={pathname === "/notifications"}
+          onClick={() => router.push("/notifications")}
+          icon={
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
           }
         />
@@ -183,12 +197,14 @@ export function Sidebar({
 function SidebarItem({
   label,
   count,
+  badgeCount,
   active,
   onClick,
   icon,
 }: {
   label: string;
   count?: number;
+  badgeCount?: number; // count > 0일 때만, 눈에 띄는 빨간 배지로 표시(안 읽은 알림 등)
   active: boolean;
   onClick: () => void;
   icon?: ReactNode;
@@ -211,6 +227,14 @@ function SidebarItem({
           style={{ color: active ? "var(--accent-soft-fg)" : "var(--text-faintest)" }}
         >
           {count}
+        </span>
+      )}
+      {!!badgeCount && (
+        <span
+          className="ml-auto flex-none rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none"
+          style={{ background: "var(--danger-soft-bg)", color: "var(--danger)" }}
+        >
+          {badgeCount > 99 ? "99+" : badgeCount}
         </span>
       )}
     </button>
