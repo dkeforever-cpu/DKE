@@ -93,8 +93,6 @@ function route_(action, payload) {
       return handleDelete_(payload.entity, payload.id);
     case "uploadFile":
       return handleUploadFile_(payload);
-    case "uploadFileChunk":
-      return handleUploadFileChunk_(payload);
     case "deleteFile":
       return handleDeleteFile_(payload);
     default:

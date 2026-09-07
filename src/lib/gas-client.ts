@@ -92,27 +92,46 @@ export interface UploadedFile {
   url: string;
 }
 
-// 첨부파일은 쿼리 파라미터 하나에 다 실으면 URL이 너무 길어질 수 있어서,
-// base64 문자열을 작은 조각으로 나눠 순서대로 여러 번 보낸다. 서버(Drive.gs)가
-// 마지막 조각을 받으면 전체를 이어붙여 실제 드라이브 업로드를 수행하고,
-// 그 결과(driveFileId/url 등)를 마지막 호출의 응답으로 돌려준다.
+// 첨부파일은 google.script.run으로 앱스크립트에 "업로드 세션 URL"만 요청하고
+// (관리자 권한으로 열림 — ScriptApp.getOAuthToken()), 실제 파일 바이너리는
+// 앱스크립트를 거치지 않고 브라우저가 그 주소로 구글 드라이브에 직접
+// PUT한다. 조각내서 여러 번의 GET 요청으로 보내던 이전 방식은 조각 하나당
+// 앱스크립트 실행이 한 번씩 걸려 파일이 조금만 커도 느렸다(실측: 500KB
+// 5개에 4분) — 이 방식은 요청이 한 번뿐이라 그 오버헤드가 없다.
 //
-// 조각 하나하나가 구글 앱스크립트를 새로 실행시키는 요청이라, 조각 개수가
-// 곧 소요 시간이다(실사용 측정: 500KB 5개=조각 약 430개에 4분 — 조각당
-// 0.5초 안팎). 그래서 조각 크기를 최대한 키우는 게 속도에 직접적이다.
-// 일반 base64는 +, /, = 문자가 섞여 있어서 URL에 실을 때 encodeURIComponent가
-// 그 문자들을 퍼센트 인코딩(%2B 등)해 최대 3배까지 길어진다 — URL에 그대로
-// 써도 되는 base64url(A-Z a-z 0-9 - _)로 바꿔 보내면 그 증가가 없어서,
-// 조각 크기를 그만큼 더 키울 수 있다.
-//
-// 20000자로 올려봤더니 구글 쪽에서 요청 자체를 거부해(연결 실패로 보임)
-// 실사용 중 확인됨 — 그 값과 8000(정상 동작 확인됨) 사이 어딘가에 실제
-// 한계가 있다는 뜻. 안전하게 확인된 8000으로 되돌린다. 더 키우고 싶다면
-// 이 값을 조금씩만 올려가며 실제로 큰 파일을 올려보고 확인해야 한다.
-const UPLOAD_CHUNK_SIZE = 8000;
+// google.script.run은 이 배포가 직접 서빙하는 화면(자체 호스팅 모드)에서만
+// 주입되므로, 그 화면이 아니면(로컬 파일로 열었을 때 등) 업로드를 쓸 수 없다.
+interface GoogleScriptRun {
+  withSuccessHandler: (cb: (result: unknown) => void) => GoogleScriptRun;
+  withFailureHandler: (cb: (err: Error) => void) => GoogleScriptRun;
+  getUploadUrl: (token: string, fileName: string, mimeType: string, folder: string) => void;
+  finalizeUploadSharing: (token: string, driveFileId: string) => void;
+}
 
-function toBase64Url(base64: string): string {
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+function getScriptRun(): GoogleScriptRun | undefined {
+  return (window as unknown as { google?: { script?: { run?: GoogleScriptRun } } }).google?.script?.run;
+}
+
+function scriptRun<T>(invoke: (run: GoogleScriptRun) => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const run = getScriptRun();
+    if (!run) {
+      reject(new GasApiError("이 화면에서는 파일 업로드를 쓸 수 없습니다. 앱스크립트 배포 주소로 접속했는지 확인해주세요."));
+      return;
+    }
+    invoke(
+      run
+        .withSuccessHandler((result) => resolve(result as T))
+        .withFailureHandler((err) => reject(err instanceof Error ? err : new GasApiError(String(err))))
+    );
+  });
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 // folder를 넘기면(예: 업무번호) 드라이브의 공용 업로드 폴더 아래에 그
@@ -124,23 +143,46 @@ async function uploadFile(
   base64Data: string,
   folder?: string
 ): Promise<UploadedFile> {
-  const data = toBase64Url(base64Data);
-  const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
-  const total = Math.max(1, Math.ceil(data.length / UPLOAD_CHUNK_SIZE));
-  let result: UploadedFile | { received: true } | undefined;
-  for (let i = 0; i < total; i++) {
-    const chunk = data.slice(i * UPLOAD_CHUNK_SIZE, (i + 1) * UPLOAD_CHUNK_SIZE);
-    result = await call<UploadedFile | { received: true }>("uploadFileChunk", {
-      uploadId,
-      index: i,
-      total,
-      chunk,
-      fileName,
-      mimeType,
-      folder: folder || "",
-    });
+  const cfg = getBackendConfig();
+  if (!cfg) {
+    throw new GasApiError("연동된 구글 시트가 없습니다. 설정에서 Apps Script 웹앱 URL을 등록해주세요.");
   }
-  return result as UploadedFile;
+
+  const uploadUrl = await scriptRun<string>((run) =>
+    run.getUploadUrl(cfg.token, fileName, mimeType, folder || "")
+  );
+  if (!uploadUrl) {
+    throw new GasApiError("업로드 URL을 받지 못했습니다.");
+  }
+
+  const bytes = base64ToBytes(base64Data);
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": mimeType },
+    body: bytes as unknown as BodyInit,
+  });
+  if (!res.ok) {
+    throw new GasApiError(`드라이브 업로드 실패 (${res.status})`);
+  }
+  const data = (await res.json()) as { id: string; name?: string; mimeType?: string; size?: string };
+
+  // 파일은 이미 올라갔으니, 공유 설정만 실패해도 다시 올리지 않는다 —
+  // 그 경우 드라이브 링크 형식은 같지만 관리자 외에는 못 열 수 있다.
+  let url = `https://drive.google.com/file/d/${data.id}/view`;
+  try {
+    const shared = await scriptRun<{ url: string }>((run) => run.finalizeUploadSharing(cfg.token, data.id));
+    url = shared.url;
+  } catch (err) {
+    console.warn("업로드된 파일의 공유 설정에 실패했습니다:", err);
+  }
+
+  return {
+    name: data.name || fileName,
+    mimeType: data.mimeType || mimeType,
+    size: data.size ? Number(data.size) : bytes.length,
+    driveFileId: data.id,
+    url,
+  };
 }
 
 export const gas = {
