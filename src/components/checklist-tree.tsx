@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChecklistItem, Comment, ResourceFile, User } from "@/lib/types";
-import { flatten } from "@/lib/checklist";
+import { computeProgress, flatten } from "@/lib/checklist";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { CommentList } from "@/components/comment-thread";
 import { daysOverdue, formatDateShort, formatDateTime } from "@/lib/format";
@@ -81,9 +81,7 @@ export function ChecklistTree({
   readOnly?: boolean;
 }) {
   const all = flatten(items);
-  const avg = all.length
-    ? Math.round(all.reduce((sum, i) => sum + i.progress, 0) / all.length)
-    : 0;
+  const avg = computeProgress(items);
 
   const [expandSignal, setExpandSignal] = useState<ExpandSignal | null>(null);
 

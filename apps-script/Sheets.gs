@@ -145,6 +145,12 @@ function decodeRow_(schema, row) {
       out[h] = parseJsonField_(v, h === "attachments" || h === "collaboratorIds" || h === "viewTeamIds" ? [] : undefined);
     } else if (h === "isAdmin" || h === "reported" || h === "read") {
       out[h] = v === true || v === "TRUE" || v === "true";
+    } else if (h === "progress" || h === "level") {
+      // 시트 셀 서식이 일반 텍스트("@")라 이 값이 숫자가 아니라 문자열로
+      // 돌아올 수 있다 — 그대로 두면 프론트엔드에서 진행률 평균을 낼 때
+      // "+"가 숫자 덧셈 대신 문자열 이어붙이기로 동작해 값이 터무니없이
+      // 커지는 버그가 생긴다. 항상 숫자로 되돌린다.
+      out[h] = v === "" || v === null || v === undefined ? 0 : Number(v);
     } else {
       out[h] = v === "" ? undefined : v;
     }

@@ -50,7 +50,11 @@ export function findNode(tree: ChecklistItem[], id: string): ChecklistItem | und
 export function computeProgress(items: ChecklistItem[]): number {
   const all = flatten(items);
   if (all.length === 0) return 0;
-  return Math.round(all.reduce((sum, i) => sum + i.progress, 0) / all.length);
+  // progress는 항상 숫자여야 하지만, 구글 시트를 거쳐 문자열("50")로
+  // 돌아오는 경우 "+"가 숫자 덧셈이 아니라 문자열 이어붙이기로 동작해
+  // 평균이 터무니없이 큰 값으로 깨진다 — 항상 Number로 강제 변환한다.
+  const sum = all.reduce((acc, i) => acc + (Number(i.progress) || 0), 0);
+  return Math.round(sum / all.length);
 }
 
 // Keeps status in lockstep with the derived progress: reaching 100% marks
