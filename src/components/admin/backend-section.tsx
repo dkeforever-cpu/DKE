@@ -1,9 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { getBackendConfig } from "@/lib/gas-client";
 import { BackendSettingsModal } from "@/components/backend-settings-modal";
+
+/**
+ * 이 앱 코드(리액트 번들) 자신이 실제로 돌아가는 그 자리에서
+ * google.script.run이 보이는지 확인한다. 스크립트가 늦게 붙는 경우를
+ * 대비해 1.5초 지연 후 자동으로 한 번 확인하고, 버튼으로 언제든 다시
+ * 확인할 수 있다.
+ */
+function checkScriptRun(): boolean {
+  return !!(window as unknown as { google?: { script?: { run?: unknown } } }).google?.script?.run;
+}
+
+function BackendRunDiagnostic() {
+  const [result, setResult] = useState<boolean | null>(null);
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
+
+  function runCheck() {
+    setResult(checkScriptRun());
+    setCheckedAt(new Date().toLocaleTimeString("ko-KR"));
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(runCheck, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 border border-dashed border-[var(--border-strong)] bg-[var(--surface-alt)] px-3 py-2 text-[10.5px]">
+      <span className="font-semibold text-[var(--text-muted)]">google.script.run 존재 여부:</span>
+      <span
+        className="font-mono font-bold"
+        style={{ color: result === null ? "var(--text-faint)" : result ? "var(--success)" : "var(--danger)" }}
+      >
+        {result === null ? "확인 중..." : String(result)}
+      </span>
+      {checkedAt && <span className="text-[9.5px] text-[var(--text-faintest)]">({checkedAt} 확인)</span>}
+      <button
+        onClick={runCheck}
+        className="ml-auto h-6 flex-none rounded-[2px] border border-[var(--border-strong)] px-2 text-[10px] font-semibold text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+      >
+        다시 확인
+      </button>
+    </div>
+  );
+}
 
 export function BackendSection() {
   const { backendConfigured, syncError, dismissSyncError } = useStore();
@@ -52,6 +96,8 @@ export function BackendSection() {
           </button>
         </div>
       )}
+
+      <BackendRunDiagnostic />
 
       {open && <BackendSettingsModal onClose={() => setOpen(false)} />}
     </div>
