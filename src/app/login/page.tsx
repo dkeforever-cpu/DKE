@@ -7,7 +7,8 @@ import { BackendSettingsModal } from "@/components/backend-settings-modal";
 import { getSelfHostedBackendUrl, hasBackendConfig } from "@/lib/gas-client";
 
 export default function LoginPage() {
-  const { teams, login, ready, resetDemoData, backendConfigured, backendError, retryBackend } = useStore();
+  const { teams, login, ready, resetDemoData, backendConfigured, backendError, retryBackend, appTitle } =
+    useStore();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +49,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <div className="text-center text-[14.5px] font-bold tracking-tight text-[var(--text)]">
-            물류센터 업무관리 시스템
+            {appTitle}
           </div>
           <div className="text-[10.5px] text-[var(--text-faint)]">
             {teams.map((t) => t.name).join(" · ")} 전용

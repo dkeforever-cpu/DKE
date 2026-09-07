@@ -24,6 +24,7 @@ function setup() {
     props.setProperty("API_TOKEN", Utilities.getUuid().replace(/-/g, ""));
   }
   seedAdminUser_();
+  seedSettingsRow_();
 
   SpreadsheetApp.getUi().alert(
     "설정 완료",
@@ -81,6 +82,14 @@ function seedAdminUser_() {
     level: 1,
     isAdmin: true,
   });
+}
+
+/** 설정 시트가 비어있으면(최초 설치, 또는 이 기능 이전에 이미 설치된 경우) 기본 제목으로 한 행을 만들어준다. */
+function seedSettingsRow_() {
+  var schema = schemaFor_("settings");
+  var sheet = getSheet_(schema.sheet);
+  if (sheetToObjects_(sheet).length > 0) return;
+  appendRow_(sheet, schema.headers, { id: "app", appTitle: "물류센터 업무관리 시스템" });
 }
 
 function showApiToken() {
@@ -202,6 +211,11 @@ function importExportedJson(jsonText) {
   });
   batchCreate_("resources", resourceRecords);
   counts.resources = resourceRecords.length;
+
+  // settings는 위 루프에서 시트가 비워졌으므로, 내보낸 값이 있으면 그대로
+  // 되돌리고 없으면(예전 내보내기 파일) 기본 제목으로 다시 만들어준다 —
+  // 안 그러면 가져오기 한 번으로 관리자가 설정한 프로그램 제목이 사라진다.
+  batchCreate_("settings", [data.settings || { id: "app", appTitle: "물류센터 업무관리 시스템" }]);
 
   return counts;
 }

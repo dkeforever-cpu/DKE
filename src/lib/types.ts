@@ -3,6 +3,13 @@ export interface Team {
   name: string;
 }
 
+// 관리자가 로그인 화면·상단바에 표시할 프로그램 제목을 바꿀 수 있게 하는
+// 앱 전역 설정. 항상 단일 행(id="app")만 존재한다.
+export interface AppSettings {
+  id: string;
+  appTitle: string;
+}
+
 export interface User {
   id: string;
   name: string;

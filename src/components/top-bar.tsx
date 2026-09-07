@@ -9,7 +9,7 @@ import { ThemeSettingsModal } from "@/components/theme-settings-modal";
 import { ChangePasswordModal } from "@/components/change-password-modal";
 
 export function TopBar() {
-  const { currentUser, teams, logout } = useStore();
+  const { currentUser, teams, logout, appTitle } = useStore();
   const { mode, toggleMode, viewMode, setViewMode } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -33,7 +33,7 @@ export function TopBar() {
             </svg>
           </div>
           <div className="hidden whitespace-nowrap text-[12.5px] font-bold text-[var(--text)] sm:block">
-            물류센터 업무관리
+            {appTitle}
           </div>
         </button>
 

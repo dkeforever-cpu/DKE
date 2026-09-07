@@ -92,6 +92,14 @@ var SCHEMA = {
     ],
     json: [],
   },
+
+  // 앱 전역 설정. 단일 행(id="app")만 사용 — 관리자가 로그인 화면·상단바에
+  // 표시할 프로그램 제목을 바꿀 수 있게 하기 위함.
+  settings: {
+    sheet: "Settings",
+    headers: ["id", "appTitle"],
+    json: [],
+  },
 };
 
 function schemaFor_(entity) {

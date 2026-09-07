@@ -15,6 +15,7 @@ const TABLE_LABELS: Record<string, string> = {
   logEntries: "업무 메모 (logEntries)",
   comments: "댓글 (comments)",
   resources: "자료실 (resources)",
+  settings: "일반 설정 (settings)",
 };
 
 function countOf(v: unknown): number {
@@ -35,6 +36,7 @@ export function DatabaseSection() {
     logEntries,
     comments,
     resources,
+    appTitle,
     backendConfigured,
   } = useStore();
   const tables: Record<string, unknown> = {
@@ -48,6 +50,7 @@ export function DatabaseSection() {
     logEntries,
     comments,
     resources,
+    settings: { id: "app", appTitle },
   };
   const [openTable, setOpenTable] = useState<string | null>("tasks");
   const [exportOpen, setExportOpen] = useState(false);

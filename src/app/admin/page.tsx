@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRequireAdmin } from "@/lib/use-require-auth";
 import { TopBar } from "@/components/top-bar";
+import { GeneralSection } from "@/components/admin/general-section";
 import { TeamsSection } from "@/components/admin/teams-section";
 import { CentersSection } from "@/components/admin/centers-section";
 import { CategoriesSection } from "@/components/admin/categories-section";
@@ -13,6 +14,7 @@ import { DatabaseSection } from "@/components/admin/database-section";
 import { BackendSection } from "@/components/admin/backend-section";
 
 const TABS = [
+  { key: "general", label: "일반 설정" },
   { key: "teams", label: "팀 관리" },
   { key: "centers", label: "센터 관리" },
   { key: "categories", label: "카테고리 관리" },
@@ -27,7 +29,7 @@ type TabKey = (typeof TABS)[number]["key"];
 export default function AdminPage() {
   const { ready, currentUser } = useRequireAdmin();
   const router = useRouter();
-  const [tab, setTab] = useState<TabKey>("teams");
+  const [tab, setTab] = useState<TabKey>("general");
 
   if (!ready || !currentUser) return null;
 
@@ -67,6 +69,7 @@ export default function AdminPage() {
             <div className="mb-3 text-[13px] font-bold text-[var(--text)]">
               {TABS.find((t) => t.key === tab)?.label}
             </div>
+            {tab === "general" && <GeneralSection />}
             {tab === "teams" && <TeamsSection />}
             {tab === "centers" && <CentersSection />}
             {tab === "categories" && <CategoriesSection />}

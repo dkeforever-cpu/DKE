@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import {
+  AppSettings,
   Board,
   CategoryLarge,
   ChecklistItem,
@@ -42,6 +43,8 @@ import { gas, GasApiError, hasBackendConfig } from "./gas-client";
 
 const STORAGE_KEY = "dke-task-system-v2";
 const SESSION_KEY = "dke-task-system-current-user";
+const DEFAULT_APP_TITLE = "물류센터 업무관리 시스템";
+const DEFAULT_SETTINGS: AppSettings = { id: "app", appTitle: DEFAULT_APP_TITLE };
 
 interface StoreData {
   teams: Team[];
@@ -55,6 +58,7 @@ interface StoreData {
   comments: Comment[];
   resources: ResourceDoc[];
   notifications: Notification[];
+  settings: AppSettings;
 }
 
 function genId(prefix: string): string {
@@ -281,6 +285,9 @@ function normalize(data: Partial<StoreData>): StoreData {
 
   const notifications = data.notifications ?? [];
 
+  const settings: AppSettings =
+    data.settings && data.settings.appTitle ? data.settings : DEFAULT_SETTINGS;
+
   return {
     teams,
     centers,
@@ -293,6 +300,7 @@ function normalize(data: Partial<StoreData>): StoreData {
     comments,
     resources,
     notifications,
+    settings,
   };
 }
 
@@ -310,6 +318,7 @@ function loadLocalData(): StoreData {
       comments: SEED_COMMENTS,
       resources: [],
       notifications: [],
+      settings: DEFAULT_SETTINGS,
     };
   }
   try {
@@ -330,6 +339,7 @@ function loadLocalData(): StoreData {
     comments: SEED_COMMENTS,
     resources: [],
     notifications: [],
+    settings: DEFAULT_SETTINGS,
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
   return seeded;
@@ -353,6 +363,7 @@ interface StoreContextValue {
   comments: Comment[];
   resources: ResourceDoc[];
   notifications: Notification[];
+  appTitle: string;
   currentUser: User | null;
   ready: boolean;
 
@@ -429,6 +440,8 @@ interface StoreContextValue {
   resetUserPassword: (id: string) => void;
 
   resetDemoData: () => boolean;
+
+  updateAppTitle: (title: string) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -445,6 +458,7 @@ const EMPTY_DATA: StoreData = {
   comments: [],
   resources: [],
   notifications: [],
+  settings: DEFAULT_SETTINGS,
 };
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -1239,11 +1253,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       comments: SEED_COMMENTS,
       resources: [],
       notifications: [],
+      settings: DEFAULT_SETTINGS,
     };
     setData(seeded);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
     return true;
   }, [backendConfigured]);
+
+  // 관리자 전용(관리자 설정 화면에서만 노출) — 로그인 화면·상단바에 표시될
+  // 프로그램 제목을 바꾼다.
+  const updateAppTitle = useCallback(
+    (title: string) => {
+      const appTitle = title.trim() || DEFAULT_APP_TITLE;
+      setData((prev) => ({ ...prev, settings: { ...prev.settings, appTitle } }));
+      pushUpdate("settings", "app", { appTitle });
+    },
+    [pushUpdate]
+  );
 
   const value: StoreContextValue = {
     teams: data.teams,
@@ -1258,6 +1284,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     comments: data.comments,
     resources: data.resources,
     notifications: data.notifications,
+    appTitle: data.settings.appTitle,
     currentUser,
     ready,
     backendConfigured,
@@ -1309,6 +1336,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteUser,
     resetUserPassword,
     resetDemoData,
+    updateAppTitle,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

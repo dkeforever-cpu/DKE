@@ -38,8 +38,24 @@ function serveApp_() {
   var bootstrap = "<script>window.__DKE_BACKEND_URL__=" + JSON.stringify(backendUrl) + ";</script>";
   var withBootstrap = appHtml.replace("<head>", "<head>" + bootstrap);
   return HtmlService.createHtmlOutput(withBootstrap)
-    .setTitle("물류센터 업무관리 시스템")
+    .setTitle(getAppTitle_())
     .addMetaTag("viewport", "width=device-width, initial-scale=1");
+}
+
+/**
+ * 관리자가 "일반 설정"에서 바꾼 프로그램 제목. 아직 setup()을 실행하지
+ * 않았거나(시트 없음) settings 행이 비어있으면 기본값으로 대체한다 —
+ * 브라우저 탭 제목(serveApp_)과 bootstrap 응답(화면 상단바·로그인 화면)
+ * 양쪽에서 공용으로 쓴다.
+ */
+function getAppTitle_() {
+  try {
+    var rows = sheetToObjects_(getSheet_(schemaFor_("settings").sheet));
+    var row = rows[0];
+    return (row && row.appTitle) || "물류센터 업무관리 시스템";
+  } catch (e) {
+    return "물류센터 업무관리 시스템";
+  }
 }
 
 function doPost(e) {
@@ -307,6 +323,11 @@ function handleBootstrap_() {
     return decodeRow_(schemaFor_("notifications"), r);
   });
 
+  var settingsRows = sheetToObjects_(getSheet_(schemaFor_("settings").sheet));
+  var settings = settingsRows[0]
+    ? decodeRow_(schemaFor_("settings"), settingsRows[0])
+    : { id: "app", appTitle: "물류센터 업무관리 시스템" };
+
   return {
     teams: teams,
     centers: centers,
@@ -319,6 +340,7 @@ function handleBootstrap_() {
     comments: comments,
     resources: resources,
     notifications: notifications,
+    settings: settings,
   };
 }
 
