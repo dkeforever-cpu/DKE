@@ -153,8 +153,14 @@ export function FloatingWindow({
     if (!resizeState.current || !pos) return;
     const dx = e.clientX - resizeState.current.startX;
     const dy = e.clientY - resizeState.current.startY;
-    const maxW = window.innerWidth - pos.x - EDGE_MARGIN;
-    const maxH = window.innerHeight - pos.y - EDGE_MARGIN;
+    // 창을 화면 왼쪽/위 가장자리 밖으로 드래그해둔 상태(pos.x/y가
+    // EDGE_MARGIN보다 작음, 심지어 음수)에서는 이 값이 실제 뷰포트보다
+    // 커질 수 있는데, 그러면 JS가 허용하는 크기와 아래 style의
+    // maxWidth/maxHeight(뷰포트 기준 고정값)가 서로 어긋나 리사이즈 도중
+    // 계산과 실제 렌더링 크기가 따로 놀 수 있다 — 뷰포트 기준 상한과
+    // 같이 min을 취해 항상 실제 렌더링 크기와 일치하게 한다.
+    const maxW = Math.min(window.innerWidth - pos.x - EDGE_MARGIN, window.innerWidth - EDGE_MARGIN * 2);
+    const maxH = Math.min(window.innerHeight - pos.y - EDGE_MARGIN, window.innerHeight - EDGE_MARGIN * 2);
     const w = Math.max(minWidth, Math.min(resizeState.current.origW + dx, maxW));
     const h = Math.max(minHeight, Math.min(resizeState.current.origH + dy, maxH));
     setSize({ width: w, height: h });
@@ -188,6 +194,7 @@ export function FloatingWindow({
             onPointerUp={handleDragEnd}
             onPointerCancel={handleDragEnd}
             onDoubleClick={toggleMaximize}
+            onDragStart={(e) => e.preventDefault()}
             className="flex h-10 flex-none cursor-move select-none items-center justify-between border-b border-[var(--divider)] px-5 touch-none"
             title="드래그해서 이동 (더블클릭: 화면에 꽉 채우기)"
           >
@@ -234,9 +241,16 @@ export function FloatingWindow({
             onPointerMove={handleResizeMove}
             onPointerUp={handleResizeEnd}
             onPointerCancel={handleResizeEnd}
+            onDragStart={(e) => e.preventDefault()}
             title="크기 조절"
             className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize touch-none"
           >
+            {/* SVG는 브라우저 기본값으로 마우스 드래그 시 네이티브 이미지
+                드래그(고스트 이미지)가 시작될 수 있다 — 빠르게 움직일 때
+                이 네이티브 드래그가 우리 포인터 리사이즈 로직과 충돌해서
+                창이 갑자기 튀는 것처럼 보이는 원인일 수 있어, 위 부모 div의
+                onDragStart(preventDefault)로 명시적으로 막는다(dragstart는
+                이 svg에서 시작돼도 부모로 버블링되므로 거기서 막으면 된다). */}
             <svg
               width="14"
               height="14"

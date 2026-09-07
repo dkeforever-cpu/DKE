@@ -117,7 +117,7 @@ export function ThemeSettingsModal({ onClose }: { onClose: () => void }) {
         />
         <div className="flex justify-between text-[10px] text-[var(--text-faintest)]">
           <span>80%</span>
-          <span>100%</span>
+          <span>140%</span>
           <span>200%</span>
         </div>
       </div>
