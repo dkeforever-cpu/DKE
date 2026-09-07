@@ -7,6 +7,7 @@ import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
 import { finalizeAttachment, readPickedFile } from "@/lib/attachments";
 import { downloadResourceFile } from "@/lib/download";
+import { linkify } from "@/lib/linkify";
 
 export function PencilIcon() {
   return (
@@ -303,7 +304,7 @@ function CommentRow({
             </div>
           </div>
         ) : (
-          <div className="text-[10.5px] leading-relaxed text-[var(--text-secondary)]">{comment.content}</div>
+          <div className="text-[10.5px] leading-relaxed text-[var(--text-secondary)]">{linkify(comment.content)}</div>
         )}
         {(comment.attachments ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1">

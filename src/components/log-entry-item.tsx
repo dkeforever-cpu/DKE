@@ -6,6 +6,7 @@ import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/lib/format";
 import { downloadResourceFile } from "@/lib/download";
+import { linkify } from "@/lib/linkify";
 import { FileIcon, PencilIcon, TrashIcon } from "@/components/comment-thread";
 
 export function LogEntryItem({
@@ -99,7 +100,7 @@ export function LogEntryItem({
           </div>
         ) : (
           <div className="whitespace-pre-wrap pl-[26px] text-[11px] leading-relaxed text-[var(--text-secondary)]">
-            {entry.content}
+            {linkify(entry.content)}
           </div>
         )}
 

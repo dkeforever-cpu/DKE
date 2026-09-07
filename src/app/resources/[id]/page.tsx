@@ -9,6 +9,7 @@ import { AppShell } from "@/components/app-shell";
 import { Avatar } from "@/components/avatar";
 import { FileIcon } from "@/components/comment-thread";
 import { downloadResourceFile } from "@/lib/download";
+import { linkify } from "@/lib/linkify";
 import { formatDateTime } from "@/lib/format";
 
 export default function ResourceDetailPage() {
@@ -116,7 +117,7 @@ export default function ResourceDetailPage() {
               <>
                 <div className="h-px bg-[var(--divider)]" />
                 <div className="whitespace-pre-wrap text-[11.5px] leading-relaxed text-[var(--text-secondary)]">
-                  {resource.description}
+                  {linkify(resource.description)}
                 </div>
               </>
             )}

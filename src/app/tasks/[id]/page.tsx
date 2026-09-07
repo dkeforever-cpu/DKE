@@ -14,6 +14,7 @@ import { ChecklistTree } from "@/components/checklist-tree";
 import { formatDateFull, formatDateTime, daysOverdue, isOverdue } from "@/lib/format";
 import { finalizeAttachment, readPickedFile } from "@/lib/attachments";
 import { downloadResourceFile } from "@/lib/download";
+import { linkify } from "@/lib/linkify";
 import type { ResourceFile } from "@/lib/types";
 
 export default function TaskDetailPage() {
@@ -208,7 +209,7 @@ export default function TaskDetailPage() {
             </div>
             <div className="h-px bg-[var(--divider)]" />
             <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-[var(--text-secondary)]">
-              {task.description || "설명이 없습니다."}
+              {task.description ? linkify(task.description) : "설명이 없습니다."}
             </div>
           </div>
 
