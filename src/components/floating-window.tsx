@@ -40,7 +40,7 @@ export function FloatingWindow({
   minWidth?: number;
   minHeight?: number;
 }) {
-  // The app's own 화면 배율 (screen scale, 80~130%) is applied as
+  // The app's own 화면 배율 (screen scale, 80~200%) is applied as
   // `document.body.style.zoom`, which visually scales this window along
   // with everything else but leaves window.innerWidth/innerHeight (and
   // pointer clientX/clientY) unzoomed — every clamp and drag calculation

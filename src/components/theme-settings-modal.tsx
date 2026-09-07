@@ -109,7 +109,7 @@ export function ThemeSettingsModal({ onClose }: { onClose: () => void }) {
         <input
           type="range"
           min={80}
-          max={130}
+          max={200}
           step={5}
           value={scale}
           onChange={(e) => setScale(Number(e.target.value))}
@@ -118,7 +118,7 @@ export function ThemeSettingsModal({ onClose }: { onClose: () => void }) {
         <div className="flex justify-between text-[10px] text-[var(--text-faintest)]">
           <span>80%</span>
           <span>100%</span>
-          <span>130%</span>
+          <span>200%</span>
         </div>
       </div>
     </FloatingWindow>

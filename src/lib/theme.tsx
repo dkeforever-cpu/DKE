@@ -10,7 +10,7 @@ export type ViewMode = "auto" | "mobile" | "desktop";
 export interface ThemeState {
   accent: string;
   mode: ThemeMode;
-  scale: number; // percent, 80-130
+  scale: number; // percent, 80-200
   viewMode: ViewMode;
 }
 
@@ -108,7 +108,7 @@ export function useTheme() {
   return ctx;
 }
 
-// 화면 배율(80~130%)은 document.body.style.zoom으로 적용되는데, 이는
+// 화면 배율(80~200%)은 document.body.style.zoom으로 적용되는데, 이는
 // window.innerHeight를 바꾸지 않고 렌더링 크기만 키우거나 줄인다. 그래서
 // 레이아웃을 "뷰포트에 꽉 채우고 그 안에서만 스크롤"시키려는 화면(h-screen +
 // overflow-hidden 조합)은 배율이 100%가 아니면 실제 화면보다 크게 렌더링돼
