@@ -68,6 +68,11 @@ function getOrCreateSubfolder_(parent, name) {
  * base64Data는 "data:<mime>;base64," 접두사가 붙어있어도 되고 없어도 된다.
  * folder를 주면(업무 상세에서 올릴 때는 업무번호) 공용 폴더 아래 그 이름의
  * 하위 폴더에 저장한다 — 업무별로 첨부파일을 모아볼 수 있게 하기 위함.
+ *
+ * 브라우저 쪽 화면은 이제 이 함수를 직접 호출하지 않는다(직접 업로드
+ * 방식 — getUploadUrl/finalizeDirectUpload — 로 전환됨). 그래도 지우면
+ * 안 된다: Setup.gs의 importExportedJson이 예전에 내보낸 JSON 안의
+ * base64 첨부파일을 드라이브에 올릴 때 그대로 쓴다.
  */
 function handleUploadFile_(payload) {
   var fileName = payload.fileName || "첨부파일";

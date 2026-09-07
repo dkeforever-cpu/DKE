@@ -125,10 +125,6 @@ function deleteRowByField_(sheet, headers, idField, idValue) {
   if (rowIndex !== -1) sheet.deleteRow(rowIndex);
 }
 
-function nowIso_() {
-  return new Date().toISOString();
-}
-
 /** JSON 문자열이면 파싱하고, 아니면(빈 값 등) 안전한 기본값을 돌려준다. */
 function parseJsonField_(raw, fallback) {
   if (raw === "" || raw === null || raw === undefined) return fallback;

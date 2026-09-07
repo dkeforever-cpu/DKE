@@ -27,16 +27,10 @@ function doGet(e) {
 }
 
 /**
- * App.html/Style.html/Function.html을 <?!= include(...); ?> 스크립틀릿으로
- * 합치는 방식을 시도했었으나, 실제 배포에서 "Unexpected identifier '$'"
- * 파싱 에러가 파일 크기와 무관하게 반복 발생했다(360KB짜리도 실패) —
- * 반면 예전에 실제로 성공했던 체크포인트는 644KB나 됐지만 스크립틀릿 없이
- * 파일 하나였다. 즉 크기가 아니라 그 템플릿 방식 자체가 실제 앱스크립트
- * 환경에서 문제였던 것으로 보고(로컬 시뮬레이션으로는 재현 불가), 그
- * 방식을 버리고 예전에 확실히 동작했던 단순한 방식(파일 하나,
- * createHtmlOutputFromFile만 사용)으로 되돌린다.
+ * 화면(App.html)은 파일 하나로 유지한다 — <?!= include(...); ?>로 조각
+ * 파일을 합치는 방식을 시도했었으나, 실제 배포에서 크기와 무관하게 파싱
+ * 에러가 반복 발생해 포기했다(로컬 테스트로는 재현되지 않는 문제였다).
  */
-
 /** 이 배포의 안정적인 웹 앱 주소(재배포해도 바뀌지 않음)를 앱 화면에 심어준다. */
 function serveApp_() {
   var appHtml = HtmlService.createHtmlOutputFromFile("App").getContent();
@@ -102,8 +96,6 @@ function route_(action, payload) {
       return handleUpdate_(payload.entity, payload.id, payload.patch);
     case "delete":
       return handleDelete_(payload.entity, payload.id);
-    case "uploadFile":
-      return handleUploadFile_(payload);
     case "deleteFile":
       return handleDeleteFile_(payload);
     default:
