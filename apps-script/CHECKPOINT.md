@@ -30,6 +30,5 @@
 
 ## 이 시점으로 되돌리는 법
 ```
-git checkout <이 커밋 해시> -- apps-script/ src/lib/gas-client.ts src/lib/download.ts src/lib/seed-data-mgmt-support.ts
+git checkout 3bd20d5 -- apps-script/ src/lib/gas-client.ts src/lib/download.ts src/lib/seed-data-mgmt-support.ts
 ```
-(정확한 커밋 해시는 `git log --oneline -- apps-script/CHECKPOINT.md`로 확인)
