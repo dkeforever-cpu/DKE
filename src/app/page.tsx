@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [centerFilter, setCenterFilter] = useState("전체");
   const [assigneeFilter, setAssigneeFilter] = useState("전체");
   const [statusFilter, setStatusFilter] = useState<"전체" | Status>("전체");
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<"전체" | Priority>("전체");
   const [includeReported, setIncludeReported] = useState(true);
   const [includeTasksInCalendar, setIncludeTasksInCalendar] = useState(true);
@@ -100,6 +101,7 @@ export default function DashboardPage() {
       if (centerFilter !== "전체" && t.center !== centerFilter) return false;
       if (assigneeFilter !== "전체" && t.assigneeId !== assigneeFilter) return false;
       if (statusFilter !== "전체" && t.status !== statusFilter) return false;
+      if (overdueOnly && !isOverdue(t.dueDate, t.status)) return false;
       if (priorityFilter !== "전체" && t.priority !== priorityFilter) return false;
       if (!includeReported && t.reported) return false;
       if (q) {
@@ -118,7 +120,17 @@ export default function DashboardPage() {
       }
       return true;
     });
-  }, [scoped, centerFilter, assigneeFilter, statusFilter, priorityFilter, includeReported, search, getUser]);
+  }, [
+    scoped,
+    centerFilter,
+    assigneeFilter,
+    statusFilter,
+    overdueOnly,
+    priorityFilter,
+    includeReported,
+    search,
+    getUser,
+  ]);
 
   const summary = useMemo(() => {
     const base = scoped;
@@ -134,6 +146,21 @@ export default function DashboardPage() {
   function handleTeamChange(next: string) {
     setTeamTab(next);
     setSelection({ type: "all" });
+  }
+
+  // 요약 건수(진행중/검토중/완료/마감 연체)를 눌렀을 때 그 상태의 업무만
+  // 걸러서 보여준다 — 이미 같은 조건이 걸려있으면 다시 눌러서 해제한다.
+  function toggleStatusFilter(status: Status) {
+    setOverdueOnly(false);
+    setStatusFilter((prev) => (prev === status ? "전체" : status));
+  }
+  function toggleOverdueOnly() {
+    setStatusFilter("전체");
+    setOverdueOnly((prev) => !prev);
+  }
+  function clearSummaryFilter() {
+    setStatusFilter("전체");
+    setOverdueOnly(false);
   }
 
   if (!ready || !currentUser) return null;
@@ -204,15 +231,45 @@ export default function DashboardPage() {
 
       <div className="dashboard-desktop-pane flex-1 flex-col gap-1.5 overflow-hidden p-2">
         <div className="flex items-center gap-0 border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
-          <SummaryCell label={`${teamName} · ${selectionLabel}`} value={summary.total} />
+          <SummaryCell
+            label={`${teamName} · ${selectionLabel}`}
+            value={summary.total}
+            active={statusFilter === "전체" && !overdueOnly}
+            onClick={clearSummaryFilter}
+          />
           <Divider />
-          <SummaryCell label="진행중" value={summary.진행중} color="var(--accent)" />
+          <SummaryCell
+            label="진행중"
+            value={summary.진행중}
+            color="var(--accent)"
+            active={statusFilter === "진행중"}
+            onClick={() => toggleStatusFilter("진행중")}
+          />
           <Divider />
-          <SummaryCell label="검토중" value={summary.검토중} color="var(--warning-text)" />
+          <SummaryCell
+            label="검토중"
+            value={summary.검토중}
+            color="var(--warning-text)"
+            active={statusFilter === "검토중"}
+            onClick={() => toggleStatusFilter("검토중")}
+          />
           <Divider />
-          <SummaryCell label="완료" value={summary.완료} color="var(--success)" />
+          <SummaryCell
+            label="완료"
+            value={summary.완료}
+            color="var(--success)"
+            active={statusFilter === "완료"}
+            onClick={() => toggleStatusFilter("완료")}
+          />
           <Divider />
-          <SummaryCell label="마감 연체" value={summary.연체} color="var(--danger)" labelColor="var(--danger-text)" />
+          <SummaryCell
+            label="마감 연체"
+            value={summary.연체}
+            color="var(--danger)"
+            labelColor="var(--danger-text)"
+            active={overdueOnly}
+            onClick={toggleOverdueOnly}
+          />
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -365,21 +422,30 @@ function SummaryCell({
   value,
   color = "var(--text)",
   labelColor = "var(--text-faint)",
+  active = false,
+  onClick,
 }: {
   label: string;
   value: number;
   color?: string;
   labelColor?: string;
+  active?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-baseline gap-1.5 px-3.5 first:pl-0 last:pr-0">
-      <span className="text-[10.5px]" style={{ color: labelColor }}>
+    <button
+      onClick={onClick}
+      title={onClick ? "눌러서 이 상태의 업무만 보기 (다시 누르면 해제)" : undefined}
+      className="flex items-baseline gap-1.5 rounded-[3px] px-3.5 py-0.5 first:pl-0 last:pr-0 hover:bg-[var(--surface-alt)]"
+      style={active ? { background: "var(--accent-soft-bg)" } : undefined}
+    >
+      <span className="text-[10.5px]" style={{ color: active ? "var(--accent-soft-fg)" : labelColor }}>
         {label}
       </span>
-      <span className="text-[13px] font-bold" style={{ color }}>
+      <span className="text-[13px] font-bold" style={{ color: active ? "var(--accent-soft-fg)" : color }}>
         {value}
       </span>
-    </div>
+    </button>
   );
 }
 
