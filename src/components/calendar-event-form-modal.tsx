@@ -19,7 +19,7 @@ export function CalendarEventFormModal({
   event?: CalendarEvent;
   onClose: () => void;
 }) {
-  const { addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, canEdit, currentUser } = useStore();
+  const { addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, canEdit, currentUser, getUser } = useStore();
   const { confirm } = useConfirmDialog();
 
   const [title, setTitle] = useState(event?.title ?? "");
@@ -119,6 +119,11 @@ export function CalendarEventFormModal({
             placeholder="예: 여름 휴가"
             className={inputCls}
           />
+          {event && (
+            <div className="mt-1 text-[9.5px] text-[var(--text-faintest)]">
+              작성자: {getUser(event.createdBy)?.name ?? event.createdBy}
+            </div>
+          )}
         </Field>
 
         <div className="flex gap-2">
