@@ -380,6 +380,7 @@ interface StoreContextValue {
   notifications: Notification[];
   calendarEvents: CalendarEvent[];
   appTitle: string;
+  appIconUrl?: string;
   currentUser: User | null;
   ready: boolean;
 
@@ -467,6 +468,7 @@ interface StoreContextValue {
   deleteCalendarEvent: (id: string) => void;
 
   updateAppTitle: (title: string) => void;
+  updateAppIcon: (url: string) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -1501,6 +1503,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [pushUpdate, logActivity]
   );
 
+  // 로그인 화면·상단바 로고에 쓸 아이콘. 빈 문자열을 주면 기본 내장
+  // 아이콘으로 되돌린다.
+  const updateAppIcon = useCallback(
+    (url: string) => {
+      setData((prev) => ({ ...prev, settings: { ...prev.settings, appIconUrl: url } }));
+      pushUpdate("settings", "app", { appIconUrl: url });
+      logActivity("update", "settings", "app", url ? "프로그램 아이콘 변경" : "프로그램 아이콘을 기본값으로 되돌림");
+    },
+    [pushUpdate, logActivity]
+  );
+
   const value: StoreContextValue = {
     teams: data.teams,
     centers: data.centers,
@@ -1516,6 +1529,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     notifications: data.notifications,
     calendarEvents: data.calendarEvents,
     appTitle: data.settings.appTitle,
+    appIconUrl: data.settings.appIconUrl,
     currentUser,
     ready,
     backendConfigured,
@@ -1573,6 +1587,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     updateCalendarEvent,
     deleteCalendarEvent,
     updateAppTitle,
+    updateAppIcon,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -9,7 +9,8 @@ import { ThemeSettingsModal } from "@/components/theme-settings-modal";
 import { ChangePasswordModal } from "@/components/change-password-modal";
 
 export function TopBar() {
-  const { currentUser, teams, logout, appTitle, backendConfigured, refreshing, refreshFromBackend } = useStore();
+  const { currentUser, teams, logout, appTitle, appIconUrl, backendConfigured, refreshing, refreshFromBackend } =
+    useStore();
   const { mode, toggleMode, viewMode, setViewMode } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -32,12 +33,17 @@ export function TopBar() {
     <div className="flex h-9 flex-none items-center justify-between gap-2 overflow-hidden border-b border-[var(--border)] bg-[var(--surface)] px-3">
       <div className="flex min-w-0 flex-none items-center gap-2">
         <button onClick={() => router.push("/")} className="flex flex-none items-center gap-[7px]">
-          <div className="flex h-[19px] w-[19px] flex-none items-center justify-center rounded-[4px] bg-[var(--accent)]">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="7" width="18" height="12" rx="1" />
-              <path d="M3 11.5h18" />
-              <path d="M8 7V5.2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V7" />
-            </svg>
+          <div className="flex h-[19px] w-[19px] flex-none items-center justify-center overflow-hidden rounded-[4px] bg-[var(--accent)]">
+            {appIconUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={appIconUrl} alt="" className="h-full w-full" style={{ objectFit: "contain" }} />
+            ) : (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="7" width="18" height="12" rx="1" />
+                <path d="M3 11.5h18" />
+                <path d="M8 7V5.2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V7" />
+              </svg>
+            )}
           </div>
           <div className="hidden whitespace-nowrap text-[12.5px] font-bold text-[var(--text)] sm:block">
             {appTitle}

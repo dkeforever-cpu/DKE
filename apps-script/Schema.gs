@@ -97,7 +97,7 @@ var SCHEMA = {
   // 표시할 프로그램 제목을 바꿀 수 있게 하기 위함.
   settings: {
     sheet: "Settings",
-    headers: ["id", "appTitle"],
+    headers: ["id", "appTitle", "appIconUrl"],
     json: [],
   },
 

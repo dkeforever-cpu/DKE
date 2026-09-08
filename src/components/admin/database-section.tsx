@@ -39,6 +39,7 @@ export function DatabaseSection() {
     resources,
     calendarEvents,
     appTitle,
+    appIconUrl,
     backendConfigured,
   } = useStore();
   const tables: Record<string, unknown> = {
@@ -52,7 +53,7 @@ export function DatabaseSection() {
     logEntries,
     comments,
     resources,
-    settings: { id: "app", appTitle },
+    settings: { id: "app", appTitle, appIconUrl },
     calendarEvents,
   };
   const [openTable, setOpenTable] = useState<string | null>("tasks");

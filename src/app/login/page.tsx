@@ -7,7 +7,7 @@ import { BackendSettingsModal } from "@/components/backend-settings-modal";
 import { getSelfHostedBackendUrl, hasBackendConfig } from "@/lib/gas-client";
 
 export default function LoginPage() {
-  const { teams, login, ready, resetDemoData, backendConfigured, backendError, retryBackend, appTitle } =
+  const { teams, login, ready, resetDemoData, backendConfigured, backendError, retryBackend, appTitle, appIconUrl } =
     useStore();
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -41,12 +41,20 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-1 items-center justify-center bg-[var(--bg)] p-6">
       <div className="w-full max-w-[360px] border border-[var(--border)] bg-[var(--surface)] p-6">
         <div className="mb-6 flex flex-col items-center gap-1.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[4px]" style={{ background: "var(--accent)" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-fg)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="7" width="18" height="12" rx="1" />
-              <path d="M3 11.5h18" />
-              <path d="M8 7V5.2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V7" />
-            </svg>
+          <div
+            className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-[4px]"
+            style={{ background: "var(--accent)" }}
+          >
+            {appIconUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={appIconUrl} alt="" className="h-full w-full" style={{ objectFit: "contain" }} />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-fg)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="7" width="18" height="12" rx="1" />
+                <path d="M3 11.5h18" />
+                <path d="M8 7V5.2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V7" />
+              </svg>
+            )}
           </div>
           <div className="text-center text-[14.5px] font-bold tracking-tight text-[var(--text)]">
             {appTitle}

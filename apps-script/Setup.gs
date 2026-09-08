@@ -44,6 +44,18 @@ function ensureSheet_(name, headers) {
   if (sheet.getLastRow() === 0) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.setFrozenRows(1);
+  } else {
+    // 이미 만들어진(데이터가 있는) 시트라면, 그 뒤에 SCHEMA에 새로 추가된
+    // 헤더(예: 나중에 추가된 appIconUrl 컬럼)가 있어도 "1. 초기 설정"을
+    // 다시 실행하기 전까진 실제 시트에는 반영이 안 된다 — 기존 컬럼
+    // 순서/데이터는 그대로 두고, 빠진 헤더만 뒤에 이어 붙인다.
+    var existingHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
+    var missing = headers.filter(function (h) {
+      return existingHeaders.indexOf(h) === -1;
+    });
+    if (missing.length > 0) {
+      sheet.getRange(1, existingHeaders.length + 1, 1, missing.length).setValues([missing]);
+    }
   }
   // 날짜처럼 생긴 문자열(created At 등)을 구글 시트가 멋대로 "날짜" 타입
   // 셀로 재해석하지 못하도록, 데이터 영역 전체를 일반 텍스트 서식으로

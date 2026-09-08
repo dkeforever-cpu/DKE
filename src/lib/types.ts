@@ -3,11 +3,14 @@ export interface Team {
   name: string;
 }
 
-// 관리자가 로그인 화면·상단바에 표시할 프로그램 제목을 바꿀 수 있게 하는
-// 앱 전역 설정. 항상 단일 행(id="app")만 존재한다.
+// 관리자가 로그인 화면·상단바에 표시할 프로그램 제목·아이콘을 바꿀 수
+// 있게 하는 앱 전역 설정. 항상 단일 행(id="app")만 존재한다.
 export interface AppSettings {
   id: string;
   appTitle: string;
+  // 구글 드라이브 공개 URL(연동 중) 또는 data: URL(로컬 저장 모드) — 없으면
+  // 기본 내장 아이콘을 쓴다.
+  appIconUrl?: string;
 }
 
 export interface User {
