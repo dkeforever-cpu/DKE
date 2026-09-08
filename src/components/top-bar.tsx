@@ -7,6 +7,7 @@ import { useTheme, ViewMode } from "@/lib/theme";
 import { Avatar } from "@/components/avatar";
 import { ThemeSettingsModal } from "@/components/theme-settings-modal";
 import { ChangePasswordModal } from "@/components/change-password-modal";
+import { getSelfHostedBackendUrl } from "@/lib/gas-client";
 
 export function TopBar() {
   const { currentUser, teams, logout, appTitle, backendConfigured, refreshing, refreshFromBackend } = useStore();
@@ -25,13 +26,21 @@ export function TopBar() {
     // 때뿐이다. 로그인 쪽에 걸면 다음 로그인마다 전체 페이지를 다시
     // 불러오느라 몇 초씩 흰 화면이 뜰 수 있어서, 대신 로그아웃하는
     // 순간(어차피 로그인 화면으로 돌아가는 타이밍이라 잠깐의 로딩이
-    // 덜 거슬림)에 캐시를 타지 않는 새 주소로 이동시킨다(주소 끝에
-    // 매번 다른 값을 붙이면 브라우저가 캐시를 쓰지 않고 서버에 새로
-    // 요청한다 — 강력 새로고침과 같은 효과). logout()이 이미
-    // localStorage의 로그인 정보를 지웠으니, 새로 불러온 페이지는
-    // 로그인 화면으로 시작한다.
-    window.location.href =
-      window.location.origin + window.location.pathname + "?_r=" + Date.now() + "#/login";
+    // 덜 거슬림)에 캐시를 타지 않는 새 주소로 이동시킨다.
+    //
+    // 구글 앱스크립트 웹 앱은 .../exec 주소로 접속하면 실제 화면은
+    // 그 뒤에서 임시 실행 주소(script.googleusercontent.com, 그 순간만
+    // 유효한 값이 붙어있음)로 한 번 더 이동해서 보여준다. window.location
+    // 은 이 임시 주소를 가리키므로, 여기서 origin/pathname을 그대로
+    // 가져다 새로고침하면 이미 만료됐을 수 있는 임시 주소로 다시 접속을
+    // 시도하게 되어 응답 없이 멈출 수 있다. 재배포해도 바뀌지 않는 진짜
+    // 배포 주소(window.__DKE_BACKEND_URL__, serveApp_이 심어준 값)를
+    // 대신 쓰고, window.top으로 이동시켜 혹시 이 페이지가 프레임 안에
+    // 있는 경우에도 최상위 창 자체가 그 주소로 다시 열리게 한다(프레임이
+    // 아니면 window.top은 window 자신이라 평소와 동일하게 동작한다).
+    const stableUrl = getSelfHostedBackendUrl() || window.location.origin + window.location.pathname;
+    const sep = stableUrl.includes("?") ? "&" : "?";
+    (window.top || window).location.href = stableUrl + sep + "_r=" + Date.now() + "#/login";
   }
 
   async function handleRefresh() {
