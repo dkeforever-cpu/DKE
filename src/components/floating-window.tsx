@@ -65,6 +65,32 @@ export function FloatingWindow({
     posRef.current = pos;
   }, [pos]);
 
+  // 포인터가 빠르게 움직이면 브라우저는 화면 새로고침 빈도(보통 60Hz)보다
+  // 훨씬 잦은 빈도로 pointermove를 쏠 수 있다(트랙패드·고폴링레이트 마우스
+  // 등). 이 창은 화면 배율 상쇄를 위해 zoom CSS 속성을 쓰는데(위 주석
+  // 참고), zoom은 transform과 달리 레이아웃을 다시 계산시키는 무거운
+  // 속성이라, pointermove가 올 때마다 매번 setState → 리렌더 → zoom
+  // 레이아웃 재계산을 반복하면 프레임을 못 따라가 눈에 띄게 끊겨 보인다.
+  // 프레임당 최대 한 번만 실제로 반영되도록 requestAnimationFrame으로
+  // 묶어서(coalesce), 같은 프레임 안에 여러 번 들어온 pointermove는
+  // 마지막 값 하나로만 커밋한다.
+  const pendingUpdateRef = useRef<(() => void) | null>(null);
+  const rafRef = useRef<number | null>(null);
+  function scheduleUpdate(fn: () => void) {
+    pendingUpdateRef.current = fn;
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      pendingUpdateRef.current?.();
+      pendingUpdateRef.current = null;
+    });
+  }
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     const w = Math.min(defaultWidth, window.innerWidth - EDGE_MARGIN * 2);
     const h = Math.min(defaultHeight, window.innerHeight - EDGE_MARGIN * 2);
@@ -130,8 +156,10 @@ export function FloatingWindow({
       Math.min(dragState.current.origX + dx, window.innerWidth - EDGE_MARGIN)
     );
     const ny = Math.max(0, Math.min(dragState.current.origY + dy, window.innerHeight - HEADER_H));
-    setPos({ x: nx, y: ny });
-    setMaximized(false);
+    scheduleUpdate(() => {
+      setPos({ x: nx, y: ny });
+      setMaximized(false);
+    });
   }
 
   // 마우스를 빠르게 움직이면 브라우저가 pointerup 대신 pointercancel을 보낼
@@ -163,8 +191,10 @@ export function FloatingWindow({
     const maxH = Math.min(window.innerHeight - pos.y - EDGE_MARGIN, window.innerHeight - EDGE_MARGIN * 2);
     const w = Math.max(minWidth, Math.min(resizeState.current.origW + dx, maxW));
     const h = Math.max(minHeight, Math.min(resizeState.current.origH + dy, maxH));
-    setSize({ width: w, height: h });
-    setMaximized(false);
+    scheduleUpdate(() => {
+      setSize({ width: w, height: h });
+      setMaximized(false);
+    });
     e.stopPropagation();
   }
 
