@@ -39,7 +39,14 @@ import { CENTERS as SEED_CENTERS, nextLargeCode, nextMediumCode, seedCategoriesB
 import { addNode, applyChecklist, computeProgress, findNode, flatten, removeNode, updateNode } from "./checklist";
 import { generateTaskNumber } from "./format";
 import { DEFAULT_PASSWORD_HASH, sha256Hex } from "./auth";
-import { gas, GasApiError, hasBackendConfig } from "./gas-client";
+import {
+  gas,
+  GasApiError,
+  getInviteToken,
+  getSelfHostedBackendUrl,
+  hasBackendConfig,
+  setBackendConfig,
+} from "./gas-client";
 
 const STORAGE_KEY = "dke-task-system-v2";
 const SESSION_KEY = "dke-task-system-current-user";
@@ -486,7 +493,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function init() {
-      const configured = hasBackendConfig();
+      let configured = hasBackendConfig();
+      // "초대 링크"(?t=<토큰>)로 접속한 경우 — 아직 이 브라우저에 연동 설정이
+      // 없으면 URL에 심어진 토큰으로 자동 연동한다. 팀원이 링크만 열면 되고,
+      // 관리자가 API 토큰을 따로 알려줄 필요가 없다. 한 번 저장한 뒤에는
+      // 주소창에 토큰이 남아있지 않도록 정리한다.
+      if (!configured) {
+        const inviteToken = getInviteToken();
+        const selfUrl = getSelfHostedBackendUrl();
+        if (inviteToken && selfUrl) {
+          setBackendConfig(selfUrl, inviteToken);
+          configured = true;
+          window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+        }
+      }
       setBackendConfigured(configured);
       setCurrentUserId(loadCurrentUserId());
       if (configured) {

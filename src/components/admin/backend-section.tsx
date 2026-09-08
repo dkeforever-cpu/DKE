@@ -8,7 +8,18 @@ import { BackendSettingsModal } from "@/components/backend-settings-modal";
 export function BackendSection() {
   const { backendConfigured, syncError, dismissSyncError } = useStore();
   const [open, setOpen] = useState(false);
+  const [copyMsg, setCopyMsg] = useState("");
   const config = getBackendConfig();
+  const inviteLink = config ? `${config.url}?t=${config.token}` : "";
+
+  async function copyInviteLink() {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopyMsg("복사되었습니다.");
+    } catch {
+      setCopyMsg("자동 복사가 막혀 있어요 — 아래 링크를 직접 선택해 복사해주세요.");
+    }
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -40,6 +51,37 @@ export function BackendSection() {
           {backendConfigured ? "설정 다시 열기" : "지금 연동하기"}
         </button>
       </div>
+
+      {backendConfigured && config && (
+        <div className="flex flex-col gap-1.5 border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2.5">
+          <div className="text-[11.5px] font-semibold text-[var(--text)]">초대 링크</div>
+          <div className="text-[10px] leading-relaxed text-[var(--text-faintest)]">
+            이 링크로 접속하면 API 토큰을 직접 입력하지 않아도 자동으로 연동됩니다. 팀원에게 이
+            링크를 보내주세요. 토큰이 그대로 담겨있는 링크라, 아무나 접근할 수 없는 곳(사내
+            메신저 등)으로만 전달해주세요.
+          </div>
+          <div className="flex items-center gap-1.5">
+            <input
+              readOnly
+              value={inviteLink}
+              onFocus={(e) => e.currentTarget.select()}
+              className="h-7 flex-1 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[10.5px] text-[var(--text)] outline-none"
+            />
+            <button
+              onClick={copyInviteLink}
+              className="h-7 flex-none rounded-[2px] px-2.5 text-[10.5px] font-semibold"
+              style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+            >
+              링크 복사
+            </button>
+          </div>
+          {copyMsg && (
+            <div className="text-[10px]" style={{ color: "var(--success)" }}>
+              {copyMsg}
+            </div>
+          )}
+        </div>
+      )}
 
       {syncError && (
         <div

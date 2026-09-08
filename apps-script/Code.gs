@@ -23,7 +23,7 @@ function doGet(e) {
   if (raw) {
     return handleApiRequest_(raw);
   }
-  return serveApp_();
+  return serveApp_(e);
 }
 
 /**
@@ -31,15 +31,34 @@ function doGet(e) {
  * 파일을 합치는 방식을 시도했었으나, 실제 배포에서 크기와 무관하게 파싱
  * 에러가 반복 발생해 포기했다(로컬 테스트로는 재현되지 않는 문제였다).
  */
-/** 이 배포의 안정적인 웹 앱 주소(재배포해도 바뀌지 않음)를 앱 화면에 심어준다. */
-function serveApp_() {
+/**
+ * 이 배포의 안정적인 웹 앱 주소(재배포해도 바뀌지 않음)를 앱 화면에 심어준다.
+ * 주소에 ?t=<API_TOKEN>이 붙어 있으면("초대 링크") 그 토큰도 함께 심어서,
+ * 프론트엔드가 별도 입력 없이 자동으로 연동을 마칠 수 있게 한다 — 관리자가
+ * 매번 팀원에게 토큰을 따로 알려줄 필요가 없다.
+ */
+function serveApp_(e) {
   var appHtml = HtmlService.createHtmlOutputFromFile("App").getContent();
   var backendUrl = ScriptApp.getService().getUrl();
-  var bootstrap = "<script>window.__DKE_BACKEND_URL__=" + JSON.stringify(backendUrl) + ";</script>";
+  // e.parameter.t는 URL 쿼리 파라미터라 누구나 원하는 값을 넣어 요청할 수
+  // 있다 — 실제 발급된 토큰(32자리 16진수, Utilities.getUuid() 기반)
+  // 형태가 아니면 무시하고, 그래도 아래에서 한 번 더 이스케이프해 이
+  // 값이 인라인 <script> 태그를 조기 종료시키는 데(예: "</script><script>...")
+  // 쓰이지 못하게 막는다.
+  var inviteTokenRaw = (e && e.parameter && e.parameter.t) || "";
+  var inviteToken = /^[a-f0-9]{16,64}$/i.test(inviteTokenRaw) ? inviteTokenRaw : "";
+  var bootstrap =
+    "<script>window.__DKE_BACKEND_URL__=" + escapeForInlineScript_(JSON.stringify(backendUrl)) +
+    ";window.__DKE_INVITE_TOKEN__=" + escapeForInlineScript_(JSON.stringify(inviteToken)) + ";</script>";
   var withBootstrap = appHtml.replace("<head>", "<head>" + bootstrap);
   return HtmlService.createHtmlOutput(withBootstrap)
     .setTitle(getAppTitle_())
     .addMetaTag("viewport", "width=device-width, initial-scale=1");
+}
+
+/** JSON 문자열 안에 "</script"가 있어도 인라인 <script> 태그를 조기 종료시키지 못하게 막는다. */
+function escapeForInlineScript_(json) {
+  return json.replace(/<\/script/gi, "<\\/script");
 }
 
 /**

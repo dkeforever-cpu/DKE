@@ -48,6 +48,16 @@ export function getSelfHostedBackendUrl(): string | null {
   return (window as unknown as { __DKE_BACKEND_URL__?: string }).__DKE_BACKEND_URL__ || null;
 }
 
+/**
+ * "초대 링크"(웹 앱 URL 뒤에 ?t=<API_TOKEN>이 붙은 주소)로 접속했을 때
+ * Code.gs의 serveApp_이 심어준 토큰 값. 유효한 형식이 아니면 서버가 이미
+ * 빈 문자열로 걸러서 내려주므로, 여기서는 있는 그대로 돌려주기만 한다.
+ */
+export function getInviteToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return (window as unknown as { __DKE_INVITE_TOKEN__?: string }).__DKE_INVITE_TOKEN__ || null;
+}
+
 export class GasApiError extends Error {}
 
 async function call<T>(action: string, payload: unknown = {}, configOverride?: BackendConfig): Promise<T> {
