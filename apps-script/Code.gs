@@ -344,14 +344,85 @@ function cascadeDeleteCategoryLarge_(largeId) {
 // bootstrap — 프론트엔드가 처음 로드할 때 한 번에 받아가는 전체 데이터
 // ---------------------------------------------------------------------
 
+// bootstrap이 쓰는 엔티티만(activityLogs 제외 — 그건 "기록" 탭에서만
+// 따로 조회한다) 나열해서, 시트 이름 하나로 batchGet 결과 맵과
+// schemaFor_ 양쪽을 다 찾을 수 있게 한다.
+var BOOTSTRAP_ENTITIES_ = [
+  "teams", "centers", "categoryLarge", "categoryMedium", "boards",
+  "customFields", "users", "tasks", "checklistItems", "logEntries",
+  "comments", "resources", "notifications", "settings",
+];
+
+/**
+ * 시트를 하나씩(엔티티 개수만큼) 여는 대신 구글 "고급 Sheets API"의
+ * batchGet으로 전부 한 번의 호출에 묶어서 읽는다 — 시트를 열 때마다
+ * 생기는 왕복 오버헤드가 데이터가 많아질수록 그대로 지연으로 쌓이는데,
+ * 이 방식은 몇 개를 읽든 왕복이 한 번이라 그 오버헤드가 늘어나지 않는다.
+ *
+ * 이 서비스는 Apps Script 편집기에서 따로 켜야 한다(왼쪽 "서비스" 옆 +
+ * → Google Sheets API 추가). 켜져 있지 않거나 이 호출이 어떤 이유로든
+ * 실패하면 여기서 예외가 나고, 호출부(handleBootstrap_)가 그 사실을
+ * 감지해서 시트를 하나씩 읽는 예전 방식으로 그대로 되돌아간다 — 즉
+ * 이 최적화가 실패해도 bootstrap 자체가 죽지는 않고, 다만 느려질 뿐이다.
+ * 실패 사유는 Apps Script 실행 기록(Executions)의 로그에 남는다.
+ */
+function batchReadAllSheets_(sheetNames) {
+  var ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  var response = Sheets.Spreadsheets.Values.batchGet(ssId, {
+    ranges: sheetNames,
+    valueRenderOption: "UNFORMATTED_VALUE",
+  });
+  var byName = {};
+  (response.valueRanges || []).forEach(function (vr, i) {
+    byName[sheetNames[i]] = valuesToObjects_(vr.values || []);
+  });
+  return byName;
+}
+
+/** batchGet이 돌려준 2차원 배열을, sheetToObjects_와 같은 모양(헤더 기준 객체 배열)으로 바꾼다. */
+function valuesToObjects_(values) {
+  if (values.length < 2) return [];
+  var headers = values[0];
+  return values
+    .slice(1)
+    .filter(function (row) {
+      return row[0] !== "" && row[0] !== undefined && row[0] !== null;
+    })
+    .map(function (row) {
+      var obj = {};
+      headers.forEach(function (h, i) {
+        obj[h] = normalizeCellValue_(row[i] === undefined ? "" : row[i]);
+      });
+      return obj;
+    });
+}
+
 function handleBootstrap_() {
-  var teams = sheetToObjects_(getSheet_(schemaFor_("teams").sheet));
-  var centers = sheetToObjects_(getSheet_(schemaFor_("centers").sheet)).map(function (r) {
+  var sheetNames = BOOTSTRAP_ENTITIES_.map(function (entity) {
+    return schemaFor_(entity).sheet;
+  });
+  var byName = null;
+  try {
+    byName = batchReadAllSheets_(sheetNames);
+  } catch (e) {
+    Logger.log("batchGet으로 bootstrap 읽기 실패, 시트별 개별 조회로 대체: " + e);
+    byName = null;
+  }
+
+  /** entity에 해당하는 원본 행(디코딩 전)을, batchGet 결과가 있으면 그걸, 없으면 예전 방식으로 읽어 돌려준다. */
+  function rowsFor(entity) {
+    var sheet = schemaFor_(entity).sheet;
+    if (byName && byName[sheet]) return byName[sheet];
+    return sheetToObjects_(getSheet_(sheet));
+  }
+
+  var teams = rowsFor("teams");
+  var centers = rowsFor("centers").map(function (r) {
     return r.name;
   });
 
-  var largeRows = sheetToObjects_(getSheet_(schemaFor_("categoryLarge").sheet));
-  var mediumRows = sheetToObjects_(getSheet_(schemaFor_("categoryMedium").sheet));
+  var largeRows = rowsFor("categoryLarge");
+  var mediumRows = rowsFor("categoryMedium");
   var mediumsByLarge = {};
   mediumRows.forEach(function (m) {
     if (!mediumsByLarge[m.largeId]) mediumsByLarge[m.largeId] = [];
@@ -368,18 +439,18 @@ function handleBootstrap_() {
     });
   });
 
-  var boards = sheetToObjects_(getSheet_(schemaFor_("boards").sheet)).map(function (r) {
+  var boards = rowsFor("boards").map(function (r) {
     return decodeRow_(schemaFor_("boards"), r);
   });
-  var customFields = sheetToObjects_(getSheet_(schemaFor_("customFields").sheet)).map(function (r) {
+  var customFields = rowsFor("customFields").map(function (r) {
     return decodeRow_(schemaFor_("customFields"), r);
   });
-  var users = sheetToObjects_(getSheet_(schemaFor_("users").sheet)).map(function (r) {
+  var users = rowsFor("users").map(function (r) {
     return decodeRow_(schemaFor_("users"), r);
   });
 
-  var taskRows = sheetToObjects_(getSheet_(schemaFor_("tasks").sheet));
-  var checklistRows = sheetToObjects_(getSheet_(schemaFor_("checklistItems").sheet));
+  var taskRows = rowsFor("tasks");
+  var checklistRows = rowsFor("checklistItems");
   var checklistByTask = {};
   checklistRows.forEach(function (row) {
     if (!checklistByTask[row.taskId]) checklistByTask[row.taskId] = [];
@@ -391,20 +462,20 @@ function handleBootstrap_() {
     return task;
   });
 
-  var logEntries = sheetToObjects_(getSheet_(schemaFor_("logEntries").sheet)).map(function (r) {
+  var logEntries = rowsFor("logEntries").map(function (r) {
     return decodeRow_(schemaFor_("logEntries"), r);
   });
-  var comments = sheetToObjects_(getSheet_(schemaFor_("comments").sheet)).map(function (r) {
+  var comments = rowsFor("comments").map(function (r) {
     return decodeRow_(schemaFor_("comments"), r);
   });
-  var resources = sheetToObjects_(getSheet_(schemaFor_("resources").sheet)).map(function (r) {
+  var resources = rowsFor("resources").map(function (r) {
     return decodeRow_(schemaFor_("resources"), r);
   });
-  var notifications = sheetToObjects_(getSheet_(schemaFor_("notifications").sheet)).map(function (r) {
+  var notifications = rowsFor("notifications").map(function (r) {
     return decodeRow_(schemaFor_("notifications"), r);
   });
 
-  var settingsRows = sheetToObjects_(getSheet_(schemaFor_("settings").sheet));
+  var settingsRows = rowsFor("settings");
   var settings = settingsRows[0]
     ? decodeRow_(schemaFor_("settings"), settingsRows[0])
     : { id: "app", appTitle: "물류센터 업무관리 시스템" };
