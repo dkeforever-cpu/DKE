@@ -374,13 +374,44 @@ function batchReadAllSheets_(sheetNames) {
   });
   var byName = {};
   (response.valueRanges || []).forEach(function (vr, i) {
-    byName[sheetNames[i]] = valuesToObjects_(vr.values || []);
+    byName[sheetNames[i]] = valuesToObjects_(sheetNames[i], vr.values || []);
   });
   return byName;
 }
 
+// "@"(일반 텍스트) 서식을 걸어놔도(forceTextFormat_) 구글 시트가 날짜처럼
+// 생긴 문자열을 API로 쓸 때 내부적으로 "날짜 타입" 셀로 재해석해버리는
+// 경우가 있다 — SpreadsheetApp.getValues() 경로였다면 이런 셀이 Date
+// 객체로 돌아와서 normalizeCellValue_가 ISO 문자열로 되돌려주는데, batchGet
+// 경로는 같은 셀을 Date 객체가 아니라 시트 내부 날짜 일련번호(숫자)로
+// 돌려줘서 그 안전장치를 그냥 통과해버린다.
+//
+// 필드마다 원래 문자열 형태가 다르다 — dueDate/completedAt/startDate/
+// endDate는 항상 "YYYY-MM-DD"만, updatedAt/editedAt은 항상 전체 ISO
+// 일시만 쓴다. createdAt만 예외적으로 시트마다 다르다(Tasks·
+// CalendarEvents는 "YYYY-MM-DD", 나머지는 전체 ISO 일시) — 그래서 어떤
+// 시트에서 온 값인지도 함께 봐야 한다.
+var DATE_ONLY_HEADERS_ = { dueDate: true, completedAt: true, startDate: true, endDate: true };
+var DATETIME_HEADERS_ = { updatedAt: true, editedAt: true };
+var DATE_ONLY_CREATEDAT_SHEETS_ = { Tasks: true, CalendarEvents: true };
+
+// 구글 시트(엑셀과 동일)의 날짜 일련번호 기준일(1899-12-30)과 유닉스
+// 기준일(1970-01-01) 사이의 일수 — 이 값을 빼고 하루(ms)를 곱하면 유닉스
+// 시각이 나온다.
+var SHEETS_EPOCH_OFFSET_DAYS_ = 25569;
+
+function coerceBatchGetValue_(sheetName, header, v) {
+  if (typeof v !== "number") return v;
+  var dateOnly = DATE_ONLY_HEADERS_[header] || (header === "createdAt" && DATE_ONLY_CREATEDAT_SHEETS_[sheetName]);
+  var datetime = DATETIME_HEADERS_[header] || (header === "createdAt" && !DATE_ONLY_CREATEDAT_SHEETS_[sheetName]);
+  if (!dateOnly && !datetime) return v; // progress/level 등 실제 숫자 필드는 그대로 둔다
+  var ms = Math.round((v - SHEETS_EPOCH_OFFSET_DAYS_) * 86400 * 1000);
+  var iso = new Date(ms).toISOString();
+  return dateOnly ? iso.slice(0, 10) : iso;
+}
+
 /** batchGet이 돌려준 2차원 배열을, sheetToObjects_와 같은 모양(헤더 기준 객체 배열)으로 바꾼다. */
-function valuesToObjects_(values) {
+function valuesToObjects_(sheetName, values) {
   if (values.length < 2) return [];
   var headers = values[0];
   return values
@@ -391,7 +422,8 @@ function valuesToObjects_(values) {
     .map(function (row) {
       var obj = {};
       headers.forEach(function (h, i) {
-        obj[h] = normalizeCellValue_(row[i] === undefined ? "" : row[i]);
+        var v = row[i] === undefined ? "" : row[i];
+        obj[h] = normalizeCellValue_(coerceBatchGetValue_(sheetName, h, v));
       });
       return obj;
     });
