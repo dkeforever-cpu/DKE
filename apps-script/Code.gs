@@ -120,6 +120,13 @@ function handleApiRequest_(raw) {
   try {
     checkToken_(body.token);
     var data = route_(body.action, body.payload || {});
+    // 쓰기 작업(SpreadsheetApp.setValues 등)은 스크립트 실행이 끝날 때
+    // 자동으로 반영되지만, 그 시점까지는 같은 시트를 다른 실행(다른
+    // 사용자의 동시 요청, 또는 batchGet 기반 bootstrap)이 고급 Sheets
+    // API로 읽을 때 아직 반영 전 값을 볼 수 있다 — 락을 놓기 전에 명시적
+    // 으로 flush해서, 이 요청이 끝난 뒤 시작되는 다른 요청은 항상 방금
+    // 쓴 값을 보게 만든다.
+    if (lock) SpreadsheetApp.flush();
     return jsonResponse_({ ok: true, data: data });
   } catch (err) {
     return jsonResponse_({ ok: false, error: String((err && err.message) || err) });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChecklistItem, Comment, ResourceFile, User } from "@/lib/types";
 import { computeProgress, flatten } from "@/lib/checklist";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
@@ -193,6 +193,28 @@ function ChecklistNode({
     setEditingLabel(false);
   }
 
+  // 슬라이더를 드래그하는 동안 range input의 onChange(=네이티브 input
+  // 이벤트)가 한 틱마다(0→20→45→70→100...) 계속 발생한다. 예전에는 이
+  // 이벤트마다 매번 서버로 저장 요청을 보냈는데, 한 번의 드래그가 요청을
+  // 수십 개씩 만들어내다 보니 네트워크 지연으로 응답 순서가 뒤바뀌는
+  // 경우가 생겨 마지막에 놓은 값(예: 100%)이 아니라 드래그 도중의 중간
+  // 값으로 저장돼버리는 문제가 있었다. 드래그 중에는 화면 표시만 로컬로
+  // 즉시 갱신하고, 손을 뗀 순간(포인터업/키업/블러)에만 최종 값 한 번을
+  // 서버로 보내도록 바꿔 이 경쟁 상태를 없앤다.
+  const [liveProgress, setLiveProgress] = useState(item.progress);
+  const liveProgressRef = useRef(item.progress);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLiveProgress(item.progress);
+    liveProgressRef.current = item.progress;
+  }, [item.progress]);
+
+  function commitProgress() {
+    if (liveProgressRef.current !== item.progress) {
+      onUpdate(item.id, { progress: liveProgressRef.current });
+    }
+  }
+
   return (
     <div>
       <div
@@ -265,14 +287,21 @@ function ChecklistNode({
             min={0}
             max={100}
             step={5}
-            value={item.progress}
+            value={liveProgress}
             disabled={readOnly}
-            onChange={(e) => onUpdate(item.id, { progress: Number(e.target.value) })}
-            style={{ accentColor: progressColor(item.progress) }}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              liveProgressRef.current = v;
+              setLiveProgress(v);
+            }}
+            onPointerUp={commitProgress}
+            onKeyUp={commitProgress}
+            onBlur={commitProgress}
+            style={{ accentColor: progressColor(liveProgress) }}
             className="h-1 w-14 min-w-0 flex-none disabled:opacity-60"
           />
           <span className="w-7 flex-none text-right text-[9.5px] text-[var(--text-faintest)]">
-            {item.progress}%
+            {liveProgress}%
           </span>
         </div>
 
