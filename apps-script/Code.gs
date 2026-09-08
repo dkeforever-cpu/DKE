@@ -358,6 +358,7 @@ var BOOTSTRAP_ENTITIES_ = [
   "teams", "centers", "categoryLarge", "categoryMedium", "boards",
   "customFields", "users", "tasks", "checklistItems", "logEntries",
   "comments", "resources", "notifications", "settings", "calendarEvents",
+  "newsItems",
 ];
 
 /**
@@ -524,6 +525,10 @@ function handleBootstrap_() {
     return decodeRow_(schemaFor_("calendarEvents"), r);
   });
 
+  var newsItems = rowsFor("newsItems").map(function (r) {
+    return decodeRow_(schemaFor_("newsItems"), r);
+  });
+
   return {
     teams: teams,
     centers: centers,
@@ -538,6 +543,7 @@ function handleBootstrap_() {
     notifications: notifications,
     settings: settings,
     calendarEvents: calendarEvents,
+    newsItems: newsItems,
   };
 }
 

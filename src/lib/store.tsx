@@ -20,6 +20,8 @@ import {
   CommentTargetType,
   CustomFieldDef,
   LogEntry,
+  NewsItem,
+  NewsItemEntityType,
   Notification,
   ResourceDoc,
   ResourceFile,
@@ -70,6 +72,7 @@ interface StoreData {
   notifications: Notification[];
   settings: AppSettings;
   calendarEvents: CalendarEvent[];
+  newsItems: NewsItem[];
 }
 
 function genId(prefix: string): string {
@@ -296,6 +299,7 @@ function normalize(data: Partial<StoreData>): StoreData {
 
   const notifications = data.notifications ?? [];
   const calendarEvents = data.calendarEvents ?? [];
+  const newsItems = (data.newsItems ?? []).map((n) => ({ ...n, dismissedBy: n.dismissedBy ?? [] }));
 
   const settings: AppSettings =
     data.settings && data.settings.appTitle ? data.settings : DEFAULT_SETTINGS;
@@ -314,6 +318,7 @@ function normalize(data: Partial<StoreData>): StoreData {
     notifications,
     settings,
     calendarEvents,
+    newsItems,
   };
 }
 
@@ -333,6 +338,7 @@ function loadLocalData(): StoreData {
       notifications: [],
       settings: DEFAULT_SETTINGS,
       calendarEvents: [],
+      newsItems: [],
     };
   }
   try {
@@ -355,6 +361,7 @@ function loadLocalData(): StoreData {
     notifications: [],
     settings: DEFAULT_SETTINGS,
     calendarEvents: [],
+    newsItems: [],
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
   return seeded;
@@ -379,6 +386,8 @@ interface StoreContextValue {
   resources: ResourceDoc[];
   notifications: Notification[];
   calendarEvents: CalendarEvent[];
+  newsItems: NewsItem[]; // 로그인한 사람 기준으로 이미 걸러진, 아직 확인 안 한 항목만
+  dismissNewsItem: (id: string) => void;
   appTitle: string;
   appIconUrl?: string;
   currentUser: User | null;
@@ -487,6 +496,7 @@ const EMPTY_DATA: StoreData = {
   notifications: [],
   settings: DEFAULT_SETTINGS,
   calendarEvents: [],
+  newsItems: [],
 };
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -609,6 +619,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [currentUserId, pushCreate]
   );
 
+  // "NEW" 메뉴용 — 업무/필요 업무/댓글/일정이 새로 생길 때마다 호출한다.
+  // 개인 알림(notifications)과 달리 특정 사람이 아니라 팀 전체가 대상이라,
+  // 받는 사람 수만큼 행을 만들지 않고 이벤트당 한 행만 만든다(누가
+  // 확인했는지는 dismissedBy 배열로 따로 관리).
+  const pushNewsItem = useCallback(
+    (
+      teamId: string,
+      entityType: NewsItemEntityType,
+      targetId: string,
+      taskId: string | undefined,
+      summary: string
+    ) => {
+      if (!currentUserId) return;
+      const item: NewsItem = {
+        id: genId("news"),
+        teamId,
+        entityType,
+        targetId,
+        taskId,
+        actorId: currentUserId,
+        summary,
+        createdAt: new Date().toISOString(),
+        dismissedBy: [],
+      };
+      setData((prev) => ({ ...prev, newsItems: [item, ...prev.newsItems] }));
+      pushCreate("newsItems", item);
+    },
+    [currentUserId, pushCreate]
+  );
+
   // 수동 새로고침 버튼과 30초 백그라운드 폴링이 함께 쓰는 실제 조회 로직.
   // silent(백그라운드)일 때는 로딩 표시나 에러 배너를 띄우지 않는다 —
   // 사용자가 화면을 만지는 중에 방해가 되면 안 되기 때문에, 실패해도 다음
@@ -716,6 +756,34 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [data.tasks, canViewTask]
   );
 
+  // "NEW" 메뉴에 보일 항목 — 내가 조회 가능한 팀에서 생긴 것 중, 내가
+  // 만든 게 아니고, 아직 내가 "확인"을 안 누른 것만.
+  const visibleNewsItems = useMemo(() => {
+    if (!currentUser) return [];
+    return data.newsItems
+      .filter((n) => n.actorId !== currentUser.id && !n.dismissedBy.includes(currentUser.id))
+      .filter((n) => currentUser.isAdmin || currentUser.viewTeamIds.includes(n.teamId))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }, [data.newsItems, currentUser]);
+
+  const dismissNewsItem = useCallback(
+    (id: string) => {
+      if (!currentUserId) return;
+      setData((prev) => ({
+        ...prev,
+        newsItems: prev.newsItems.map((n) =>
+          n.id === id && !n.dismissedBy.includes(currentUserId)
+            ? { ...n, dismissedBy: [...n.dismissedBy, currentUserId] }
+            : n
+        ),
+      }));
+      const item = data.newsItems.find((n) => n.id === id);
+      const dismissedBy = item ? [...item.dismissedBy, currentUserId] : [currentUserId];
+      pushUpdate("newsItems", id, { dismissedBy });
+    },
+    [data.newsItems, currentUserId, pushUpdate]
+  );
+
   const addTask = useCallback(
     (input: Omit<Task, "id" | "createdAt" | "progress" | "taskNumber" | "reported">) => {
       const id = genId("t");
@@ -779,9 +847,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         assigneeId: input.assigneeId,
         priority: input.priority,
       });
+      pushNewsItem(input.teamId, "task", id, id, `새 업무 등록: ${input.title}`);
       return id;
     },
-    [data.tasks, data.categoriesByTeam, pushCreate, logActivity]
+    [data.tasks, data.categoriesByTeam, pushCreate, logActivity, pushNewsItem]
   );
 
   const updateTask = useCallback(
@@ -848,9 +917,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         taskId,
         label,
       });
+      pushNewsItem(task.teamId, "checklistItem", id, taskId, `새 필요 업무 등록: ${label} (업무: ${task.title})`);
       return id;
     },
-    [data.tasks, pushCreate, pushUpdate, logActivity]
+    [data.tasks, pushCreate, pushUpdate, logActivity, pushNewsItem]
   );
 
   const updateChecklistItem = useCallback(
@@ -1000,9 +1070,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         targetId: input.targetId,
         content: input.content,
       });
+      if (task) {
+        pushNewsItem(task.teamId, "comment", id, task.id, `새 댓글 등록 (업무: ${task.title})`);
+      }
       return id;
     },
-    [data.tasks, data.logEntries, pushCreate, logActivity]
+    [data.tasks, data.logEntries, pushCreate, logActivity, pushNewsItem]
   );
 
   const updateComment = useCallback(
@@ -1451,6 +1524,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       notifications: [],
       settings: DEFAULT_SETTINGS,
       calendarEvents: [],
+      newsItems: [],
     };
     setData(seeded);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
@@ -1469,9 +1543,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         startDate: input.startDate,
         endDate: input.endDate,
       });
+      // 일정은 업무와 달리 소속 팀이 없어서, 등록한 사람의 팀을 기준으로
+      // NEW를 보여준다.
+      const creatorTeamId = data.users.find((u) => u.id === input.createdBy)?.teamId;
+      if (creatorTeamId) {
+        pushNewsItem(creatorTeamId, "calendarEvent", id, undefined, `새 일정 등록: ${input.title}`);
+      }
       return id;
     },
-    [pushCreate, logActivity]
+    [data.users, pushCreate, logActivity, pushNewsItem]
   );
 
   const updateCalendarEvent = useCallback(
@@ -1533,6 +1613,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     resources: data.resources,
     notifications: data.notifications,
     calendarEvents: data.calendarEvents,
+    newsItems: visibleNewsItems,
+    dismissNewsItem,
     appTitle: data.settings.appTitle,
     appIconUrl: data.settings.appIconUrl,
     currentUser,

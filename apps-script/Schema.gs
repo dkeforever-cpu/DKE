@@ -118,6 +118,19 @@ var SCHEMA = {
     headers: ["id", "title", "description", "startDate", "endDate", "createdBy", "createdAt"],
     json: [],
   },
+
+  // "NEW" 메뉴 — 업무/일정/필요업무/댓글이 새로 생기면 같은 팀 전체에게
+  // 보이는 알림. 담당자·협업자만 보는 개인 알림(notifications)과 달리
+  // 팀 전체가 대상이라, 사람 수만큼 행을 만드는 대신 이벤트당 한 행만
+  // 만들고 그 안에 "확인한 사람" id 목록을 함께 저장한다.
+  newsItems: {
+    sheet: "NewsItems",
+    headers: [
+      "id", "teamId", "entityType", "targetId", "taskId", "actorId",
+      "summary", "createdAt", "dismissedBy",
+    ],
+    json: ["dismissedBy"],
+  },
 };
 
 function schemaFor_(entity) {

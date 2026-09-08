@@ -191,6 +191,26 @@ export interface CalendarEvent {
   createdAt: string; // YYYY-MM-DD
 }
 
+// --- NEW: 같은 팀 사람들에게 "방금 새로 생긴 것"을 알려주는 알림. 개인
+// 알림(Notification)과 달리 담당자·협업자가 아니어도 같은 팀이면 전부
+// 보인다. 사람 수만큼 행을 만드는 대신 이벤트당 한 행만 만들고, 그 안에
+// "이미 확인한 사람" 목록을 같이 저장한다 — 확인 버튼을 누르면 그 사람의
+// id만 여기 추가되고, 본인 화면에서만 사라진다(다른 사람 화면엔 그대로).
+
+export type NewsItemEntityType = "task" | "calendarEvent" | "checklistItem" | "comment";
+
+export interface NewsItem {
+  id: string;
+  teamId: string; // 이 팀 소속(viewTeamIds에 포함된) 사람에게만 보인다
+  entityType: NewsItemEntityType;
+  targetId: string; // Task/CalendarEvent/ChecklistItem/Comment 중 해당 종류의 id
+  taskId?: string; // checklistItem·comment는 눌렀을 때 이동할 업무 id가 따로 필요
+  actorId: string; // 만든 사람 — 본인에게는 보여주지 않는다
+  summary: string; // 목록에 바로 보여줄 한 줄 요약
+  createdAt: string; // ISO datetime
+  dismissedBy: string[]; // "확인"을 누른 사람들의 id
+}
+
 // --- 활동 기록: 관리자 설정의 "기록" 메뉴 — 누가 언제 무엇을 했는지.
 // bootstrap에는 포함되지 않고 필요할 때만 gas.list()로 불러온다.
 

@@ -16,7 +16,7 @@ import { AdminTabKey, Sidebar, Selection } from "@/components/sidebar";
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const viewportHeight = useZoomCorrectedViewportHeight();
-  const { boards, categoriesByTeam, tasks, currentUser, notifications } = useStore();
+  const { boards, categoriesByTeam, tasks, currentUser, notifications, newsItems } = useStore();
   const {
     teamTab,
     boardId,
@@ -55,6 +55,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unreadNotificationCount = notifications.filter(
     (n) => n.recipientId === currentUser?.id && !n.read
   ).length;
+  // newsItems는 useStore()에서 이미 로그인한 사용자 기준으로(같은 팀 +
+  // 아직 확인 안 한 것만) 걸러져 나오므로 길이만 세면 된다.
+  const newsItemCount = newsItems.length;
 
   function handleSelect(s: Selection) {
     setSelection(s);
@@ -113,6 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onOpenCalendar={handleOpenCalendar}
               onCollapse={() => setSidebarCollapsed(true)}
               unreadNotificationCount={unreadNotificationCount}
+              newsItemCount={newsItemCount}
               isAdmin={!!currentUser?.isAdmin}
               activeAdminTab={adminTab}
               onSelectAdmin={handleSelectAdmin}

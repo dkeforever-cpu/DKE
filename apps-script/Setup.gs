@@ -232,6 +232,9 @@ function importExportedJson(jsonText) {
   batchCreate_("calendarEvents", data.calendarEvents || []);
   counts.calendarEvents = (data.calendarEvents || []).length;
 
+  batchCreate_("newsItems", data.newsItems || []);
+  counts.newsItems = (data.newsItems || []).length;
+
   return counts;
 }
 
