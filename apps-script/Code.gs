@@ -66,15 +66,32 @@ function escapeForInlineScript_(json) {
  * 않았거나(시트 없음) settings 행이 비어있으면 기본값으로 대체한다 —
  * 브라우저 탭 제목(serveApp_)과 bootstrap 응답(화면 상단바·로그인 화면)
  * 양쪽에서 공용으로 쓴다.
+ *
+ * serveApp_이 화면을 돌려주기 전에 매번 이 함수를 불러 스프레드시트를
+ * 여는데, 시트 열기 자체가 앱스크립트에서 결코 가볍지 않아(수 초씩 걸릴
+ * 수 있음) 접속할 때마다 이 왕복이 그대로 "페이지가 안 뜬다"는 체감
+ * 지연으로 이어진다. 값 자체는 자주 바뀌지 않으므로 캐시해서, 관리자가
+ * 제목을 바꾼 직후를 빼면 대부분의 접속은 시트를 아예 열지 않고 끝난다.
  */
 function getAppTitle_() {
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get("app_title");
+  if (cached !== null) return cached;
+
+  var title = "물류센터 업무관리 시스템";
   try {
     var rows = sheetToObjects_(getSheet_(schemaFor_("settings").sheet));
     var row = rows[0];
-    return (row && row.appTitle) || "물류센터 업무관리 시스템";
+    title = (row && row.appTitle) || title;
   } catch (e) {
-    return "물류센터 업무관리 시스템";
+    // 시트가 아직 없는 등 — 기본값을 그대로 쓴다.
   }
+  try {
+    cache.put("app_title", title, 300); // 5분
+  } catch (e) {
+    // 캐시 저장에 실패해도 기능에는 지장 없다 — 다음 요청이 다시 시트를 읽을 뿐이다.
+  }
+  return title;
 }
 
 function doPost(e) {
@@ -82,23 +99,32 @@ function doPost(e) {
   return handleApiRequest_(raw);
 }
 
+// 시트에 실제로 쓰는(create/update/delete) 요청끼리만 서로 겹치지 않게
+// 막으면 된다 — bootstrap/list/ping 같은 읽기 전용 요청은 동시에 여러 개가
+// 들어와도 서로 부딪힐 게 없다. 예전에는 모든 요청이 이 락 하나를 함께
+// 기다렸는데, 사용자가 여러 명 접속해 있으면(특히 30초마다 자동으로
+// bootstrap을 다시 부르는 새로고침 기능 때문에) 다들 순서대로 줄을 서서
+// 기다리게 되어 화면 표시 자체가 눈에 띄게 느려지는 원인이 됐다.
+var WRITE_ACTIONS_ = { create: true, update: true, delete: true, deleteFile: true };
+
 function handleApiRequest_(raw) {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  var body = {};
   try {
-    var body = {};
-    try {
-      body = JSON.parse(raw);
-    } catch (parseErr) {
-      throw new Error("요청을 해석할 수 없습니다 (JSON 형식이어야 합니다)");
-    }
+    body = JSON.parse(raw);
+  } catch (parseErr) {
+    return jsonResponse_({ ok: false, error: "요청을 해석할 수 없습니다 (JSON 형식이어야 합니다)" });
+  }
+
+  var lock = WRITE_ACTIONS_[body.action] ? LockService.getScriptLock() : null;
+  if (lock) lock.waitLock(30000);
+  try {
     checkToken_(body.token);
     var data = route_(body.action, body.payload || {});
     return jsonResponse_({ ok: true, data: data });
   } catch (err) {
     return jsonResponse_({ ok: false, error: String((err && err.message) || err) });
   } finally {
-    lock.releaseLock();
+    if (lock) lock.releaseLock();
   }
 }
 
@@ -158,6 +184,15 @@ function handleUpdate_(entity, id, patch) {
   var idField = schema.idField || "id";
   var encodedPatch = encodeRecord_(schema, patch || {});
   var updated = updateRowByField_(sheet, schema.headers, idField, id, encodedPatch);
+  if (entity === "settings") {
+    // 프로그램 제목을 바꾼 직후에는 getAppTitle_의 5분 캐시가 옛 값을
+    // 계속 돌려주지 않도록 바로 비운다.
+    try {
+      CacheService.getScriptCache().remove("app_title");
+    } catch (e) {
+      // 무시 — 최악의 경우 최대 5분간 이전 제목이 보일 뿐이다.
+    }
+  }
   return decodeRow_(schema, updated);
 }
 
