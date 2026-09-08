@@ -168,6 +168,9 @@ export default function DashboardPage() {
   const teamName = teams.find((t) => t.id === teamTab)?.name ?? "전체";
   const selectionLabel =
     selection.type === "mine" ? "내 업무" : selection.type === "all" ? "전체 업무" : selection.large;
+  // 팀을 특정해서 고르지 않았을 때는 "전체 · 전체 업무"처럼 "전체"가
+  // 중복 표시되니, 그럴 때는 선택 라벨만 보여준다.
+  const summaryTitle = teamName === "전체" ? selectionLabel : `${teamName} · ${selectionLabel}`;
 
   return (
     <AppShell>
@@ -232,7 +235,7 @@ export default function DashboardPage() {
       <div className="dashboard-desktop-pane flex-1 flex-col gap-1.5 overflow-hidden p-2">
         <div className="flex items-center gap-0 border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
           <SummaryCell
-            label={`${teamName} · ${selectionLabel}`}
+            label={summaryTitle}
             value={summary.total}
             active={statusFilter === "전체" && !overdueOnly}
             onClick={clearSummaryFilter}
