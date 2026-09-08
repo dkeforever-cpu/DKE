@@ -404,8 +404,9 @@ function handleBootstrap_() {
   var byName = null;
   try {
     byName = batchReadAllSheets_(sheetNames);
+    Logger.log("bootstrap: batchGet 성공 (" + sheetNames.length + "개 시트를 한 번에 읽음)");
   } catch (e) {
-    Logger.log("batchGet으로 bootstrap 읽기 실패, 시트별 개별 조회로 대체: " + e);
+    Logger.log("bootstrap: batchGet 실패, 시트별 개별 조회로 대체 — 사유: " + e);
     byName = null;
   }
 
