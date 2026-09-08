@@ -35,12 +35,17 @@ export function TopBar() {
     // 가져다 새로고침하면 이미 만료됐을 수 있는 임시 주소로 다시 접속을
     // 시도하게 되어 응답 없이 멈출 수 있다. 재배포해도 바뀌지 않는 진짜
     // 배포 주소(window.__DKE_BACKEND_URL__, serveApp_이 심어준 값)를
-    // 대신 쓰고, window.top으로 이동시켜 혹시 이 페이지가 프레임 안에
-    // 있는 경우에도 최상위 창 자체가 그 주소로 다시 열리게 한다(프레임이
-    // 아니면 window.top은 window 자신이라 평소와 동일하게 동작한다).
+    // 대신 쓴다.
+    //
+    // 구글 앱스크립트는 화면 전체를 샌드박스(sandbox)가 걸린 iframe
+    // 안에서 띄운다 — 이 샌드박스는 iframe 안의 스크립트가 최상위 창
+    // (window.top)을 다른 주소로 이동시키는 걸 막아서, window.top으로
+    // 보내면 에러 없이 조용히 무시된다(F5만 실제로 통하는 이유). 반면
+    // iframe이 자기 자신을 이동시키는 건 막지 않으므로, window.top이
+    // 아니라 이 화면 자신(window.location)을 이동시킨다.
     const stableUrl = getSelfHostedBackendUrl() || window.location.origin + window.location.pathname;
     const sep = stableUrl.includes("?") ? "&" : "?";
-    (window.top || window).location.href = stableUrl + sep + "_r=" + Date.now() + "#/login";
+    window.location.href = stableUrl + sep + "_r=" + Date.now() + "#/login";
   }
 
   async function handleRefresh() {
