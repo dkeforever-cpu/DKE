@@ -100,6 +100,15 @@ var SCHEMA = {
     headers: ["id", "appTitle"],
     json: [],
   },
+
+  // 관리자 설정의 "기록" 메뉴용 — 누가 언제 무엇을 했는지. bootstrap에는
+  // 포함하지 않고 "list" action으로 필요할 때만 불러온다(계속 쌓이는
+  // 데이터라 매 로그인마다 전부 받으면 갈수록 느려지기 때문).
+  activityLogs: {
+    sheet: "ActivityLogs",
+    headers: ["id", "userId", "action", "entity", "targetId", "summary", "detail", "createdAt"],
+    json: ["detail"],
+  },
 };
 
 function schemaFor_(entity) {

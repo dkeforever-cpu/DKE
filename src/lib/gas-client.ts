@@ -193,6 +193,8 @@ export const gas = {
   create: (entity: string, record: object) => call("create", { entity, record }),
   update: (entity: string, id: string, patch: object) => call("update", { entity, id, patch }),
   remove: (entity: string, id: string) => call("delete", { entity, id }),
+  list: <T>(entity: string, options?: { userId?: string; limit?: number }) =>
+    call<T[]>("list", { entity, options }),
   uploadFile,
   deleteFile: (driveFileId: string) => call<{ deleted: boolean }>("deleteFile", { driveFileId }),
 };

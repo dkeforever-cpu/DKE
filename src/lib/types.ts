@@ -174,3 +174,17 @@ export interface Board {
   name: string;
   visibleColumns: string[]; // BUILTIN_COLUMNS keys + CustomFieldDef ids
 }
+
+// --- 활동 기록: 관리자 설정의 "기록" 메뉴 — 누가 언제 무엇을 했는지.
+// bootstrap에는 포함되지 않고 필요할 때만 gas.list()로 불러온다.
+
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  action: string; // "create" | "update" | "delete"
+  entity: string; // 예: "task", "checklistItem", "team" — 어떤 종류의 데이터인지
+  targetId: string;
+  summary: string; // 목록에 바로 보여줄 한 줄 요약
+  detail?: Record<string, unknown>; // 눌렀을 때 팝업으로 보여줄 상세 내용
+  createdAt: string; // ISO datetime
+}

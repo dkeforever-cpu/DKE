@@ -6,9 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
+  ActivityLog,
   AppSettings,
   Board,
   CategoryLarge,
@@ -380,6 +382,8 @@ interface StoreContextValue {
   syncError: string | null; // 등록 이후 개별 변경 동기화가 실패했을 때의 사유 (데이터는 화면엔 반영됨)
   retryBackend: () => void;
   dismissSyncError: () => void;
+  refreshing: boolean; // 수동 새로고침이 진행 중인지 (배경 폴링은 조용히 동작해 여기 반영되지 않음)
+  refreshFromBackend: (opts?: { silent?: boolean }) => Promise<boolean>;
 
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -475,6 +479,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [backendConfigured, setBackendConfigured] = useState(false);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // 방금 로컬에서 만든 변경(pushCreate/Update/Delete)이 서버에 아직
+  // 반영되지 않았을 수 있는 짧은 구간을 기록해둔다 — 이 구간에 백그라운드
+  // 새로고침(bootstrap 재조회)이 끼어들면 방금 만든 데이터가 서버 응답에는
+  // 없어서 화면에서 잠깐 사라지는 것처럼 보일 수 있다. 그래서 이 구간에는
+  // 새로고침 결과 적용을 건너뛰고 다음 주기(또는 다음 수동 새로고침)에
+  // 맡긴다.
+  const lastLocalMutationRef = useRef(0);
+  const markLocalMutation = useCallback(() => {
+    lastLocalMutationRef.current = Date.now();
+  }, []);
 
   const loadFromBackend = useCallback(async () => {
     setBackendError(null);
@@ -531,24 +547,97 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const pushCreate = useCallback(
     (entity: string, record: object) => {
       if (!backendConfigured) return;
+      markLocalMutation();
       gas.create(entity, record).catch((err) => setSyncError(errorMessage(err)));
     },
-    [backendConfigured]
+    [backendConfigured, markLocalMutation]
   );
   const pushUpdate = useCallback(
     (entity: string, id: string, patch: object) => {
       if (!backendConfigured) return;
+      markLocalMutation();
       gas.update(entity, id, patch).catch((err) => setSyncError(errorMessage(err)));
     },
-    [backendConfigured]
+    [backendConfigured, markLocalMutation]
   );
   const pushDelete = useCallback(
     (entity: string, id: string) => {
       if (!backendConfigured) return;
+      markLocalMutation();
       gas.remove(entity, id).catch((err) => setSyncError(errorMessage(err)));
+    },
+    [backendConfigured, markLocalMutation]
+  );
+
+  // 관리자 설정의 "기록" 메뉴용 — 각 액션 함수 끝에서 호출한다. 이 기록
+  // 자체는 로컬 state(StoreData)에 넣지 않고 서버에만 쓴다 — 계속 쌓이는
+  // 데이터라 매 로그인 bootstrap에 포함시키면 갈수록 로딩이 느려지기
+  // 때문에, "기록" 탭을 열 때만 gas.list로 따로 불러온다. 연동 전(로컬
+  // 저장 모드)에는 기록할 서버가 없으므로 조용히 아무 일도 하지 않는다.
+  const logActivity = useCallback(
+    (action: string, entity: string, targetId: string, summary: string, detail?: Record<string, unknown>) => {
+      if (!currentUserId) return;
+      const log: ActivityLog = {
+        id: genId("act"),
+        userId: currentUserId,
+        action,
+        entity,
+        targetId,
+        summary,
+        detail,
+        createdAt: new Date().toISOString(),
+      };
+      pushCreate("activityLogs", log);
+    },
+    [currentUserId, pushCreate]
+  );
+
+  // 수동 새로고침 버튼과 30초 백그라운드 폴링이 함께 쓰는 실제 조회 로직.
+  // silent(백그라운드)일 때는 로딩 표시나 에러 배너를 띄우지 않는다 —
+  // 사용자가 화면을 만지는 중에 방해가 되면 안 되기 때문에, 실패해도 다음
+  // 주기에 다시 시도하는 것으로 충분하다.
+  const refreshFromBackend = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!backendConfigured) return false;
+      if (Date.now() - lastLocalMutationRef.current < 5000) return false;
+      if (!opts?.silent) setRefreshing(true);
+      try {
+        const result = await gas.bootstrap<Partial<StoreData>>();
+        setData(normalize(result));
+        if (!opts?.silent) setSyncError(null);
+        return true;
+      } catch (err) {
+        if (!opts?.silent) setSyncError(errorMessage(err));
+        return false;
+      } finally {
+        if (!opts?.silent) setRefreshing(false);
+      }
     },
     [backendConfigured]
   );
+
+  // 연동 중일 때만, 화면이 보이는 동안에만 30초마다 조용히 최신 데이터를
+  // 받아온다(팀원이 다른 브라우저에서 만든 변경을 실시간까지는 아니어도
+  // 곧 볼 수 있게). 다른 탭에 있다가 이 탭으로 돌아올 때도 한 번 더
+  // 받아온다 — 30초를 다 못 채우고 돌아온 경우를 위해.
+  useEffect(() => {
+    if (!backendConfigured || !ready) return;
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        refreshFromBackend({ silent: true });
+      }
+    }, 30000);
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        refreshFromBackend({ silent: true });
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [backendConfigured, ready, refreshFromBackend]);
 
   const login = useCallback(
     async (username: string, password: string) => {
@@ -580,9 +669,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         users: prev.users.map((u) => (u.id === userId ? { ...u, passwordHash: newHash } : u)),
       }));
       pushUpdate("users", userId, { passwordHash: newHash });
+      logActivity("update", "user", userId, "비밀번호 변경 (본인)");
       return true;
     },
-    [data.users, pushUpdate]
+    [data.users, pushUpdate, logActivity]
   );
 
   const currentUser = useMemo(
@@ -661,32 +751,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       };
       setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
       pushCreate("logEntries", entry);
+      logActivity("create", "task", id, `업무 등록: ${input.title}`, {
+        taskNumber,
+        teamId: input.teamId,
+        assigneeId: input.assigneeId,
+        priority: input.priority,
+      });
       return id;
     },
-    [data.tasks, data.categoriesByTeam, pushCreate]
+    [data.tasks, data.categoriesByTeam, pushCreate, logActivity]
   );
 
   const updateTask = useCallback(
     (id: string, patch: Partial<Task>) => {
+      const task = data.tasks.find((t) => t.id === id);
       setData((prev) => ({
         ...prev,
         tasks: prev.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
       }));
       pushUpdate("tasks", id, patch);
+      logActivity("update", "task", id, `업무 수정: ${task?.title ?? id}`, patch);
     },
-    [pushUpdate]
+    [data.tasks, pushUpdate, logActivity]
   );
 
   const deleteTask = useCallback(
     (id: string) => {
+      const task = data.tasks.find((t) => t.id === id);
       setData((prev) => ({
         ...prev,
         tasks: prev.tasks.filter((t) => t.id !== id),
         logEntries: prev.logEntries.filter((l) => l.taskId !== id),
       }));
       pushDelete("tasks", id);
+      logActivity("delete", "task", id, `업무 삭제: ${task?.title ?? id}`);
     },
-    [pushDelete]
+    [data.tasks, pushDelete, logActivity]
   );
 
   const addChecklistItem = useCallback(
@@ -722,9 +822,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         status: derived.status,
         completedAt: derived.completedAt ?? "",
       });
+      logActivity("create", "checklistItem", id, `필요 업무 추가: ${label} (업무: ${task.title})`, {
+        taskId,
+        label,
+      });
       return id;
     },
-    [data.tasks, pushCreate, pushUpdate]
+    [data.tasks, pushCreate, pushUpdate, logActivity]
   );
 
   const updateChecklistItem = useCallback(
@@ -735,6 +839,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     ) => {
       const task = data.tasks.find((t) => t.id === taskId);
       if (!task) return;
+      const item = findNode(task.checklist ?? [], itemId);
       const checklist = updateNode(task.checklist ?? [], itemId, patch);
       const derived = applyChecklist(task, checklist);
       setData((prev) => ({
@@ -747,8 +852,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         status: derived.status,
         completedAt: derived.completedAt ?? "",
       });
+      logActivity(
+        "update",
+        "checklistItem",
+        itemId,
+        `필요 업무 수정: ${item?.label ?? itemId} (업무: ${task.title})`,
+        patch
+      );
     },
-    [data.tasks, pushUpdate]
+    [data.tasks, pushUpdate, logActivity]
   );
 
   const deleteChecklistItem = useCallback(
@@ -775,8 +887,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         status: derived.status,
         completedAt: derived.completedAt ?? "",
       });
+      logActivity(
+        "delete",
+        "checklistItem",
+        itemId,
+        `필요 업무 삭제: ${removedNode?.label ?? itemId} (업무: ${task.title})`
+      );
     },
-    [data.tasks, pushDelete, pushUpdate]
+    [data.tasks, pushDelete, pushUpdate, logActivity]
   );
 
   const addLogEntry = useCallback(
@@ -785,9 +903,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const entry: LogEntry = { ...input, id, createdAt: new Date().toISOString() };
       setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
       pushCreate("logEntries", entry);
+      logActivity("create", "logEntry", id, `진행 일지 작성 (업무: ${input.taskId})`, {
+        taskId: input.taskId,
+        content: input.content,
+      });
       return id;
     },
-    [pushCreate]
+    [pushCreate, logActivity]
   );
 
   const updateLogEntry = useCallback(
@@ -798,8 +920,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         logEntries: prev.logEntries.map((l) => (l.id === id ? { ...l, content, editedAt } : l)),
       }));
       pushUpdate("logEntries", id, { content, editedAt });
+      logActivity("update", "logEntry", id, "진행 일지 수정", { content });
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const deleteLogEntry = useCallback(
@@ -811,8 +934,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         notifications: prev.notifications.filter((n) => !(n.targetType === "log" && n.targetId === id)),
       }));
       pushDelete("logEntries", id); // 서버가 관련 댓글까지 함께 정리한다
+      logActivity("delete", "logEntry", id, "진행 일지 삭제");
     },
-    [pushDelete]
+    [pushDelete, logActivity]
   );
 
   const addComment = useCallback(
@@ -849,9 +973,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           newNotifications.forEach((n) => pushCreate("notifications", n));
         }
       }
+      logActivity("create", "comment", id, `댓글 작성 (${input.targetType})`, {
+        targetType: input.targetType,
+        targetId: input.targetId,
+        content: input.content,
+      });
       return id;
     },
-    [data.tasks, data.logEntries, pushCreate]
+    [data.tasks, data.logEntries, pushCreate, logActivity]
   );
 
   const updateComment = useCallback(
@@ -862,8 +991,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         comments: prev.comments.map((c) => (c.id === id ? { ...c, content, editedAt } : c)),
       }));
       pushUpdate("comments", id, { content, editedAt });
+      logActivity("update", "comment", id, "댓글 수정", { content });
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const deleteComment = useCallback(
@@ -874,8 +1004,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         notifications: prev.notifications.filter((n) => n.commentId !== id),
       }));
       pushDelete("comments", id);
+      logActivity("delete", "comment", id, "댓글 삭제");
     },
-    [pushDelete]
+    [pushDelete, logActivity]
   );
 
   const markNotificationRead = useCallback(
@@ -895,9 +1026,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const resource: ResourceDoc = { ...input, id, createdAt: new Date().toISOString() };
       setData((prev) => ({ ...prev, resources: [resource, ...prev.resources] }));
       pushCreate("resources", resource);
+      logActivity("create", "resource", id, `자료 등록: ${input.title}`, { category: input.category });
       return id;
     },
-    [pushCreate]
+    [pushCreate, logActivity]
   );
 
   const deleteResource = useCallback(
@@ -910,8 +1042,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           if (f.driveFileId) gas.deleteFile(f.driveFileId).catch(() => {});
         });
       }
+      logActivity("delete", "resource", id, `자료 삭제: ${resource?.title ?? id}`);
     },
-    [data.resources, backendConfigured, pushDelete]
+    [data.resources, backendConfigured, pushDelete, logActivity]
   );
 
   const getUser = useCallback((id: string) => data.users.find((u) => u.id === id), [data.users]);
@@ -951,8 +1084,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
       pushCreate("teams", { id, name });
       pushCreate("boards", board);
+      logActivity("create", "team", id, `팀 추가: ${name}`);
     },
-    [pushCreate]
+    [pushCreate, logActivity]
   );
 
   const renameTeam = useCallback(
@@ -962,8 +1096,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         teams: prev.teams.map((t) => (t.id === id ? { ...t, name } : t)),
       }));
       pushUpdate("teams", id, { name });
+      logActivity("update", "team", id, `팀 이름 변경: ${name}`);
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const deleteTeam = useCallback(
@@ -988,9 +1123,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         };
       });
       pushDelete("teams", id); // 서버가 해당 팀의 카테고리·게시판까지 함께 정리한다
+      logActivity("delete", "team", id, "팀 삭제");
       return true;
     },
-    [data.tasks, data.users, pushDelete]
+    [data.tasks, data.users, pushDelete, logActivity]
   );
 
   // --- Admin: centers ---
@@ -999,8 +1135,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (name: string) => {
       setData((prev) => (prev.centers.includes(name) ? prev : { ...prev, centers: [...prev.centers, name] }));
       pushCreate("centers", { name });
+      logActivity("create", "center", name, `센터 추가: ${name}`);
     },
-    [pushCreate]
+    [pushCreate, logActivity]
   );
 
   const renameCenter = useCallback(
@@ -1013,8 +1150,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
       pushUpdate("centers", oldName, { name: newName });
       affectedTaskIds.forEach((taskId) => pushUpdate("tasks", taskId, { center: newName }));
+      logActivity("update", "center", newName, `센터 이름 변경: ${oldName} → ${newName}`);
     },
-    [data.tasks, pushUpdate]
+    [data.tasks, pushUpdate, logActivity]
   );
 
   const deleteCenter = useCallback(
@@ -1023,9 +1161,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (inUse) return false;
       setData((prev) => ({ ...prev, centers: prev.centers.filter((c) => c !== name) }));
       pushDelete("centers", name);
+      logActivity("delete", "center", name, `센터 삭제: ${name}`);
       return true;
     },
-    [data.tasks, pushDelete]
+    [data.tasks, pushDelete, logActivity]
   );
 
   // --- Admin: categories ---
@@ -1043,8 +1182,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       }));
       pushCreate("categoryLarge", { id, teamId, name, code });
+      logActivity("create", "categoryLarge", id, `대분류 추가: ${name}`, { teamId, code });
     },
-    [data.categoriesByTeam, pushCreate]
+    [data.categoriesByTeam, pushCreate, logActivity]
   );
 
   const renameCategoryLarge = useCallback(
@@ -1059,8 +1199,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       }));
       pushUpdate("categoryLarge", id, { name });
+      logActivity("update", "categoryLarge", id, `대분류 이름 변경: ${name}`);
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const deleteCategoryLarge = useCallback(
@@ -1073,8 +1214,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       }));
       pushDelete("categoryLarge", id); // 서버가 하위 중분류까지 함께 정리한다
+      logActivity("delete", "categoryLarge", id, "대분류 삭제");
     },
-    [pushDelete]
+    [pushDelete, logActivity]
   );
 
   const addCategoryMedium = useCallback(
@@ -1092,8 +1234,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       }));
       pushCreate("categoryMedium", { id, largeId, name, code });
+      logActivity("create", "categoryMedium", id, `중분류 추가: ${name}`, { largeId, code });
     },
-    [data.categoriesByTeam, pushCreate]
+    [data.categoriesByTeam, pushCreate, logActivity]
   );
 
   const renameCategoryMedium = useCallback(
@@ -1110,8 +1253,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       }));
       pushUpdate("categoryMedium", id, { name });
+      logActivity("update", "categoryMedium", id, `중분류 이름 변경: ${name}`);
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const deleteCategoryMedium = useCallback(
@@ -1126,8 +1270,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       }));
       pushDelete("categoryMedium", id);
+      logActivity("delete", "categoryMedium", id, "중분류 삭제");
     },
-    [pushDelete]
+    [pushDelete, logActivity]
   );
 
   // --- Admin: boards ---
@@ -1138,8 +1283,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const board = { id, teamId, name, visibleColumns: BUILTIN_COLUMNS.map((c) => c.key) };
       setData((prev) => ({ ...prev, boards: [...prev.boards, board] }));
       pushCreate("boards", board);
+      logActivity("create", "board", id, `게시판 추가: ${name}`, { teamId });
     },
-    [pushCreate]
+    [pushCreate, logActivity]
   );
 
   const updateBoard = useCallback(
@@ -1149,16 +1295,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         boards: prev.boards.map((b) => (b.id === id ? { ...b, ...patch } : b)),
       }));
       pushUpdate("boards", id, patch);
+      logActivity("update", "board", id, "게시판 수정", patch);
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const deleteBoard = useCallback(
     (id: string) => {
       setData((prev) => ({ ...prev, boards: prev.boards.filter((b) => b.id !== id) }));
       pushDelete("boards", id);
+      logActivity("delete", "board", id, "게시판 삭제");
     },
-    [pushDelete]
+    [pushDelete, logActivity]
   );
 
   // --- Admin: custom fields ---
@@ -1168,8 +1316,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const id = genId("field");
       setData((prev) => ({ ...prev, customFields: [...prev.customFields, { id, label, type, options }] }));
       pushCreate("customFields", { id, label, type, options: options ?? [] });
+      logActivity("create", "customField", id, `커스텀 필드 추가: ${label}`, { type, options });
     },
-    [pushCreate]
+    [pushCreate, logActivity]
   );
 
   const deleteCustomField = useCallback(
@@ -1187,8 +1336,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
       pushDelete("customFields", id);
       affectedBoards.forEach((b) => pushUpdate("boards", b.id, { visibleColumns: b.visibleColumns }));
+      logActivity("delete", "customField", id, "커스텀 필드 삭제");
     },
-    [data.boards, pushDelete, pushUpdate]
+    [data.boards, pushDelete, pushUpdate, logActivity]
   );
 
   // --- Admin: users ---
@@ -1208,8 +1358,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       };
       setData((prev) => ({ ...prev, users: [...prev.users, user] }));
       pushCreate("users", user);
+      logActivity("create", "user", id, `사용자 추가: ${name}`, { teamId });
     },
-    [pushCreate]
+    [pushCreate, logActivity]
   );
 
   const updateUser = useCallback(
@@ -1219,8 +1370,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         users: prev.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
       }));
       pushUpdate("users", id, patch);
+      logActivity("update", "user", id, "사용자 권한 수정", patch);
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   // 관리자 전용: 본인 인증 없이 지정한 사용자의 비밀번호를 기본값(초기
@@ -1232,8 +1384,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         users: prev.users.map((u) => (u.id === id ? { ...u, passwordHash: DEFAULT_PASSWORD_HASH } : u)),
       }));
       pushUpdate("users", id, { passwordHash: DEFAULT_PASSWORD_HASH });
+      logActivity("update", "user", id, "비밀번호 초기화 (관리자)");
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const deleteUser = useCallback(
@@ -1252,9 +1405,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (target?.isAdmin && remainingAdmins === 0) return false; // keep at least one admin
       setData((prev) => ({ ...prev, users: prev.users.filter((u) => u.id !== id) }));
       pushDelete("users", id);
+      logActivity("delete", "user", id, `사용자 삭제: ${target?.name ?? id}`);
       return true;
     },
-    [data.tasks, data.logEntries, data.comments, data.resources, data.users, currentUser, pushDelete]
+    [data.tasks, data.logEntries, data.comments, data.resources, data.users, currentUser, pushDelete, logActivity]
   );
 
   // 구글 시트에 연동된 상태에서는 여기서 되돌리면 팀 전체가 공유하는
@@ -1287,8 +1441,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const appTitle = title.trim() || DEFAULT_APP_TITLE;
       setData((prev) => ({ ...prev, settings: { ...prev.settings, appTitle } }));
       pushUpdate("settings", "app", { appTitle });
+      logActivity("update", "settings", "app", `프로그램 제목 변경: ${appTitle}`);
     },
-    [pushUpdate]
+    [pushUpdate, logActivity]
   );
 
   const value: StoreContextValue = {
@@ -1312,6 +1467,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     syncError,
     retryBackend,
     dismissSyncError: () => setSyncError(null),
+    refreshing,
+    refreshFromBackend,
     login,
     logout,
     changePassword,

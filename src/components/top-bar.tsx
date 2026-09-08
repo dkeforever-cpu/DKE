@@ -9,16 +9,23 @@ import { ThemeSettingsModal } from "@/components/theme-settings-modal";
 import { ChangePasswordModal } from "@/components/change-password-modal";
 
 export function TopBar() {
-  const { currentUser, teams, logout, appTitle } = useStore();
+  const { currentUser, teams, logout, appTitle, backendConfigured, refreshing, refreshFromBackend } = useStore();
   const { mode, toggleMode, viewMode, setViewMode } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState("");
   const teamName = teams.find((t) => t.id === currentUser?.teamId)?.name ?? "-";
 
   function handleLogout() {
     logout();
     router.push("/login");
+  }
+
+  async function handleRefresh() {
+    const ok = await refreshFromBackend();
+    setRefreshMsg(ok ? "새로고침 완료" : "새로고침 실패");
+    window.setTimeout(() => setRefreshMsg(""), 2000);
   }
 
   return (
@@ -42,6 +49,36 @@ export function TopBar() {
 
       {currentUser && (
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          {backendConfigured && (
+            <div className="flex flex-none items-center gap-1.5">
+              {refreshMsg && (
+                <span className="hidden whitespace-nowrap text-[9.5px] text-[var(--text-faintest)] sm:inline">
+                  {refreshMsg}
+                </span>
+              )}
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="최신 데이터로 새로고침 (연동 중에는 30초마다 자동으로도 갱신됩니다)"
+                className="flex-none text-[var(--text-faint)] hover:text-[var(--text)] disabled:opacity-50"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={refreshing ? { animation: "dke-spin 0.8s linear infinite" } : undefined}
+                >
+                  <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                  <path d="M21 3v6h-6" />
+                </svg>
+              </button>
+            </div>
+          )}
           {currentUser.isAdmin && (
             <button
               onClick={() => router.push("/admin")}

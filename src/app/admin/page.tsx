@@ -12,6 +12,7 @@ import { BoardsSection } from "@/components/admin/boards-section";
 import { UsersSection } from "@/components/admin/users-section";
 import { DatabaseSection } from "@/components/admin/database-section";
 import { BackendSection } from "@/components/admin/backend-section";
+import { LogsSection } from "@/components/admin/logs-section";
 
 const TABS = [
   { key: "general", label: "일반 설정" },
@@ -22,6 +23,7 @@ const TABS = [
   { key: "users", label: "사용자 권한 관리" },
   { key: "database", label: "데이터(DB) 구조" },
   { key: "backend", label: "백엔드 연동 (구글 시트)" },
+  { key: "logs", label: "기록" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -77,6 +79,7 @@ export default function AdminPage() {
             {tab === "users" && <UsersSection />}
             {tab === "database" && <DatabaseSection />}
             {tab === "backend" && <BackendSection />}
+            {tab === "logs" && <LogsSection />}
           </div>
         </div>
       </div>

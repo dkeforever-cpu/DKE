@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@keyframes dke-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 :root {
   --bg: #f0f1f4;
   --surface: #ffffff;

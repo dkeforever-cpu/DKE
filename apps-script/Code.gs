@@ -131,6 +131,8 @@ function route_(action, payload) {
       return handleUpdate_(payload.entity, payload.id, payload.patch);
     case "delete":
       return handleDelete_(payload.entity, payload.id);
+    case "list":
+      return handleList_(payload.entity, payload.options || {});
     case "deleteFile":
       return handleDeleteFile_(payload);
     default:
@@ -193,6 +195,31 @@ function handleDelete_(entity, id) {
   }
 
   return { id: id };
+}
+
+/**
+ * bootstrap에 포함되지 않는 엔티티(현재는 activityLogs)를 필요할 때만
+ * 조회한다. userId를 주면 그 사용자 것만, limit을 주면 최신순으로 그
+ * 개수만큼만 돌려준다.
+ */
+function handleList_(entity, options) {
+  var schema = schemaFor_(entity);
+  var sheet = getSheet_(schema.sheet);
+  var rows = sheetToObjects_(sheet).map(function (r) {
+    return decodeRow_(schema, r);
+  });
+  if (options && options.userId) {
+    rows = rows.filter(function (r) {
+      return r.userId === options.userId;
+    });
+  }
+  rows.sort(function (a, b) {
+    return (b.createdAt || "").localeCompare(a.createdAt || "");
+  });
+  if (options && options.limit) {
+    rows = rows.slice(0, options.limit);
+  }
+  return rows;
 }
 
 function cascadeDeleteTask_(taskId) {
