@@ -7,7 +7,6 @@ import { useTheme, ViewMode } from "@/lib/theme";
 import { Avatar } from "@/components/avatar";
 import { ThemeSettingsModal } from "@/components/theme-settings-modal";
 import { ChangePasswordModal } from "@/components/change-password-modal";
-import { getSelfHostedBackendUrl } from "@/lib/gas-client";
 
 export function TopBar() {
   const { currentUser, teams, logout, appTitle, backendConfigured, refreshing, refreshFromBackend } = useStore();
@@ -20,32 +19,7 @@ export function TopBar() {
 
   function handleLogout() {
     logout();
-    // router.push("/login")로 화면만 넘기면 이미 브라우저에 올라와 있는
-    // (어쩌면 오래된) 자바스크립트가 그대로 쓰인다 — 배포한 새 버전이
-    // 있어도 이 탭이 그걸 받아오는 시점은 실제로 서버에 새로 요청할
-    // 때뿐이다. 로그인 쪽에 걸면 다음 로그인마다 전체 페이지를 다시
-    // 불러오느라 몇 초씩 흰 화면이 뜰 수 있어서, 대신 로그아웃하는
-    // 순간(어차피 로그인 화면으로 돌아가는 타이밍이라 잠깐의 로딩이
-    // 덜 거슬림)에 캐시를 타지 않는 새 주소로 이동시킨다.
-    //
-    // 구글 앱스크립트 웹 앱은 .../exec 주소로 접속하면 실제 화면은
-    // 그 뒤에서 임시 실행 주소(script.googleusercontent.com, 그 순간만
-    // 유효한 값이 붙어있음)로 한 번 더 이동해서 보여준다. window.location
-    // 은 이 임시 주소를 가리키므로, 여기서 origin/pathname을 그대로
-    // 가져다 새로고침하면 이미 만료됐을 수 있는 임시 주소로 다시 접속을
-    // 시도하게 되어 응답 없이 멈출 수 있다. 재배포해도 바뀌지 않는 진짜
-    // 배포 주소(window.__DKE_BACKEND_URL__, serveApp_이 심어준 값)를
-    // 대신 쓴다.
-    //
-    // 구글 앱스크립트는 화면 전체를 샌드박스(sandbox)가 걸린 iframe
-    // 안에서 띄운다 — 이 샌드박스는 iframe 안의 스크립트가 최상위 창
-    // (window.top)을 다른 주소로 이동시키는 걸 막아서, window.top으로
-    // 보내면 에러 없이 조용히 무시된다(F5만 실제로 통하는 이유). 반면
-    // iframe이 자기 자신을 이동시키는 건 막지 않으므로, window.top이
-    // 아니라 이 화면 자신(window.location)을 이동시킨다.
-    const stableUrl = getSelfHostedBackendUrl() || window.location.origin + window.location.pathname;
-    const sep = stableUrl.includes("?") ? "&" : "?";
-    window.location.href = stableUrl + sep + "_r=" + Date.now() + "#/login";
+    router.push("/login");
   }
 
   async function handleRefresh() {

@@ -136,6 +136,13 @@ export default function LoginPage() {
             {backendConfigured ? "데이터 연동 설정" : "데이터 연동 설정 (구글 시트)"}
           </button>
         </div>
+
+        <div
+          className="text-center text-[9.5px] leading-relaxed text-[var(--text-faintest)]"
+          style={{ marginTop: 16 }}
+        >
+          ※ 업데이트된 화면이 안 보이면 새로고침(Ctrl+Shift+R)을 한 번 해주세요.
+        </div>
       </div>
 
       {settingsOpen && <BackendSettingsModal onClose={() => setSettingsOpen(false)} />}
