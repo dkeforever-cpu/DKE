@@ -31,8 +31,8 @@
    만들어야 함 — 편집기에서 파일 추가 시 "HTML"을 선택)
 4. 스프레드시트로 돌아가면 상단에 "물류센터 업무관리 설치" 메뉴가 생김
    (안 보이면 새로고침)
-5. 메뉴 → "1. 초기 설정" 실행 → 권한 승인 → 시트 12개 자동 생성 +
-   API 토큰 발급 + admin/blp00487 관리자 계정 자동 생성
+5. 메뉴 → "1. 초기 설정" 실행 → 권한 승인 → `Schema.gs`에 정의된 시트가
+   전부 자동 생성 + API 토큰 발급 + admin/blp00487 관리자 계정 자동 생성
 6. (선택) 메뉴 → "2. 기존 데이터 가져오기" — 지금 쓰던 앱의 관리자 설정 →
    데이터(DB) 구조 → "전체 JSON 내보내기"로 받은 내용을 붙여넣으면 기존
    업무·사용자·카테고리 등을 그대로 옮길 수 있음. **가져오면 지금 시트에
@@ -51,16 +51,19 @@
 
 ## 데이터 구조
 
-시트 12개가 프론트엔드 `src/lib/types.ts`의 각 타입과 1:1로 대응됩니다
-(Teams, Centers, CategoryLarge, CategoryMedium, Boards, CustomFields,
-Users, Tasks, ChecklistItems, LogEntries, Comments, Resources). 배열/객체
-필드(예: `viewTeamIds`, `collaboratorIds`, `attachments`)는 셀에 JSON
-문자열로 저장됩니다 — 시트에서 직접 값을 고칠 때는 이 점에 주의하세요.
+`Schema.gs`의 `SCHEMA`에 등록된 시트마다 프론트엔드 `src/lib/types.ts`의
+타입과 1:1로 대응됩니다 (Teams, Centers, CategoryLarge, CategoryMedium,
+Boards, CustomFields, Users, Tasks, ChecklistItems, LogEntries, Comments,
+Resources, Notifications, Settings, ActivityLogs). 새 엔티티가 추가되면
+이 목록도 늘어나므로, 정확한 최신 목록은 `Schema.gs`를 기준으로 보면
+됩니다. 배열/객체 필드(예: `viewTeamIds`, `collaboratorIds`,
+`attachments`, `detail`)는 셀에 JSON 문자열로 저장됩니다 — 시트에서
+직접 값을 고칠 때는 이 점에 주의하세요.
 
 ## "기존 데이터 가져오기"는 추가가 아니라 교체입니다
 
-가져오기를 실행하면 12개 시트를 전부 비운 뒤 붙여넣은 JSON으로 새로
-채웁니다 (추가가 아닙니다). 백업에서 복원하거나, 다른 곳의 데이터를
+가져오기를 실행하면 SCHEMA에 등록된 모든 시트를 비운 뒤 붙여넣은 JSON으로
+새로 채웁니다 (추가가 아닙니다). 백업에서 복원하거나, 다른 곳의 데이터를
 한 번에 그대로 옮기는 용도에 맞춘 동작입니다. 지우지 않고 쌓이는
 방식이었다면 admin 계정처럼 이미 있는 데이터가 매번 중복돼서 오히려
 헷갈립니다. 지금 시트 내용을 보존하고 싶다면, 가져오기 전에 스프레드시트
@@ -91,21 +94,13 @@ Apps Script 웹 앱의 `/exec` 주소는 실제 실행 서버로 302 리다이�
 찍히는 증상으로 나타납니다. 이 문제 때문에 프론트엔드(`gas-client.ts`)는
 모든 요청을 GET으로 보내고, action/token/payload를 JSON으로 묶어
 `?data=` 쿼리 파라미터 하나에 실어 보냅니다. `Code.gs`의 `doGet`이 이
-파라미터를 파싱해서 처리합니다 (파라미터가 없으면 상태 확인 메시지만
-보여줍니다). 첨부파일은 URL 길이 제한 때문에 작은 조각으로 나눠 여러 번의
-GET 요청으로 보내고, 서버가 마지막 조각에서 전체를 이어붙여 드라이브에
-저장합니다 (`uploadFileChunk` 액션, `Drive.gs`).
-
-**이전에 이미 설치하신 분들은 다음 두 가지를 반영해주세요.**
-
-1. `Code.gs`, `Drive.gs`를 이 저장소의 최신 내용으로 다시 덮어쓰기
-   (GET 방식 통신 수정 사항)
-2. `App.html` 파일을 새로 추가하기 — 이걸 추가하면 앱 파일을 따로
-   나눠줄 필요 없이, 배포된 웹 앱 주소를 여는 것만으로 화면이 뜨게 됩니다
-   (아래 "웹 앱 주소 하나로 화면까지 서빙하는 방법" 참고)
-
-수정 후에는 배포 → 배포 관리 → 새 버전으로 재배포해주세요. 웹 앱 URL과
-API 토큰은 그대로 쓰시면 됩니다.
+파라미터를 파싱해서 처리합니다 (파라미터가 없으면 앱 화면을 그대로
+돌려줍니다). 첨부파일은 이 GET 경로를 타지 않습니다 — 화면이 이 배포
+자체에서 서빙되고 있을 때만 쓸 수 있는 `google.script.run`으로 관리자
+권한 업로드 세션 주소만 서버에서 받아온 뒤, 브라우저가 그 주소로 파일
+바이너리를 구글 드라이브에 직접 PUT으로 올립니다 (`getUploadUrl`/
+`finalizeDirectUpload`, `Drive.gs`) — 조각내서 여러 번 보내는 것보다
+빠릅니다.
 
 ## 웹 앱 주소 하나로 화면까지 서빙하는 방법
 
