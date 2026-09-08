@@ -830,17 +830,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         });
       });
 
-      const logId = genId("l");
-      const entry: LogEntry = {
-        id: logId,
-        taskId: id,
-        authorId: input.createdBy,
-        content: `업무 등록. ${input.description || ""}`.trim(),
-        attachments: [],
-        createdAt: new Date().toISOString(),
-      };
-      setData((prev) => ({ ...prev, logEntries: [entry, ...prev.logEntries] }));
-      pushCreate("logEntries", entry);
       logActivity("create", "task", id, `업무 등록: ${input.title}`, {
         taskNumber,
         teamId: input.teamId,
