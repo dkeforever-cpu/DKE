@@ -41,7 +41,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     () => (teamTab === "전체" ? tasks : tasks.filter((t) => t.teamId === teamTab)),
     [tasks, teamTab]
   );
-  const mineCount = teamTasks.filter((t) => t.assigneeId === currentUser?.id).length;
+  // "내 업무" 사이드바 건수도 협업자로 지정된 업무를 포함한다 (src/app/page.tsx의
+  // isMine과 동일한 기준).
+  const mineCount = teamTasks.filter(
+    (t) => t.assigneeId === currentUser?.id || t.collaboratorIds.includes(currentUser?.id ?? "")
+  ).length;
   const allCount = teamTasks.length;
   const categoryCounts = useMemo(() => {
     const map: Record<string, number> = {};

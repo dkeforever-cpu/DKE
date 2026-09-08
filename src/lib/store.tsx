@@ -701,6 +701,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (task: Task) => {
       if (!currentUser) return false;
       if (currentUser.isAdmin) return true;
+      // 담당자·협업자로 직접 지정된 업무는 팀·업무레벨 제한과 무관하게 항상
+      // 볼 수 있어야 한다 — 안 그러면 다른 팀 업무에 협업자로 초대돼도
+      // 정작 그 업무를 열어볼 수 없고, 그 업무에 달린 알림을 눌러도
+      // "업무를 찾을 수 없습니다"만 뜨는 문제가 생긴다.
+      if (task.assigneeId === currentUser.id || task.collaboratorIds.includes(currentUser.id)) return true;
       return currentUser.viewTeamIds.includes(task.teamId) && task.level >= currentUser.level;
     },
     [currentUser]

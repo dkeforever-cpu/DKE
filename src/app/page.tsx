@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { useRequireAuth } from "@/lib/use-require-auth";
 import { useDashboardState } from "@/lib/dashboard-state";
@@ -85,15 +85,23 @@ export default function DashboardPage() {
     [tasks, teamTab]
   );
 
-  const mineCount = teamTasks.filter((t) => t.assigneeId === currentUser?.id).length;
+  // "내 업무"는 담당자로 지정된 업무뿐 아니라 협업자로 지정된 업무도
+  // 포함한다 — 협업자도 그 업무를 함께 관리하는 사람이니 자기 업무 목록에
+  // 안 보이면 놓치기 쉽다.
+  const isMine = useCallback(
+    (t: { assigneeId: string; collaboratorIds: string[] }) =>
+      t.assigneeId === currentUser?.id || t.collaboratorIds.includes(currentUser?.id ?? ""),
+    [currentUser]
+  );
+  const mineCount = teamTasks.filter(isMine).length;
   const allCount = teamTasks.length;
 
   const scoped = useMemo(() => {
-    if (selection.type === "mine") return teamTasks.filter((t) => t.assigneeId === currentUser?.id);
+    if (selection.type === "mine") return teamTasks.filter(isMine);
     if (selection.type === "category")
       return teamTasks.filter((t) => t.categoryLarge === selection.large);
     return teamTasks;
-  }, [teamTasks, selection, currentUser]);
+  }, [teamTasks, selection, isMine]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
