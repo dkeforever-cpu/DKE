@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Priority, Status, Task, User } from "@/lib/types";
+import { CalendarEvent, Priority, Status, Task, User } from "@/lib/types";
 import { StatusBadge, PriorityLabel } from "@/components/badges";
 import { formatDateShort, daysOverdue, isOverdue, assigneeDisplay } from "@/lib/format";
 import { Selection, selectionKey } from "@/components/sidebar";
@@ -32,6 +32,9 @@ export function MobileTaskList({
   users,
   centers,
   onOpenNewTask,
+  events,
+  onOpenEvent,
+  onOpenNewEvent,
 }: {
   className?: string;
   tasks: Task[];
@@ -53,6 +56,9 @@ export function MobileTaskList({
   users: User[];
   centers: string[];
   onOpenNewTask: () => void;
+  events: CalendarEvent[];
+  onOpenEvent: (event: CalendarEvent) => void;
+  onOpenNewEvent: () => void;
 }) {
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -191,7 +197,7 @@ export function MobileTaskList({
 
       {showCalendar ? (
         <div className="flex flex-1 flex-col overflow-hidden p-1.5">
-          <CalendarView tasks={tasks} />
+          <CalendarView tasks={tasks} events={events} includeTasks onOpenEvent={onOpenEvent} />
         </div>
       ) : (
       <div className="flex-1 overflow-y-auto">
@@ -255,10 +261,10 @@ export function MobileTaskList({
       )}
 
       <button
-        onClick={onOpenNewTask}
+        onClick={showCalendar ? onOpenNewEvent : onOpenNewTask}
         className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg"
         style={{ background: "var(--accent)", color: "var(--accent-fg)", boxShadow: "var(--shadow-menu)" }}
-        title="새 업무 등록"
+        title={showCalendar ? "일정 등록" : "새 업무 등록"}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
           <path d="M12 5v14M5 12h14" />

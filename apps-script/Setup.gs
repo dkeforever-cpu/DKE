@@ -217,6 +217,9 @@ function importExportedJson(jsonText) {
   // 안 그러면 가져오기 한 번으로 관리자가 설정한 프로그램 제목이 사라진다.
   batchCreate_("settings", [data.settings || { id: "app", appTitle: "물류센터 업무관리 시스템" }]);
 
+  batchCreate_("calendarEvents", data.calendarEvents || []);
+  counts.calendarEvents = (data.calendarEvents || []).length;
+
   return counts;
 }
 

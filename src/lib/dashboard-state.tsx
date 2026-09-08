@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, ReactNode, useContext, useState } from "react";
-import { Selection } from "@/components/sidebar";
+import { AdminTabKey, Selection } from "@/components/sidebar";
 
 // Shared across the dashboard and task-detail pages so the left sidebar's
 // filters/selection and its collapsed state survive navigating between
@@ -13,8 +13,10 @@ interface DashboardStateValue {
   setBoardId: (v: string | null) => void;
   selection: Selection;
   setSelection: (v: Selection) => void;
-  view: "list" | "calendar";
-  setView: (v: "list" | "calendar") => void;
+  view: "list" | "calendar" | "admin";
+  setView: (v: "list" | "calendar" | "admin") => void;
+  adminTab: AdminTabKey;
+  setAdminTab: (v: AdminTabKey) => void;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (v: boolean) => void;
 }
@@ -25,7 +27,8 @@ export function DashboardStateProvider({ children }: { children: ReactNode }) {
   const [teamTab, setTeamTab] = useState("전체");
   const [boardId, setBoardId] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection>({ type: "all" });
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const [view, setView] = useState<"list" | "calendar" | "admin">("list");
+  const [adminTab, setAdminTab] = useState<AdminTabKey>("general");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
@@ -39,6 +42,8 @@ export function DashboardStateProvider({ children }: { children: ReactNode }) {
         setSelection,
         view,
         setView,
+        adminTab,
+        setAdminTab,
         sidebarCollapsed,
         setSidebarCollapsed,
       }}

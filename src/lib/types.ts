@@ -175,6 +175,19 @@ export interface Board {
   visibleColumns: string[]; // BUILTIN_COLUMNS keys + CustomFieldDef ids
 }
 
+// --- 캘린더 전용 일정: 업무(Task)와 별개로, 팀·담당자 구분 없이 누구나
+// 기간(시작일~종료일)만 정해서 등록하는 항목. 캘린더 화면에서만 쓰인다.
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  createdBy: string;
+  createdAt: string; // YYYY-MM-DD
+}
+
 // --- 활동 기록: 관리자 설정의 "기록" 메뉴 — 누가 언제 무엇을 했는지.
 // bootstrap에는 포함되지 않고 필요할 때만 gas.list()로 불러온다.
 

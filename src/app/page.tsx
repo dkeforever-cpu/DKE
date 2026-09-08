@@ -9,27 +9,33 @@ import { TaskTable } from "@/components/task-table";
 import { CalendarView } from "@/components/calendar-view";
 import { MobileTaskList } from "@/components/mobile-task-list";
 import { TaskFormModal } from "@/components/task-form-modal";
-import { Priority, Status } from "@/lib/types";
+import { CalendarEventFormModal } from "@/components/calendar-event-form-modal";
+import { AdminPanel } from "@/components/admin/admin-panel";
+import { CalendarEvent, Priority, Status } from "@/lib/types";
 import { isOverdue } from "@/lib/format";
 import { flatten } from "@/lib/checklist";
 
 export default function DashboardPage() {
   const { ready, currentUser } = useRequireAuth();
-  const { tasks, users, teams, centers, boards, customFields, logEntries, comments, getUser } = useStore();
+  const { tasks, users, teams, centers, boards, customFields, logEntries, comments, calendarEvents, getUser } =
+    useStore();
 
   const viewableTeams = useMemo(
     () => teams.filter((t) => currentUser?.viewTeamIds.includes(t.id)),
     [teams, currentUser]
   );
 
-  const { teamTab, setTeamTab, boardId, selection, setSelection, view } = useDashboardState();
+  const { teamTab, setTeamTab, boardId, selection, setSelection, view, adminTab } = useDashboardState();
   const [centerFilter, setCenterFilter] = useState("전체");
   const [assigneeFilter, setAssigneeFilter] = useState("전체");
   const [statusFilter, setStatusFilter] = useState<"전체" | Status>("전체");
   const [priorityFilter, setPriorityFilter] = useState<"전체" | Priority>("전체");
   const [includeReported, setIncludeReported] = useState(true);
+  const [includeTasksInCalendar, setIncludeTasksInCalendar] = useState(true);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [eventFormOpen, setEventFormOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   const teamBoards = useMemo(
     () => (teamTab === "전체" ? [] : boards.filter((b) => b.teamId === teamTab)),
@@ -138,6 +144,10 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
+      {view === "admin" && currentUser.isAdmin ? (
+        <AdminPanel tab={adminTab} />
+      ) : (
+        <>
       <div className="flex h-8 flex-none items-center gap-0.5 border-b border-[var(--border)] bg-[var(--surface)] px-3">
         <button
           onClick={() => handleTeamChange("전체")}
@@ -187,6 +197,9 @@ export default function DashboardPage() {
         users={users}
         centers={centers}
         onOpenNewTask={() => setFormOpen(true)}
+        events={calendarEvents}
+        onOpenEvent={setEditingEvent}
+        onOpenNewEvent={() => setEventFormOpen(true)}
       />
 
       <div className="dashboard-desktop-pane flex-1 flex-col gap-1.5 overflow-hidden p-2">
@@ -269,21 +282,53 @@ export default function DashboardPage() {
           >
             {includeReported ? "보고완료 포함" : "보고완료 제외"}
           </button>
+          {view === "calendar" && (
+            <button
+              onClick={() => setIncludeTasksInCalendar((v) => !v)}
+              className="h-6 rounded-[2px] border px-2 text-[10.5px] font-semibold"
+              style={
+                includeTasksInCalendar
+                  ? { borderColor: "var(--border-strong)", color: "var(--text-muted)", background: "var(--surface)" }
+                  : { borderColor: "var(--accent)", color: "var(--accent-fg)", background: "var(--accent)" }
+              }
+              title="캘린더에 업무 시작일·마감일도 함께 표시할지 전환합니다"
+            >
+              {includeTasksInCalendar ? "업무일정포함" : "등록일정만"}
+            </button>
+          )}
           <div className="flex-1" />
-          <button
-            onClick={() => setFormOpen(true)}
-            className="flex h-6 items-center gap-1 rounded-[3px] px-2.5 text-[10.5px] font-semibold"
-            style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            새 업무
-          </button>
+          {view === "calendar" ? (
+            <button
+              onClick={() => setEventFormOpen(true)}
+              className="flex h-6 items-center gap-1 rounded-[3px] px-2.5 text-[10.5px] font-semibold"
+              style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              일정 등록
+            </button>
+          ) : (
+            <button
+              onClick={() => setFormOpen(true)}
+              className="flex h-6 items-center gap-1 rounded-[3px] px-2.5 text-[10.5px] font-semibold"
+              style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              새 업무
+            </button>
+          )}
         </div>
 
         {view === "calendar" ? (
-          <CalendarView tasks={filtered} />
+          <CalendarView
+            tasks={filtered}
+            events={calendarEvents}
+            includeTasks={includeTasksInCalendar}
+            onOpenEvent={setEditingEvent}
+          />
         ) : (
           <TaskTable
             tasks={filtered}
@@ -295,6 +340,8 @@ export default function DashboardPage() {
           />
         )}
       </div>
+        </>
+      )}
 
       {formOpen && (
         <TaskFormModal
@@ -303,6 +350,11 @@ export default function DashboardPage() {
           onClose={() => setFormOpen(false)}
           onSaved={() => setFormOpen(false)}
         />
+      )}
+
+      {eventFormOpen && <CalendarEventFormModal mode="create" onClose={() => setEventFormOpen(false)} />}
+      {editingEvent && (
+        <CalendarEventFormModal mode="edit" event={editingEvent} onClose={() => setEditingEvent(null)} />
       )}
     </AppShell>
   );

@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { useZoomCorrectedViewportHeight } from "@/lib/theme";
 import { useDashboardState } from "@/lib/dashboard-state";
 import { TopBar } from "@/components/top-bar";
-import { Sidebar, Selection } from "@/components/sidebar";
+import { AdminTabKey, Sidebar, Selection } from "@/components/sidebar";
 
 // Wraps the dashboard and task-detail pages with a shared TopBar + left
 // sidebar so switching between "업무 목록 보기" and viewing a task's detail
@@ -25,6 +25,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     setSelection,
     view,
     setView,
+    adminTab,
+    setAdminTab,
     sidebarCollapsed,
     setSidebarCollapsed,
   } = useDashboardState();
@@ -67,6 +69,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     router.push("/");
   }
 
+  function handleSelectAdmin(tab: AdminTabKey) {
+    setAdminTab(tab);
+    setView("admin");
+    router.push("/");
+  }
+
   return (
     <div
       className="flex h-screen flex-col"
@@ -97,10 +105,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               mineCount={mineCount}
               allCount={allCount}
               categoryCounts={categoryCounts}
-              calendarActive={view === "calendar"}
+              activeView={view}
               onOpenCalendar={handleOpenCalendar}
               onCollapse={() => setSidebarCollapsed(true)}
               unreadNotificationCount={unreadNotificationCount}
+              isAdmin={!!currentUser?.isAdmin}
+              activeAdminTab={adminTab}
+              onSelectAdmin={handleSelectAdmin}
             />
           </div>
         )}

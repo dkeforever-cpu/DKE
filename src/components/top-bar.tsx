@@ -79,17 +79,6 @@ export function TopBar() {
               </button>
             </div>
           )}
-          {currentUser.isAdmin && (
-            <button
-              onClick={() => router.push("/admin")}
-              title="관리자 설정"
-              className="flex-none text-[var(--text-faint)] hover:text-[var(--text)]"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20V10M18 20V4M6 20v-4" />
-              </svg>
-            </button>
-          )}
           <button
             onClick={toggleMode}
             title={mode === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"}

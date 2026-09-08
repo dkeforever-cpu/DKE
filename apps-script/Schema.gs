@@ -109,6 +109,15 @@ var SCHEMA = {
     headers: ["id", "userId", "action", "entity", "targetId", "summary", "detail", "createdAt"],
     json: ["detail"],
   },
+
+  // 캘린더 전용 "일정" — 업무(Task)와 별개로, 특정 팀·담당자 없이 누구나
+  // 시작일~종료일만 정해서 등록하는 항목. 업무처럼 상태·우선순위 등은
+  // 없고 캘린더에 기간으로 표시하기 위한 최소 정보만 가진다.
+  calendarEvents: {
+    sheet: "CalendarEvents",
+    headers: ["id", "title", "description", "startDate", "endDate", "createdBy", "createdAt"],
+    json: [],
+  },
 };
 
 function schemaFor_(entity) {

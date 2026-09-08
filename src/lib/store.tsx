@@ -13,6 +13,7 @@ import {
   ActivityLog,
   AppSettings,
   Board,
+  CalendarEvent,
   CategoryLarge,
   ChecklistItem,
   Comment,
@@ -68,6 +69,7 @@ interface StoreData {
   resources: ResourceDoc[];
   notifications: Notification[];
   settings: AppSettings;
+  calendarEvents: CalendarEvent[];
 }
 
 function genId(prefix: string): string {
@@ -293,6 +295,7 @@ function normalize(data: Partial<StoreData>): StoreData {
   });
 
   const notifications = data.notifications ?? [];
+  const calendarEvents = data.calendarEvents ?? [];
 
   const settings: AppSettings =
     data.settings && data.settings.appTitle ? data.settings : DEFAULT_SETTINGS;
@@ -310,6 +313,7 @@ function normalize(data: Partial<StoreData>): StoreData {
     resources,
     notifications,
     settings,
+    calendarEvents,
   };
 }
 
@@ -328,6 +332,7 @@ function loadLocalData(): StoreData {
       resources: [],
       notifications: [],
       settings: DEFAULT_SETTINGS,
+      calendarEvents: [],
     };
   }
   try {
@@ -349,6 +354,7 @@ function loadLocalData(): StoreData {
     resources: [],
     notifications: [],
     settings: DEFAULT_SETTINGS,
+    calendarEvents: [],
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
   return seeded;
@@ -372,6 +378,7 @@ interface StoreContextValue {
   comments: Comment[];
   resources: ResourceDoc[];
   notifications: Notification[];
+  calendarEvents: CalendarEvent[];
   appTitle: string;
   currentUser: User | null;
   ready: boolean;
@@ -452,6 +459,13 @@ interface StoreContextValue {
 
   resetDemoData: () => boolean;
 
+  addCalendarEvent: (input: Omit<CalendarEvent, "id" | "createdAt">) => string;
+  updateCalendarEvent: (
+    id: string,
+    patch: Partial<Pick<CalendarEvent, "title" | "description" | "startDate" | "endDate">>
+  ) => void;
+  deleteCalendarEvent: (id: string) => void;
+
   updateAppTitle: (title: string) => void;
 }
 
@@ -470,6 +484,7 @@ const EMPTY_DATA: StoreData = {
   resources: [],
   notifications: [],
   settings: DEFAULT_SETTINGS,
+  calendarEvents: [],
 };
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -1428,11 +1443,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       resources: [],
       notifications: [],
       settings: DEFAULT_SETTINGS,
+      calendarEvents: [],
     };
     setData(seeded);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
     return true;
   }, [backendConfigured]);
+
+  // --- 캘린더 일정: 업무와 별개로 팀 구분 없이 누구나 등록 ---
+
+  const addCalendarEvent = useCallback(
+    (input: Omit<CalendarEvent, "id" | "createdAt">) => {
+      const id = genId("ev");
+      const event: CalendarEvent = { ...input, id, createdAt: new Date().toISOString().slice(0, 10) };
+      setData((prev) => ({ ...prev, calendarEvents: [event, ...prev.calendarEvents] }));
+      pushCreate("calendarEvents", event);
+      logActivity("create", "calendarEvent", id, `일정 등록: ${input.title}`, {
+        startDate: input.startDate,
+        endDate: input.endDate,
+      });
+      return id;
+    },
+    [pushCreate, logActivity]
+  );
+
+  const updateCalendarEvent = useCallback(
+    (id: string, patch: Partial<Pick<CalendarEvent, "title" | "description" | "startDate" | "endDate">>) => {
+      setData((prev) => ({
+        ...prev,
+        calendarEvents: prev.calendarEvents.map((ev) => (ev.id === id ? { ...ev, ...patch } : ev)),
+      }));
+      pushUpdate("calendarEvents", id, patch);
+      logActivity("update", "calendarEvent", id, "일정 수정", patch);
+    },
+    [pushUpdate, logActivity]
+  );
+
+  const deleteCalendarEvent = useCallback(
+    (id: string) => {
+      const event = data.calendarEvents.find((ev) => ev.id === id);
+      setData((prev) => ({ ...prev, calendarEvents: prev.calendarEvents.filter((ev) => ev.id !== id) }));
+      pushDelete("calendarEvents", id);
+      logActivity("delete", "calendarEvent", id, `일정 삭제: ${event?.title ?? id}`);
+    },
+    [data.calendarEvents, pushDelete, logActivity]
+  );
 
   // 관리자 전용(관리자 설정 화면에서만 노출) — 로그인 화면·상단바에 표시될
   // 프로그램 제목을 바꾼다.
@@ -1459,6 +1514,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     comments: data.comments,
     resources: data.resources,
     notifications: data.notifications,
+    calendarEvents: data.calendarEvents,
     appTitle: data.settings.appTitle,
     currentUser,
     ready,
@@ -1513,6 +1569,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteUser,
     resetUserPassword,
     resetDemoData,
+    addCalendarEvent,
+    updateCalendarEvent,
+    deleteCalendarEvent,
     updateAppTitle,
   };
 

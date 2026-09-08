@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Board, CategoryLarge } from "@/lib/types";
@@ -13,6 +14,20 @@ export function selectionKey(s: Selection): string {
   return s.type === "category" ? `category:${s.large}` : s.type;
 }
 
+export const ADMIN_TABS = [
+  { key: "general", label: "일반 설정" },
+  { key: "teams", label: "팀 관리" },
+  { key: "centers", label: "센터 관리" },
+  { key: "categories", label: "카테고리 관리" },
+  { key: "boards", label: "게시판/열 관리" },
+  { key: "users", label: "사용자 권한 관리" },
+  { key: "database", label: "데이터(DB) 구조" },
+  { key: "backend", label: "백엔드 연동 (구글 시트)" },
+  { key: "logs", label: "기록" },
+] as const;
+
+export type AdminTabKey = (typeof ADMIN_TABS)[number]["key"];
+
 export function Sidebar({
   teamSelected,
   categories,
@@ -24,10 +39,13 @@ export function Sidebar({
   mineCount,
   allCount,
   categoryCounts,
-  calendarActive,
+  activeView,
   onOpenCalendar,
   onCollapse,
   unreadNotificationCount,
+  isAdmin,
+  activeAdminTab,
+  onSelectAdmin,
 }: {
   teamSelected: boolean;
   categories: CategoryLarge[];
@@ -39,18 +57,29 @@ export function Sidebar({
   mineCount: number;
   allCount: number;
   categoryCounts: Record<string, number>;
-  calendarActive: boolean;
+  activeView: "list" | "calendar" | "admin";
   onOpenCalendar: () => void;
   onCollapse: () => void;
   unreadNotificationCount: number;
+  isAdmin: boolean;
+  activeAdminTab: AdminTabKey;
+  onSelectAdmin: (tab: AdminTabKey) => void;
 }) {
   const currentKey = selectionKey(selection);
   const router = useRouter();
   const pathname = usePathname();
   const onDashboard = pathname === "/";
+  const calendarActive = activeView === "calendar";
+  const adminActive = activeView === "admin";
+  // 지금 관리자 화면을 보고 있으면(다른 메뉴를 거쳐 다시 돌아왔을 때도)
+  // 어느 탭인지 바로 알 수 있게 아코디언이 항상 펼쳐진 채로 보이고, 그
+  // 외에는 이 버튼으로 직접 펼치고 접는다.
+  const [manuallyExpanded, setManuallyExpanded] = useState(false);
+  const adminExpanded = manuallyExpanded || adminActive;
 
   return (
-    <div className="flex w-[168px] flex-none flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] py-1.5">
+    <div className="flex w-[168px] flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)]">
+      <div className="flex flex-1 flex-col overflow-y-auto py-1.5">
       <div className="mb-1 flex items-center justify-end px-1.5">
         <button
           onClick={onCollapse}
@@ -67,7 +96,7 @@ export function Sidebar({
         <SidebarItem
           label="내 업무"
           count={mineCount}
-          active={onDashboard && !calendarActive && currentKey === "mine"}
+          active={onDashboard && activeView === "list" && currentKey === "mine"}
           onClick={() => onSelect({ type: "mine" })}
           icon={
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -79,7 +108,7 @@ export function Sidebar({
         <SidebarItem
           label="전체 업무"
           count={allCount}
-          active={onDashboard && !calendarActive && currentKey === "all"}
+          active={onDashboard && activeView === "list" && currentKey === "all"}
           onClick={() => onSelect({ type: "all" })}
           icon={
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -183,12 +212,64 @@ export function Sidebar({
                 key={c.id}
                 label={c.name}
                 count={categoryCounts[c.name] ?? 0}
-                active={onDashboard && currentKey === `category:${c.name}`}
+                active={onDashboard && activeView === "list" && currentKey === `category:${c.name}`}
                 onClick={() => onSelect({ type: "category", large: c.name })}
               />
             ))}
           </div>
         </>
+      )}
+      </div>
+
+      {isAdmin && (
+        <div className="flex-none border-t border-[var(--border)]">
+          <button
+            onClick={() => setManuallyExpanded((v) => !v)}
+            className="flex h-[30px] w-full items-center gap-1.5 px-2.5 text-left text-[11.5px] font-semibold"
+            style={{ color: adminActive ? "var(--accent-soft-fg)" : "var(--text-secondary)" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20V10M18 20V4M6 20v-4" />
+            </svg>
+            <span className="flex-1 truncate">관리자설정</span>
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                color: "var(--text-faint)",
+                transform: adminExpanded ? "rotate(180deg)" : "none",
+                transition: "transform 0.15s",
+              }}
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          {adminExpanded && (
+            <div className="flex flex-col overflow-y-auto" style={{ maxHeight: 260, paddingBottom: 6 }}>
+              {ADMIN_TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => onSelectAdmin(t.key)}
+                  className="flex h-[26px] items-center px-3 text-left text-[11px] font-medium"
+                  style={{
+                    paddingLeft: 24,
+                    background: adminActive && activeAdminTab === t.key ? "var(--accent-soft-bg)" : "transparent",
+                    color: adminActive && activeAdminTab === t.key ? "var(--accent-soft-fg)" : "var(--text-secondary)",
+                    borderLeft: adminActive && activeAdminTab === t.key ? "2px solid var(--accent)" : "2px solid transparent",
+                  }}
+                >
+                  <span className="truncate">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

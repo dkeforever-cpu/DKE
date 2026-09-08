@@ -350,7 +350,7 @@ function cascadeDeleteCategoryLarge_(largeId) {
 var BOOTSTRAP_ENTITIES_ = [
   "teams", "centers", "categoryLarge", "categoryMedium", "boards",
   "customFields", "users", "tasks", "checklistItems", "logEntries",
-  "comments", "resources", "notifications", "settings",
+  "comments", "resources", "notifications", "settings", "calendarEvents",
 ];
 
 /**
@@ -481,6 +481,10 @@ function handleBootstrap_() {
     ? decodeRow_(schemaFor_("settings"), settingsRows[0])
     : { id: "app", appTitle: "물류센터 업무관리 시스템" };
 
+  var calendarEvents = rowsFor("calendarEvents").map(function (r) {
+    return decodeRow_(schemaFor_("calendarEvents"), r);
+  });
+
   return {
     teams: teams,
     centers: centers,
@@ -494,6 +498,7 @@ function handleBootstrap_() {
     resources: resources,
     notifications: notifications,
     settings: settings,
+    calendarEvents: calendarEvents,
   };
 }
 

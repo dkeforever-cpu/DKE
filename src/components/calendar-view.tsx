@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Task } from "@/lib/types";
+import { CalendarEvent, Task } from "@/lib/types";
 import { taskColor, buildMonthGrid, parseDateStr, toDateStr } from "@/lib/calendar";
 import { todayStr } from "@/lib/format";
 
@@ -12,10 +12,7 @@ const ITEM_H = 15;
 
 type Role = "start" | "due";
 
-interface DayItem {
-  task: Task;
-  role: Role;
-}
+type DayItem = { kind: "task"; task: Task; role: Role } | { kind: "event"; event: CalendarEvent };
 
 interface Range {
   task: Task;
@@ -23,22 +20,51 @@ interface Range {
   end: Date;
 }
 
-// Only the start day and the due day are shown — the days in between add no
-// information beyond "still going" and were cluttering the grid once many
-// people each had several tasks running at once.
-function itemsForDay(day: Date, ranges: Range[]): DayItem[] {
+interface EventRange {
+  event: CalendarEvent;
+  start: Date;
+  end: Date;
+}
+
+// 업무는 시작일·마감일 이틀만 표시한다(그 사이 날짜는 "아직 진행 중"이라는
+// 것 외에 정보가 없고, 여러 명이 동시에 업무를 여러 개 갖고 있으면 칸만
+// 복잡해진다) — 반면 등록한 일정은 기간 전체를 매일 같은 색으로 표시해서
+// 하나의 이어진 막대처럼 보이게 한다(휴가·출장처럼 "이 기간 통째로"가
+// 핵심 정보이기 때문).
+function itemsForDay(day: Date, taskRanges: Range[], eventRanges: EventRange[], includeTasks: boolean): DayItem[] {
   const t = day.getTime();
   const list: DayItem[] = [];
-  for (const r of ranges) {
-    if (t === r.start.getTime()) list.push({ task: r.task, role: "start" });
-    else if (t === r.end.getTime()) list.push({ task: r.task, role: "due" });
+  for (const r of eventRanges) {
+    if (t >= r.start.getTime() && t <= r.end.getTime()) list.push({ kind: "event", event: r.event });
   }
-  const priority: Record<Role, number> = { start: 0, due: 1 };
-  list.sort((a, b) => priority[a.role] - priority[b.role] || a.task.dueDate.localeCompare(b.task.dueDate));
+  if (includeTasks) {
+    for (const r of taskRanges) {
+      if (t === r.start.getTime()) list.push({ kind: "task", task: r.task, role: "start" });
+      else if (t === r.end.getTime()) list.push({ kind: "task", task: r.task, role: "due" });
+    }
+  }
+  const rolePriority: Record<Role, number> = { start: 0, due: 1 };
+  list.sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === "event" ? -1 : 1;
+    if (a.kind === "task" && b.kind === "task") {
+      return rolePriority[a.role] - rolePriority[b.role] || a.task.dueDate.localeCompare(b.task.dueDate);
+    }
+    return 0;
+  });
   return list;
 }
 
-export function CalendarView({ tasks }: { tasks: Task[] }) {
+export function CalendarView({
+  tasks,
+  events,
+  includeTasks,
+  onOpenEvent,
+}: {
+  tasks: Task[];
+  events: CalendarEvent[];
+  includeTasks: boolean;
+  onOpenEvent: (event: CalendarEvent) => void;
+}) {
   const router = useRouter();
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
@@ -59,6 +85,17 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
           return { task: t, start, end };
         }),
     [tasks]
+  );
+
+  const eventRanges = useMemo<EventRange[]>(
+    () =>
+      events.map((ev) => {
+        const start = parseDateStr(ev.startDate);
+        let end = parseDateStr(ev.endDate);
+        if (end < start) end = start;
+        return { event: ev, start, end };
+      }),
+    [events]
   );
 
   function openTask(id: string) {
@@ -114,7 +151,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
             {days.map((d) => {
               const inMonth = d.getMonth() === cursor.getMonth();
               const isToday = toDateStr(d) === today;
-              const dayItems = itemsForDay(d, ranges);
+              const dayItems = itemsForDay(d, ranges, eventRanges, includeTasks);
               const visible = dayItems.slice(0, MAX_ROWS_PER_DAY);
               const overflow = dayItems.length - visible.length;
               return (
@@ -133,11 +170,17 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                     {d.getDate()}
                   </span>
 
-                  {visible.map(({ task, role }) =>
-                    role === "start" ? (
-                      <StartChip key={task.id} task={task} onOpen={() => openTask(task.id)} />
+                  {visible.map((item) =>
+                    item.kind === "event" ? (
+                      <EventChip
+                        key={`ev_${item.event.id}`}
+                        event={item.event}
+                        onOpen={() => onOpenEvent(item.event)}
+                      />
+                    ) : item.role === "start" ? (
+                      <StartChip key={item.task.id} task={item.task} onOpen={() => openTask(item.task.id)} />
                     ) : (
-                      <DueChip key={task.id} task={task} onOpen={() => openTask(task.id)} />
+                      <DueChip key={item.task.id} task={item.task} onOpen={() => openTask(item.task.id)} />
                     )
                   )}
                   {overflow > 0 && (
@@ -150,6 +193,22 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+// 업무 칩은 업무마다 색이 달라지지만, 등록된 일정은 항상 같은 색으로
+// 표시해서 같은 색이 이어지는 것만으로 "이 기간 전체가 하나의 일정"임을
+// 한눈에 알아볼 수 있게 한다.
+function EventChip({ event, onOpen }: { event: CalendarEvent; onOpen: () => void }) {
+  return (
+    <button
+      onClick={onOpen}
+      title={event.title}
+      className="flex items-center overflow-hidden rounded-[2px] px-1 text-left text-[10px] font-semibold"
+      style={{ background: "var(--accent)", color: "var(--accent-fg)", height: ITEM_H }}
+    >
+      <span className="truncate">{event.title}</span>
+    </button>
   );
 }
 
