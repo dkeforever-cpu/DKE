@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { BackendSettingsModal } from "@/components/backend-settings-modal";
 import { getSelfHostedBackendUrl, hasBackendConfig } from "@/lib/gas-client";
@@ -8,6 +9,7 @@ import { getSelfHostedBackendUrl, hasBackendConfig } from "@/lib/gas-client";
 export default function LoginPage() {
   const { teams, login, ready, resetDemoData, backendConfigured, backendError, retryBackend, appTitle } =
     useStore();
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,21 +27,12 @@ export default function LoginPage() {
     setSubmitting(true);
     setError("");
     const ok = await login(username.trim(), password);
+    setSubmitting(false);
     if (!ok) {
-      setSubmitting(false);
       setError("아이디 또는 비밀번호가 올바르지 않습니다.");
       return;
     }
-    // router.push("/")로 화면만 넘기면 이미 브라우저에 올라와 있는 (어쩌면
-    // 오래된) 자바스크립트가 그대로 쓰인다 — 배포한 새 버전이 있어도 이
-    // 탭이 그걸 받아오는 시점은 실제로 서버에 새로 요청할 때뿐이다.
-    // 로그인은 하루에도 여러 번, 여러 사람이 반복하는 동작이라, 이
-    // 순간에 캐시를 타지 않는 새 주소로 이동시켜서 항상 최신 배포로
-    // 넘어가게 한다(주소 끝에 매번 다른 값을 붙이면 브라우저가 캐시를
-    // 쓰지 않고 서버에 새로 요청한다 — 강력 새로고침과 같은 효과).
-    // currentUserId는 login()이 이미 localStorage에 저장해뒀으니, 새로
-    // 불러온 페이지도 곧바로 로그인된 상태(대시보드)로 시작한다.
-    window.location.href = window.location.origin + window.location.pathname + "?_r=" + Date.now();
+    router.push("/");
   }
 
   if (!ready) return null;

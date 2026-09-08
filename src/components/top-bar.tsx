@@ -19,7 +19,19 @@ export function TopBar() {
 
   function handleLogout() {
     logout();
-    router.push("/login");
+    // router.push("/login")로 화면만 넘기면 이미 브라우저에 올라와 있는
+    // (어쩌면 오래된) 자바스크립트가 그대로 쓰인다 — 배포한 새 버전이
+    // 있어도 이 탭이 그걸 받아오는 시점은 실제로 서버에 새로 요청할
+    // 때뿐이다. 로그인 쪽에 걸면 다음 로그인마다 전체 페이지를 다시
+    // 불러오느라 몇 초씩 흰 화면이 뜰 수 있어서, 대신 로그아웃하는
+    // 순간(어차피 로그인 화면으로 돌아가는 타이밍이라 잠깐의 로딩이
+    // 덜 거슬림)에 캐시를 타지 않는 새 주소로 이동시킨다(주소 끝에
+    // 매번 다른 값을 붙이면 브라우저가 캐시를 쓰지 않고 서버에 새로
+    // 요청한다 — 강력 새로고침과 같은 효과). logout()이 이미
+    // localStorage의 로그인 정보를 지웠으니, 새로 불러온 페이지는
+    // 로그인 화면으로 시작한다.
+    window.location.href =
+      window.location.origin + window.location.pathname + "?_r=" + Date.now() + "#/login";
   }
 
   async function handleRefresh() {
