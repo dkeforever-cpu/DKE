@@ -140,6 +140,14 @@ export default function DashboardPage() {
     getUser,
   ]);
 
+  // 캘린더의 '일정 등록'으로 만든 항목은 업무와 달리 담당자 필드가 없다 —
+  // 등록한 사람을 담당자로 보고, 상단 '담당자' 필터가 이 일정에도 걸리도록
+  // 한다(등록자=담당자로 취급하기로 확정).
+  const filteredEvents = useMemo(() => {
+    if (assigneeFilter === "전체") return calendarEvents;
+    return calendarEvents.filter((ev) => ev.createdBy === assigneeFilter);
+  }, [calendarEvents, assigneeFilter]);
+
   const summary = useMemo(() => {
     const base = scoped;
     return {
@@ -235,7 +243,7 @@ export default function DashboardPage() {
         users={users}
         centers={centers}
         onOpenNewTask={() => setFormOpen(true)}
-        events={calendarEvents}
+        events={filteredEvents}
         onOpenEvent={setEditingEvent}
         onOpenNewEvent={() => setEventFormOpen(true)}
       />
@@ -393,7 +401,7 @@ export default function DashboardPage() {
         {view === "calendar" ? (
           <CalendarView
             tasks={filtered}
-            events={calendarEvents}
+            events={filteredEvents}
             includeTasks={includeTasksInCalendar}
             onOpenEvent={setEditingEvent}
           />
