@@ -51,11 +51,21 @@ function doGet(e) {
  * 콘텐츠" 예외를 던진다. 그래서 파일 자체는 <script>...</script>로 감싸
  * 저장해두고(HTML 파서가 <script> 태그 안쪽은 raw text로 취급해 이 문제를
  * 피해간다), 여기서 그 감싼 태그만 벗겨내 순수 JS만 응답으로 돌려준다.
+ *
+ * 파일 하나(861KB)를 통째로 편집기에 붙여넣었을 때 일부 내용이 손실되는
+ * 사례가 있어(받아온 길자 수가 기대치보다 약 8천자 적었음 — 원인은 특정할
+ * 수 없었지만, 붙여넣기 자체가 손실 지점으로 의심된다), 절반 크기씩
+ * ExcelLib1.html·ExcelLib2.html 두 파일로 나눠 순서대로 이어붙인다 —
+ * 한 번에 붙여넣는 양을 줄이면 손실 위험도 줄어들 것으로 기대한다.
  */
 function serveExcelLib_() {
-  var raw = HtmlService.createHtmlOutputFromFile("ExcelLib").getContent();
-  var match = raw.match(/<script[^>]*>([\s\S]*)<\/script>/i);
-  var js = match ? match[1] : raw;
+  var js = ["ExcelLib1", "ExcelLib2"]
+    .map(function (name) {
+      var raw = HtmlService.createHtmlOutputFromFile(name).getContent();
+      var match = raw.match(/<script[^>]*>([\s\S]*)<\/script>/i);
+      return match ? match[1] : raw;
+    })
+    .join("\n");
   return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
