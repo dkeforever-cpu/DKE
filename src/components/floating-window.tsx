@@ -85,6 +85,20 @@ export function FloatingWindow({
       pendingUpdateRef.current = null;
     });
   }
+  // pointerup/pointercancel로 드래그·리사이즈가 끝난 뒤에 예약된 업데이트가
+  // 뒤늦게 실행되면, 그 시점엔 이미 최신이 아닌(포인터가 끝나기 직전의)
+  // 좌표/크기가 뒤늦게 한 번 더 반영되면서 눈에 튀어 보일 수 있다 — 특히
+  // 웨일 브라우저는 리사이즈 도중 pointercancel을 더 자주 보내는 것으로
+  // 보여 이 어긋남이 두드러진다. 끝나는 시점에 예약된 게 있으면 그 자리에서
+  // 바로 확정해 다음 프레임까지 미뤄지는 어긋남 자체를 없앤다.
+  function flushUpdate() {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    pendingUpdateRef.current?.();
+    pendingUpdateRef.current = null;
+  }
   useEffect(() => {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -168,6 +182,7 @@ export function FloatingWindow({
   // pointerup과 똑같이 처리하지 않으면 "드래그/리사이즈 중" 상태가 풀리지
   // 않은 채로 남아있을 수 있다.
   function handleDragEnd() {
+    flushUpdate();
     dragState.current = null;
   }
 
@@ -199,6 +214,7 @@ export function FloatingWindow({
   }
 
   function handleResizeEnd(e: React.PointerEvent) {
+    flushUpdate();
     resizeState.current = null;
     e.stopPropagation();
   }
