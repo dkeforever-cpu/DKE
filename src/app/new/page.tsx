@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { useRequireAuth } from "@/lib/use-require-auth";
@@ -20,8 +21,18 @@ export default function NewPage() {
   const { newsItems, dismissNewsItem } = useStore();
   const { setView } = useDashboardState();
   const router = useRouter();
+  // 화면이 리렌더되어 항목이 사라지기 전에 같은 확인 버튼을 연타하면
+  // dismissNewsItem이 같은 id로 여러 번 호출될 수 있었다 — 한 번 확인
+  // 요청을 보낸 id는 기록해두고 다시 보내지 않는다.
+  const dismissedRef = useRef<Set<string>>(new Set());
 
   if (!ready || !currentUser) return null;
+
+  function handleDismiss(id: string) {
+    if (dismissedRef.current.has(id)) return;
+    dismissedRef.current.add(id);
+    dismissNewsItem(id);
+  }
 
   function openNewsItem(item: NewsItem) {
     if (item.entityType === "calendarEvent") {
@@ -85,7 +96,7 @@ export default function NewPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      dismissNewsItem(n.id);
+                      handleDismiss(n.id);
                     }}
                     className="mt-0.5 flex h-6 flex-none items-center whitespace-nowrap rounded-[3px] px-2.5 text-[9.5px] font-semibold"
                     style={{ background: "var(--accent)", color: "var(--accent-fg)" }}

@@ -769,16 +769,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const dismissNewsItem = useCallback(
     (id: string) => {
       if (!currentUserId) return;
+      const item = data.newsItems.find((n) => n.id === id);
+      // 이미 확인한 항목이면 아무 것도 하지 않는다 — 여기서 걸러야
+      // 화면이 아직 안 사라진 사이에 연타해도 서버에 내 아이디가
+      // 중복으로 쌓이지 않는다(예전에는 로컬 반영에만 이 체크가 있고
+      // 서버로 보내는 값 계산에는 빠져 있어서, dismissedBy가
+      // ["u12","u12",...]처럼 중복 누적되는 버그가 있었다).
+      if (!item || item.dismissedBy.includes(currentUserId)) return;
+      const dismissedBy = [...item.dismissedBy, currentUserId];
       setData((prev) => ({
         ...prev,
-        newsItems: prev.newsItems.map((n) =>
-          n.id === id && !n.dismissedBy.includes(currentUserId)
-            ? { ...n, dismissedBy: [...n.dismissedBy, currentUserId] }
-            : n
-        ),
+        newsItems: prev.newsItems.map((n) => (n.id === id ? { ...n, dismissedBy } : n)),
       }));
-      const item = data.newsItems.find((n) => n.id === id);
-      const dismissedBy = item ? [...item.dismissedBy, currentUserId] : [currentUserId];
       pushUpdate("newsItems", id, { dismissedBy });
     },
     [data.newsItems, currentUserId, pushUpdate]
