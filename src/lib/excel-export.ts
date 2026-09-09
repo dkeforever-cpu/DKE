@@ -303,7 +303,15 @@ function buildTaskListSheet(
     const titleCell = ws.getCell(row, 4);
     const anchorRow = anchors.get(task.id);
     if (anchorRow) {
-      titleCell.value = { text: task.title, hyperlink: `#상세!A${anchorRow}`, tooltip: "클릭하면 세부내용으로 이동" };
+      // 일반 하이퍼링크 객체({hyperlink: ...})로 이동하면, 상세 시트에 틀고정이
+      // 걸려 있을 때 선택 셀은 바뀌는데 화면(스크롤)이 안 따라가는 엑셀
+      // 자체의 오래된 버그가 있다 — HYPERLINK() 함수로 참조하면 같은
+      // 틀고정 상태에서도 화면이 정상적으로 따라간다(직접 테스트로 확인됨).
+      const safeTitle = task.title.replace(/"/g, '""');
+      titleCell.value = {
+        formula: `HYPERLINK("#상세!A${anchorRow}","${safeTitle}")`,
+        result: task.title,
+      };
       titleCell.font = { color: { argb: "FF3355D6" }, underline: true };
     }
   });
