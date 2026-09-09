@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { ChecklistItem, Priority, Status, Task } from "@/lib/types";
 import { CALENDAR_PALETTE, taskColor } from "@/lib/calendar";
@@ -65,6 +65,12 @@ export function TaskFormModal({
   const [checklistDraft, setChecklistDraft] = useState<string[]>([]);
   const [newChecklistLabel, setNewChecklistLabel] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  // 저장 버튼을 빠르게 여러 번 누르면 업무가 중복 등록될 수 있었다 —
+  // ref로는 리렌더를 기다리지 않고 바로 다음 클릭을 막고, state로는
+  // 버튼을 눈에 보이게 비활성화한다(calendar-event-form-modal.tsx와
+  // 동일한 방식).
+  const submittedRef = useRef(false);
 
   function addChecklistDraftItem() {
     if (!newChecklistLabel.trim()) return;
@@ -92,11 +98,14 @@ export function TaskFormModal({
   const canSubmit = useMemo(() => title.trim().length > 0, [title]);
 
   function handleSubmit() {
+    if (submittedRef.current) return;
     if (!currentUser) return;
     if (!canSubmit) {
       setError("업무 제목을 입력해주세요.");
       return;
     }
+    submittedRef.current = true;
+    setSubmitting(true);
     if (mode === "create") {
       const now = new Date().toISOString();
       const checklist: ChecklistItem[] = checklistDraft.map((label, i) => ({
@@ -160,7 +169,8 @@ export function TaskFormModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="h-7 rounded-[2px] px-3.5 text-[11.5px] font-semibold"
+            disabled={submitting}
+            className="h-7 rounded-[2px] px-3.5 text-[11.5px] font-semibold disabled:opacity-50"
             style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
           >
             저장
