@@ -171,7 +171,10 @@ function buildDetailSheet(
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_FILL } };
     cell.border = ALL_BORDERS;
   });
-  ws.views = [{ state: "frozen", ySplit: 1 }];
+  // 틀고정을 걸어두면(예전 코드는 ySplit:1로 헤더 행 고정) "전체업무" 시트
+  // 링크로 이 시트에 있는 셀로 이동할 때 선택 셀은 바뀌는데 화면(스크롤)이
+  // 안 따라가는 엑셀 자체의 오래된 동작이 있다 — 틀고정을 포기하는 대신
+  // 링크 이동이 확실히 되도록 한다.
 
   const anchors = new Map<string, number>();
   let row = 2;
@@ -303,17 +306,11 @@ function buildTaskListSheet(
     const titleCell = ws.getCell(row, 4);
     const anchorRow = anchors.get(task.id);
     if (anchorRow) {
-      // 일반 하이퍼링크 객체({hyperlink: ...})로 이동하면, 상세 시트에 틀고정이
-      // 걸려 있을 때 선택 셀은 바뀌는데 화면(스크롤)이 안 따라가는 엑셀
-      // 자체의 오래된 버그가 있다 — HYPERLINK() 함수로 참조하면 같은
-      // 틀고정 상태에서도 화면이 정상적으로 따라간다(직접 테스트로 확인됨).
-      // 시트 이름을 작은따옴표로 감싸야(#'상세'!A5) 실제로 클릭 이동이
-      // 된다 — 안 감싸면(#상세!A5) 표시는 멀쩡해도 클릭해도 이동이 안 된다.
-      const safeTitle = task.title.replace(/"/g, '""');
-      titleCell.value = {
-        formula: `HYPERLINK("#'상세'!A${anchorRow}","${safeTitle}")`,
-        result: task.title,
-      };
+      // HYPERLINK() 수식으로도 시도해봤으나 원인 불명으로 클릭 이동 자체가
+      // 안 됐다 — 하이퍼링크 객체 방식으로 되돌린다(클릭하면 선택 셀 이동은
+      // 확실히 됨). 상세 시트의 틀고정을 없애서(buildDetailSheet 참고)
+      // 화면 스크롤도 함께 따라가게 한다.
+      titleCell.value = { text: task.title, hyperlink: `#상세!A${anchorRow}`, tooltip: "클릭하면 세부내용으로 이동" };
       titleCell.font = { color: { argb: "FF3355D6" }, underline: true };
     }
   });
