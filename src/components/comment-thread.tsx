@@ -180,53 +180,6 @@ export function CommentList({
   );
 }
 
-/** Self-toggling comment section: collapsed shows a "댓글 N개 보기" link. */
-export function CommentThread({
-  comments,
-  getUser,
-  canEdit,
-  currentUserId,
-  onAdd,
-  onUpdateComment,
-  onDeleteComment,
-  folderHint,
-  defaultExpanded,
-}: CommentListProps & { defaultExpanded?: boolean }) {
-  const [expanded, setExpanded] = useState(defaultExpanded ?? comments.length > 0);
-
-  if (!expanded) {
-    return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="text-[10px] text-[var(--text-faintest)] hover:text-[var(--text-muted)]"
-      >
-        {comments.length === 0 ? "댓글 남기기" : `댓글 ${comments.length}개 보기 ›`}
-      </button>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2 border border-[var(--divider)] bg-[var(--surface-alt)] p-2">
-      <button
-        onClick={() => setExpanded(false)}
-        className="self-start text-[9.5px] text-[var(--text-faintest)] hover:text-[var(--text-muted)]"
-      >
-        접기 ‹
-      </button>
-      <CommentList
-        comments={comments}
-        getUser={getUser}
-        canEdit={canEdit}
-        currentUserId={currentUserId}
-        onAdd={onAdd}
-        onUpdateComment={onUpdateComment}
-        onDeleteComment={onDeleteComment}
-        folderHint={folderHint}
-      />
-    </div>
-  );
-}
-
 function CommentRow({
   comment,
   author,
