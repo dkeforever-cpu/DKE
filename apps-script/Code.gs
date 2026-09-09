@@ -37,14 +37,25 @@ function doGet(e) {
  * 커져서 앱스크립트 편집기에 붙여넣을 때 내용이 깨질 위험이 있어(App.html
  * 자체의 파일 하나 유지 방침과 그 이유는 serveApp_ 위 주석 참고), 이 배포
  * 주소에 ?resource=exceljs로 요청이 오면 그 라이브러리 코드만 자바스크립트로
- * 돌려주는 별도 경로를 만들어, 화면 쪽에서 <script src="...?resource=exceljs">로
- * 필요할 때만 따로 불러오게 분리했다. include()로 화면 파일 자체를 조각내
+ * 돌려주는 별도 경로를 만들어, 화면 쪽에서 fetch()로 필요할 때만 따로
+ * 받아와 인라인 스크립트로 실행하게 분리했다(처음엔 <script src>로 직접
+ * 불러오려 했으나 실제 배포에서 항상 실패해 fetch 방식으로 바꿨다).
+ * include()로 화면 파일 자체를 조각내
  * 합치려던 예전 시도와는 다른 방식이다 — 그건 실제 배포에서만 파싱 에러가
  * 나서 포기했지만, 이건 서버가 파일을 합치는 게 아니라 완전히 별개의
  * 응답(같은 배포 주소의 또 다른 쿼리 파라미터)이라 그 문제와는 무관하다.
+ *
+ * ExcelLib.html 파일 자체는 순수 자바스크립트 코드를 그대로 담고 있지
+ * 않다 — HtmlService.createHtmlOutputFromFile()이 파일 내용을 HTML로
+ * 검증하는데, 순수 JS는 비교 연산자(<, >)가 많아 "형식이 잘못된 HTML
+ * 콘텐츠" 예외를 던진다. 그래서 파일 자체는 <script>...</script>로 감싸
+ * 저장해두고(HTML 파서가 <script> 태그 안쪽은 raw text로 취급해 이 문제를
+ * 피해간다), 여기서 그 감싼 태그만 벗겨내 순수 JS만 응답으로 돌려준다.
  */
 function serveExcelLib_() {
-  var js = HtmlService.createHtmlOutputFromFile("ExcelLib").getContent();
+  var raw = HtmlService.createHtmlOutputFromFile("ExcelLib").getContent();
+  var match = raw.match(/<script[^>]*>([\s\S]*)<\/script>/i);
+  var js = match ? match[1] : raw;
   return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
