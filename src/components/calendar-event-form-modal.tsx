@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { CalendarEvent } from "@/lib/types";
@@ -27,6 +27,12 @@ export function CalendarEventFormModal({
   const [endDate, setEndDate] = useState(event?.endDate ?? todayStr());
   const [description, setDescription] = useState(event?.description ?? "");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  // 저장 버튼을 빠르게 여러 번 누르면(또는 응답이 늦어 안 눌린 것처럼
+  // 보이면) 그만큼 일정이 중복 등록될 수 있었다 — ref로는 리렌더를
+  // 기다리지 않고 바로 다음 클릭을 막고, state로는 버튼을 눈에 보이게
+  // 비활성화한다.
+  const submittedRef = useRef(false);
 
   // 새로 등록할 때는 당연히 본인이 만드는 거라 항상 수정 가능하고, 기존
   // 일정을 열었을 때만 작성자 본인/관리자가 아니면 읽기 전용으로 막는다 —
@@ -34,6 +40,7 @@ export function CalendarEventFormModal({
   const editable = mode === "create" || (event ? canEdit(event.createdBy) : false);
 
   function handleSubmit() {
+    if (submittedRef.current) return;
     if (!title.trim()) {
       setError("일정 제목을 입력해주세요.");
       return;
@@ -42,6 +49,8 @@ export function CalendarEventFormModal({
       setError("시작일과 종료일을 모두 입력해주세요.");
       return;
     }
+    submittedRef.current = true;
+    setSubmitting(true);
     // 종료일이 시작일보다 빠르면 화면에서 기간이 거꾸로 표시되니, 저장 전에
     // 두 값을 바로잡는다(사용자가 날짜를 반대로 골랐을 뿐 오류로 취급하지 않음).
     const [normalizedStart, normalizedEnd] = startDate <= endDate ? [startDate, endDate] : [endDate, startDate];
@@ -101,7 +110,8 @@ export function CalendarEventFormModal({
           {editable && (
             <button
               onClick={handleSubmit}
-              className="h-7 rounded-[2px] px-3.5 text-[11.5px] font-semibold"
+              disabled={submitting}
+              className="h-7 rounded-[2px] px-3.5 text-[11.5px] font-semibold disabled:opacity-50"
               style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
             >
               저장
