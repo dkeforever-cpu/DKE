@@ -15,8 +15,10 @@ export function ExcelSection() {
     setDownloading(true);
     try {
       await buildAndDownloadExcel({ teams, users, tasks: allTasks, calendarEvents, logEntries, comments });
-    } catch {
-      await alertUser("엑셀 파일을 만드는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } catch (err) {
+      console.error("[Excel 다운로드 실패]", err);
+      const detail = err instanceof Error ? err.message : String(err);
+      await alertUser(`엑셀 파일을 만드는 중 문제가 발생했습니다.\n(${detail})`);
     } finally {
       setDownloading(false);
     }
