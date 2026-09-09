@@ -333,10 +333,15 @@ export async function buildAndDownloadExcel(data: ExcelExportData, filename?: st
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+  const name = filename ?? `dke-업무현황-${toDateStr(new Date())}.xlsx`;
+  if (window.saveAs) {
+    window.saveAs(blob, name);
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename ?? `dke-업무현황-${toDateStr(new Date())}.xlsx`;
+  a.download = name;
   a.click();
   URL.revokeObjectURL(url);
 }

@@ -19,10 +19,6 @@
  */
 
 function doGet(e) {
-  var resource = e && e.parameter && e.parameter.resource;
-  if (resource === "exceljs") {
-    return serveExcelLib_();
-  }
   var raw = e && e.parameter && e.parameter.data;
   if (raw) {
     return handleApiRequest_(raw);
@@ -30,44 +26,13 @@ function doGet(e) {
   return serveApp_(e);
 }
 
-/**
- * 관리자설정의 "Excel 다운로드" 버튼을 눌렀을 때만 브라우저가 따로
- * 요청하는, 서식(테두리·배경색·병합) 지원 라이브러리(ExcelJS, 최소화해도
- * 800KB 이상)다. App.html 자체에 포함시키면 배포 파일 크기가 두 배 넘게
- * 커져서 앱스크립트 편집기에 붙여넣을 때 내용이 깨질 위험이 있어(App.html
- * 자체의 파일 하나 유지 방침과 그 이유는 serveApp_ 위 주석 참고), 이 배포
- * 주소에 ?resource=exceljs로 요청이 오면 그 라이브러리 코드만 자바스크립트로
- * 돌려주는 별도 경로를 만들어, 화면 쪽에서 fetch()로 필요할 때만 따로
- * 받아와 인라인 스크립트로 실행하게 분리했다(처음엔 <script src>로 직접
- * 불러오려 했으나 실제 배포에서 항상 실패해 fetch 방식으로 바꿨다).
- * include()로 화면 파일 자체를 조각내
- * 합치려던 예전 시도와는 다른 방식이다 — 그건 실제 배포에서만 파싱 에러가
- * 나서 포기했지만, 이건 서버가 파일을 합치는 게 아니라 완전히 별개의
- * 응답(같은 배포 주소의 또 다른 쿼리 파라미터)이라 그 문제와는 무관하다.
- *
- * ExcelLib.html 파일 자체는 순수 자바스크립트 코드를 그대로 담고 있지
- * 않다 — HtmlService.createHtmlOutputFromFile()이 파일 내용을 HTML로
- * 검증하는데, 순수 JS는 비교 연산자(<, >)가 많아 "형식이 잘못된 HTML
- * 콘텐츠" 예외를 던진다. 그래서 파일 자체는 <script>...</script>로 감싸
- * 저장해두고(HTML 파서가 <script> 태그 안쪽은 raw text로 취급해 이 문제를
- * 피해간다), 여기서 그 감싼 태그만 벗겨내 순수 JS만 응답으로 돌려준다.
- *
- * 파일 하나(861KB)를 통째로 편집기에 붙여넣었을 때 일부 내용이 손실되는
- * 사례가 있어(받아온 길자 수가 기대치보다 약 8천자 적었음 — 원인은 특정할
- * 수 없었지만, 붙여넣기 자체가 손실 지점으로 의심된다), 절반 크기씩
- * ExcelLib1.html·ExcelLib2.html 두 파일로 나눠 순서대로 이어붙인다 —
- * 한 번에 붙여넣는 양을 줄이면 손실 위험도 줄어들 것으로 기대한다.
- */
-function serveExcelLib_() {
-  var js = ["ExcelLib1", "ExcelLib2"]
-    .map(function (name) {
-      var raw = HtmlService.createHtmlOutputFromFile(name).getContent();
-      var match = raw.match(/<script[^>]*>([\s\S]*)<\/script>/i);
-      return match ? match[1] : raw;
-    })
-    .join("\n");
-  return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JAVASCRIPT);
-}
+// Excel 다운로드 기능이 쓰는 서식 라이브러리(ExcelJS)는 앱스크립트
+// 프로젝트에 파일로 담지 않는다 — 최소화해도 800KB 이상이라 프로젝트에
+// 직접 저장하려 했더니, 어떤 방식으로 나누거나 감싸도 실제 배포에서
+// 매번 일정량(전체의 약 1% 정도)이 손실된 채로 저장돼 원인을 특정하지
+// 못했다(구글 앱스스크립트 저장소 자체의 용량/처리 한계로 추정). 그래서
+// App.html의 <head>에 있는 <script src="https://cdnjs...">로 직접
+// 불러오도록 바꿨다 — 이 파일(Code.gs)에는 관련 코드가 없다.
 
 /**
  * 화면(App.html)은 파일 하나로 유지한다 — <?!= include(...); ?>로 조각
