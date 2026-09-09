@@ -23,6 +23,7 @@ export const ADMIN_TABS = [
   { key: "users", label: "사용자 권한 관리" },
   { key: "database", label: "데이터(DB) 구조" },
   { key: "backend", label: "백엔드 연동 (구글 시트)" },
+  { key: "excel", label: "Excel" },
   { key: "logs", label: "기록" },
 ] as const;
 

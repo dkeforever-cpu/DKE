@@ -19,11 +19,33 @@
  */
 
 function doGet(e) {
+  var resource = e && e.parameter && e.parameter.resource;
+  if (resource === "exceljs") {
+    return serveExcelLib_();
+  }
   var raw = e && e.parameter && e.parameter.data;
   if (raw) {
     return handleApiRequest_(raw);
   }
   return serveApp_(e);
+}
+
+/**
+ * 관리자설정의 "Excel 다운로드" 버튼을 눌렀을 때만 브라우저가 따로
+ * 요청하는, 서식(테두리·배경색·병합) 지원 라이브러리(ExcelJS, 최소화해도
+ * 800KB 이상)다. App.html 자체에 포함시키면 배포 파일 크기가 두 배 넘게
+ * 커져서 앱스크립트 편집기에 붙여넣을 때 내용이 깨질 위험이 있어(App.html
+ * 자체의 파일 하나 유지 방침과 그 이유는 serveApp_ 위 주석 참고), 이 배포
+ * 주소에 ?resource=exceljs로 요청이 오면 그 라이브러리 코드만 자바스크립트로
+ * 돌려주는 별도 경로를 만들어, 화면 쪽에서 <script src="...?resource=exceljs">로
+ * 필요할 때만 따로 불러오게 분리했다. include()로 화면 파일 자체를 조각내
+ * 합치려던 예전 시도와는 다른 방식이다 — 그건 실제 배포에서만 파싱 에러가
+ * 나서 포기했지만, 이건 서버가 파일을 합치는 게 아니라 완전히 별개의
+ * 응답(같은 배포 주소의 또 다른 쿼리 파라미터)이라 그 문제와는 무관하다.
+ */
+function serveExcelLib_() {
+  var js = HtmlService.createHtmlOutputFromFile("ExcelLib").getContent();
+  return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
 /**

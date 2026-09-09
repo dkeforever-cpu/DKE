@@ -9,6 +9,7 @@ import { BoardsSection } from "@/components/admin/boards-section";
 import { UsersSection } from "@/components/admin/users-section";
 import { DatabaseSection } from "@/components/admin/database-section";
 import { BackendSection } from "@/components/admin/backend-section";
+import { ExcelSection } from "@/components/admin/excel-section";
 import { LogsSection } from "@/components/admin/logs-section";
 
 // 사이드바 하단 "관리자설정" 아코디언에서 탭을 고르면 대시보드 화면(그
@@ -29,6 +30,7 @@ export function AdminPanel({ tab }: { tab: AdminTabKey }) {
         {tab === "users" && <UsersSection />}
         {tab === "database" && <DatabaseSection />}
         {tab === "backend" && <BackendSection />}
+        {tab === "excel" && <ExcelSection />}
         {tab === "logs" && <LogsSection />}
       </div>
     </div>
