@@ -4,17 +4,33 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { useConfirmDialog } from "@/lib/confirm-dialog";
 import { buildAndDownloadExcel } from "@/lib/excel-export";
+import { todayStr } from "@/lib/format";
+
+function defaultFilename() {
+  return `업무현황_${todayStr()}`;
+}
+
+// 파일명에 못 쓰는 문자(윈도우 기준 \ / : * ? " < > |)는 지워서, 사용자가
+// 실수로 넣어도 다운로드 자체가 깨지지 않게 한다.
+function sanitizeFilename(name: string): string {
+  return name.replace(/[\\/:*?"<>|]/g, "").trim();
+}
 
 export function ExcelSection() {
   const { teams, users, allTasks, calendarEvents, logEntries, comments } = useStore();
   const { confirm, alertUser } = useConfirmDialog();
   const [downloading, setDownloading] = useState(false);
+  const [filename, setFilename] = useState(defaultFilename);
 
   async function handleDownload() {
     if (!(await confirm("현재 데이터를 엑셀 파일로 다운로드하시겠습니까?"))) return;
     setDownloading(true);
     try {
-      await buildAndDownloadExcel({ teams, users, tasks: allTasks, calendarEvents, logEntries, comments });
+      const name = `${sanitizeFilename(filename) || defaultFilename()}.xlsx`;
+      await buildAndDownloadExcel(
+        { teams, users, tasks: allTasks, calendarEvents, logEntries, comments },
+        name
+      );
     } catch (err) {
       console.error("[Excel 다운로드 실패]", err);
       const detail = err instanceof Error ? err.message : String(err);
@@ -36,6 +52,18 @@ export function ExcelSection() {
         3. <b>업무 세부내용</b> — 업무별 필요 업무·업무 메모·댓글
         <br />
         처음 누를 때 서식 라이브러리를 추가로 받아오기 때문에 몇 초 걸릴 수 있습니다.
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <label className="text-[10.5px] font-semibold text-[var(--text-muted)]">파일명</label>
+        <input
+          value={filename}
+          onChange={(e) => setFilename(e.target.value)}
+          disabled={downloading}
+          placeholder={defaultFilename()}
+          className="h-7 w-56 rounded-[2px] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[11.5px] text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
+        />
+        <span className="text-[10.5px] text-[var(--text-faintest)]">.xlsx</span>
       </div>
 
       <button
