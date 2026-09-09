@@ -307,9 +307,11 @@ function buildTaskListSheet(
       // 걸려 있을 때 선택 셀은 바뀌는데 화면(스크롤)이 안 따라가는 엑셀
       // 자체의 오래된 버그가 있다 — HYPERLINK() 함수로 참조하면 같은
       // 틀고정 상태에서도 화면이 정상적으로 따라간다(직접 테스트로 확인됨).
+      // 시트 이름을 작은따옴표로 감싸야(#'상세'!A5) 실제로 클릭 이동이
+      // 된다 — 안 감싸면(#상세!A5) 표시는 멀쩡해도 클릭해도 이동이 안 된다.
       const safeTitle = task.title.replace(/"/g, '""');
       titleCell.value = {
-        formula: `HYPERLINK("#상세!A${anchorRow}","${safeTitle}")`,
+        formula: `HYPERLINK("#'상세'!A${anchorRow}","${safeTitle}")`,
         result: task.title,
       };
       titleCell.font = { color: { argb: "FF3355D6" }, underline: true };
