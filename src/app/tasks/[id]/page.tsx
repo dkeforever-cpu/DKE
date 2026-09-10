@@ -15,6 +15,7 @@ import { formatDateFull, formatDateTime, daysOverdue, isOverdue } from "@/lib/fo
 import { finalizeAttachment, readPickedFile } from "@/lib/attachments";
 import { downloadResourceFile } from "@/lib/download";
 import { linkify } from "@/lib/linkify";
+import { flatten } from "@/lib/checklist";
 import type { ResourceFile } from "@/lib/types";
 
 export default function TaskDetailPage() {
@@ -59,10 +60,23 @@ export default function TaskDetailPage() {
   );
 
   const allAttachments = useMemo(() => {
-    return taskLogEntries
-      .flatMap((l) => (l.attachments ?? []).map((f) => ({ file: f, date: l.createdAt })))
-      .sort((a, b) => (a.date < b.date ? 1 : -1));
-  }, [taskLogEntries]);
+    const logAttachments = taskLogEntries.flatMap((l) =>
+      (l.attachments ?? []).map((f) => ({ file: f, date: l.createdAt }))
+    );
+    // 업무 메모/필요 업무에 달린 댓글도 파일을 첨부할 수 있는데, 예전에는
+    // 업무 메모 자체의 첨부파일만 모아서 보여주고 댓글 첨부파일은 빠져
+    // 있었다.
+    const logIds = new Set(taskLogEntries.map((l) => l.id));
+    const checklistIds = new Set(flatten(task?.checklist ?? []).map((i) => i.id));
+    const commentAttachments = comments
+      .filter(
+        (c) =>
+          (c.targetType === "log" && logIds.has(c.targetId)) ||
+          (c.targetType === "checklist" && checklistIds.has(c.targetId))
+      )
+      .flatMap((c) => (c.attachments ?? []).map((f) => ({ file: f, date: c.createdAt })));
+    return [...logAttachments, ...commentAttachments].sort((a, b) => (a.date < b.date ? 1 : -1));
+  }, [taskLogEntries, comments, task?.checklist]);
 
   if (!ready || !currentUser) return null;
 

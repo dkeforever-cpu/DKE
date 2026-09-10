@@ -64,10 +64,23 @@ export default function DashboardPage() {
       "reported",
     ];
 
-  const attachmentCount = (taskId: string) =>
-    logEntries
-      .filter((l) => l.taskId === taskId)
-      .reduce((sum, l) => sum + (l.attachments ?? []).length, 0);
+  const attachmentCount = (taskId: string) => {
+    const taskLogEntries = logEntries.filter((l) => l.taskId === taskId);
+    const logCount = taskLogEntries.reduce((sum, l) => sum + (l.attachments ?? []).length, 0);
+    // 업무 메모/필요 업무 댓글에 달린 첨부파일도 함께 센다(업무 상세의
+    // "전체 첨부파일" 목록과 동일한 기준).
+    const logIds = new Set(taskLogEntries.map((l) => l.id));
+    const task = tasks.find((t) => t.id === taskId);
+    const checklistIds = new Set(flatten(task?.checklist ?? []).map((i) => i.id));
+    const commentAttachmentCount = comments
+      .filter(
+        (c) =>
+          (c.targetType === "log" && logIds.has(c.targetId)) ||
+          (c.targetType === "checklist" && checklistIds.has(c.targetId))
+      )
+      .reduce((sum, c) => sum + (c.attachments ?? []).length, 0);
+    return logCount + commentAttachmentCount;
+  };
 
   const commentCount = (taskId: string) => {
     const logIds = new Set(logEntries.filter((l) => l.taskId === taskId).map((l) => l.id));
