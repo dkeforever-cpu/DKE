@@ -96,6 +96,16 @@ input, textarea, select, button {
   font-family: inherit;
 }
 
+/* Tailwind의 기본 리셋은 button에 cursor: default를 적용해서, 마우스를
+   올려도 손가락 커서로 안 바뀐다 — 링크처럼 클릭 가능하다는 걸 알 수
+   있도록 되돌린다. 비활성화된 버튼은 그대로 클릭 불가 커서를 쓴다. */
+button:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
