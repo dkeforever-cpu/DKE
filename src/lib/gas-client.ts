@@ -116,6 +116,7 @@ interface GoogleScriptRun {
   withFailureHandler: (cb: (err: Error) => void) => GoogleScriptRun;
   getUploadUrl: (token: string, fileName: string, mimeType: string, folder: string) => void;
   finalizeDirectUpload: (token: string, uploadSessionUrl: string) => void;
+  updateAppIconDirect: (token: string, dataUri: string) => void;
 }
 
 function getScriptRun(): GoogleScriptRun | undefined {
@@ -126,7 +127,7 @@ function scriptRun<T>(invoke: (run: GoogleScriptRun) => void): Promise<T> {
   return new Promise((resolve, reject) => {
     const run = getScriptRun();
     if (!run) {
-      reject(new GasApiError("이 화면에서는 파일 업로드를 쓸 수 없습니다. 앱스크립트 배포 주소로 접속했는지 확인해주세요."));
+      reject(new GasApiError("이 화면에서는 이 기능을 쓸 수 없습니다. 앱스크립트 배포 주소로 접속했는지 확인해주세요."));
       return;
     }
     invoke(
@@ -187,6 +188,17 @@ async function uploadFile(
   return result;
 }
 
+// 로고 이미지(data URI)는 수만자짜리 값이라, 일반 update(GET 주소 하나에
+// 전부 실어 보내는 방식)로 보내면 주소 길이 제한에 걸려 실패한다.
+// google.script.run은 그 제한이 없어서 안전하게 보낼 수 있다.
+function updateAppIconDirect(dataUri: string): Promise<unknown> {
+  const cfg = getBackendConfig();
+  if (!cfg) {
+    throw new GasApiError("연동된 구글 시트가 없습니다. 설정에서 Apps Script 웹앱 URL을 등록해주세요.");
+  }
+  return scriptRun((run) => run.updateAppIconDirect(cfg.token, dataUri));
+}
+
 export const gas = {
   testConnection: (cfg: BackendConfig) => call<{ pong: boolean }>("ping", {}, cfg),
   bootstrap: <T>() => call<T>("bootstrap"),
@@ -196,5 +208,6 @@ export const gas = {
   list: <T>(entity: string, options?: { userId?: string; limit?: number }) =>
     call<T[]>("list", { entity, options }),
   uploadFile,
+  updateAppIconDirect,
   deleteFile: (driveFileId: string) => call<{ deleted: boolean }>("deleteFile", { driveFileId }),
 };

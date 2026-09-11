@@ -211,6 +211,20 @@ function handleUpdate_(entity, id, patch) {
   return decodeRow_(schema, updated);
 }
 
+/**
+ * 로고 이미지(data URI, 수만자)를 저장한다. google.script.run으로
+ * 호출된다 — 일반 doGet 경로는 action/payload를 전부 GET 주소 하나에
+ * 실어 보내야 해서, 이렇게 큰 값을 보내면 주소 길이 제한에 걸려 400
+ * Bad Request로 거부된다(리다이렉트를 거치며 POST 본문이 사라지는
+ * 문제 때문에 POST를 못 쓰는 것과 같은 이유). google.script.run은
+ * 주소 길이 제한 없이 값을 그대로 전달할 수 있어서 안전하다.
+ * google.script.run은 누구나 호출할 수 있으므로 토큰 검사를 직접 한다.
+ */
+function updateAppIconDirect(token, dataUri) {
+  checkToken_(token);
+  return handleUpdate_("settings", "app", { appIconUrl: dataUri || "" });
+}
+
 function handleDelete_(entity, id) {
   var schema = schemaFor_(entity);
   var sheet = getSheet_(schema.sheet);

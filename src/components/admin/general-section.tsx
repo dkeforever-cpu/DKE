@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { readPickedFile, finalizeAttachment } from "@/lib/attachments";
-import type { ResourceFile } from "@/lib/types";
+import { readFileAsBase64 } from "@/lib/download";
 
-// 로고 이미지는 이제 구글 드라이브에 실제로 업로드하고 짧은 링크만
-// 시트에 저장하므로(백엔드 연동 모드), 시트 셀 글자 수 제한과는 무관하다
-// — 넉넉하게 5MB까지 허용한다.
-const MAX_ICON_BYTES = 5 * 1024 * 1024;
+// 구글 시트 한 셀에 저장 가능한 글자 수(약 5만자) 안에 여유 있게 들어가도록
+// 아이콘 원본 파일 크기를 제한한다(base64로 바꾸면 원본의 약 1.37배로
+// 커진다) — 로고/아이콘 용도라 이 정도면 충분히 넉넉하다. (드라이브에
+// 업로드해 링크만 저장하는 방식도 시도해봤으나, 구글 드라이브의 공개
+// 이미지 링크가 <img> 태그로 안정적으로 뜨지 않아 도로 이 방식으로
+// 되돌렸다 — apps-script/CHECKPOINT.md 참고.)
+const MAX_ICON_BYTES = 30 * 1024;
 
 export function GeneralSection() {
   const { appTitle, updateAppTitle, appIconUrl, updateAppIcon } = useStore();
   const [draft, setDraft] = useState(appTitle);
-  const [iconFile, setIconFile] = useState<ResourceFile | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [iconError, setIconError] = useState("");
   const [iconBusy, setIconBusy] = useState(false);
@@ -33,14 +34,13 @@ export function GeneralSection() {
       return;
     }
     if (file.size > MAX_ICON_BYTES) {
-      setIconError(`아이콘 파일이 너무 큽니다 (최대 ${Math.round(MAX_ICON_BYTES / 1024 / 1024)}MB). 더 작은 이미지로 시도해주세요.`);
+      setIconError(`아이콘 파일이 너무 큽니다 (최대 ${Math.round(MAX_ICON_BYTES / 1024)}KB). 더 작은 이미지로 시도해주세요.`);
       return;
     }
     setIconBusy(true);
     try {
-      const picked = await readPickedFile(file);
-      setIconFile(picked);
-      setIconPreview(`data:${picked.mimeType};base64,${picked.base64}`);
+      const { base64, mimeType } = await readFileAsBase64(file);
+      setIconPreview(`data:${mimeType};base64,${base64}`);
     } catch (err) {
       setIconError(err instanceof Error ? err.message : "파일을 읽지 못했습니다.");
     } finally {
@@ -48,34 +48,13 @@ export function GeneralSection() {
     }
   }
 
-  async function handleSaveIcon() {
-    if (!iconFile || !iconPreview) return;
-    setIconBusy(true);
-    setIconError("");
-    try {
-      // 예전에는 이미지를 base64 그대로 시트 셀에 저장했는데, 그러면
-      // 그 값을 서버로 보내는 요청 주소 자체가 너무 길어져(브라우저가
-      // 통째로 GET 쿼리 파라미터 하나에 실어 보내는 구조) 400 오류로
-      // 거부되는 문제가 있었다 — 다른 첨부파일처럼 드라이브에 실제로
-      // 업로드하고, 시트에는 짧은 이미지 링크만 저장한다. 백엔드 연동이
-      // 안 된 로컬 저장 모드에서는 드라이브가 없으니 예전처럼 data URI를
-      // 그대로 쓴다(로컬 저장은 주소 길이 제한과 무관해서 문제없음).
-      const uploaded = await finalizeAttachment(iconFile, "app-icon");
-      const url = uploaded.driveFileId
-        ? `https://drive.google.com/uc?export=view&id=${uploaded.driveFileId}`
-        : iconPreview;
-      updateAppIcon(url);
-      setIconFile(null);
-      setIconPreview(null);
-    } catch (err) {
-      setIconError(err instanceof Error ? err.message : "아이콘 업로드에 실패했습니다.");
-    } finally {
-      setIconBusy(false);
-    }
+  function handleSaveIcon() {
+    if (!iconPreview) return;
+    updateAppIcon(iconPreview);
+    setIconPreview(null);
   }
 
   function handleResetIcon() {
-    setIconFile(null);
     setIconPreview(null);
     setIconError("");
     updateAppIcon("");
@@ -143,26 +122,24 @@ export function GeneralSection() {
           </div>
 
           <label className="flex h-7 cursor-pointer items-center rounded-[2px] border border-[var(--border-strong)] px-2.5 text-[10.5px] font-semibold text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]">
-            {iconBusy ? "처리 중..." : "파일 선택"}
+            {iconBusy ? "읽는 중..." : "파일 선택"}
             <input type="file" accept="image/*" className="hidden" onChange={handleIconPick} disabled={iconBusy} />
           </label>
 
           {iconPreview && (
             <button
               onClick={handleSaveIcon}
-              disabled={iconBusy}
-              className="h-7 flex-none rounded-[2px] px-3 text-[11px] font-semibold disabled:opacity-50"
+              className="h-7 flex-none rounded-[2px] px-3 text-[11px] font-semibold"
               style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
             >
-              {iconBusy ? "업로드 중..." : "저장"}
+              저장
             </button>
           )}
 
           {(appIconUrl || iconPreview) && (
             <button
               onClick={handleResetIcon}
-              disabled={iconBusy}
-              className="h-7 flex-none rounded-[2px] border px-2.5 text-[10.5px] disabled:opacity-50"
+              className="h-7 flex-none rounded-[2px] border px-2.5 text-[10.5px]"
               style={{ borderColor: "var(--danger-soft-bg)", color: "var(--danger)" }}
             >
               기본 아이콘으로 되돌리기

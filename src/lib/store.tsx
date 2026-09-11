@@ -1579,15 +1579,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [pushUpdate, logActivity]
   );
 
-  // 로그인 화면·상단바 로고에 쓸 아이콘. 빈 문자열을 주면 기본 내장
-  // 아이콘으로 되돌린다.
+  // 로그인 화면·상단바 로고에 쓸 아이콘(data URI, 수만자). 빈 문자열을
+  // 주면 기본 내장 아이콘으로 되돌린다. 일반 pushUpdate(GET 주소 하나에
+  // 전부 실어 보내는 방식)로 보내면 이렇게 큰 값 때문에 주소 길이 제한에
+  // 걸려 400으로 거부되므로, google.script.run 기반의 별도 경로
+  // (updateAppIconDirect)로 보낸다 — 그 제한이 없다.
   const updateAppIcon = useCallback(
     (url: string) => {
       setData((prev) => ({ ...prev, settings: { ...prev.settings, appIconUrl: url } }));
-      pushUpdate("settings", "app", { appIconUrl: url });
+      if (backendConfigured) {
+        markLocalMutation();
+        gas.updateAppIconDirect(url).catch((err) => setSyncError(errorMessage(err)));
+      }
       logActivity("update", "settings", "app", url ? "프로그램 아이콘 변경" : "프로그램 아이콘을 기본값으로 되돌림");
     },
-    [pushUpdate, logActivity]
+    [backendConfigured, markLocalMutation, logActivity]
   );
 
   const value: StoreContextValue = {
