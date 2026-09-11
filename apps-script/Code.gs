@@ -176,6 +176,8 @@ function route_(action, payload) {
       return handleList_(payload.entity, payload.options || {});
     case "deleteFile":
       return handleDeleteFile_(payload);
+    case "getIcon":
+      return handleGetIcon_(payload.driveFileId);
     default:
       throw new Error("알 수 없는 action: " + action);
   }
@@ -212,17 +214,21 @@ function handleUpdate_(entity, id, patch) {
 }
 
 /**
- * 로고 이미지(data URI, 수만자)를 저장한다. google.script.run으로
- * 호출된다 — 일반 doGet 경로는 action/payload를 전부 GET 주소 하나에
- * 실어 보내야 해서, 이렇게 큰 값을 보내면 주소 길이 제한에 걸려 400
- * Bad Request로 거부된다(리다이렉트를 거치며 POST 본문이 사라지는
- * 문제 때문에 POST를 못 쓰는 것과 같은 이유). google.script.run은
- * 주소 길이 제한 없이 값을 그대로 전달할 수 있어서 안전하다.
- * google.script.run은 누구나 호출할 수 있으므로 토큰 검사를 직접 한다.
+ * 로고 이미지는 드라이브에 파일로 올리고 시트에는 driveFileId만 저장한다
+ * (appIconUrl: "drive:<id>") — 큰 이미지를 시트 셀에 직접 넣으면 셀 글자
+ * 수 제한(약 5만자)에 걸리기 때문이다. 화면에 띄울 때는 구글 드라이브의
+ * 공개 "보기" 링크를 <img src>로 직접 거는 방식이 안정적으로 뜨지 않아서
+ * (핫링크 제한), 이 액션으로 서버가 대신 파일을 읽어 base64로 응답
+ * 본문에 실어 돌려준다 — 응답 본문은 요청 주소와 달리 길이 제한이 없어
+ * 이미지가 커도 문제없다.
  */
-function updateAppIconDirect(token, dataUri) {
-  checkToken_(token);
-  return handleUpdate_("settings", "app", { appIconUrl: dataUri || "" });
+function handleGetIcon_(driveFileId) {
+  if (!driveFileId) return { mimeType: "", base64: "" };
+  var blob = DriveApp.getFileById(driveFileId).getBlob();
+  return {
+    mimeType: blob.getContentType(),
+    base64: Utilities.base64Encode(blob.getBytes()),
+  };
 }
 
 function handleDelete_(entity, id) {

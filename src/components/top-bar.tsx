@@ -33,7 +33,10 @@ export function TopBar() {
     <div className="flex h-9 flex-none items-center justify-between gap-2 overflow-hidden border-b border-[var(--border)] bg-[var(--surface)] px-3">
       <div className="flex min-w-0 flex-none items-center gap-2">
         <button onClick={() => router.push("/")} className="flex flex-none items-center gap-[7px]">
-          <div className="flex h-[19px] w-[19px] flex-none items-center justify-center overflow-hidden rounded-[4px] bg-[var(--accent)]">
+          <div
+            className="flex h-[19px] w-[19px] flex-none items-center justify-center overflow-hidden rounded-[4px]"
+            style={{ background: appIconUrl ? "#ffffff" : "var(--accent)" }}
+          >
             {appIconUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={appIconUrl} alt="" className="h-full w-full" style={{ objectFit: "contain" }} />

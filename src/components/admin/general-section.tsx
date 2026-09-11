@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { readFileAsBase64 } from "@/lib/download";
+import { gas, hasBackendConfig } from "@/lib/gas-client";
 
-// 구글 시트 한 셀에 저장 가능한 글자 수(약 5만자) 안에 여유 있게 들어가도록
-// 아이콘 원본 파일 크기를 제한한다(base64로 바꾸면 원본의 약 1.37배로
-// 커진다) — 로고/아이콘 용도라 이 정도면 충분히 넉넉하다. (드라이브에
-// 업로드해 링크만 저장하는 방식도 시도해봤으나, 구글 드라이브의 공개
-// 이미지 링크가 <img> 태그로 안정적으로 뜨지 않아 도로 이 방식으로
-// 되돌렸다 — apps-script/CHECKPOINT.md 참고.)
-const MAX_ICON_BYTES = 30 * 1024;
+// 300KB까지 허용한다. 백엔드 연동 모드에서는 드라이브에 파일로 올리고
+// "drive:<id>"만 시트에 저장하므로 시트 셀 글자 수 제한과 무관하다.
+// 로컬 저장 모드(백엔드 미연동)에서는 드라이브가 없어 data URI를 그대로
+// 저장하는데, 이건 브라우저 localStorage라 마찬가지로 문제없다.
+const MAX_ICON_BYTES = 300 * 1024;
 
 export function GeneralSection() {
   const { appTitle, updateAppTitle, appIconUrl, updateAppIcon } = useStore();
@@ -48,10 +47,26 @@ export function GeneralSection() {
     }
   }
 
-  function handleSaveIcon() {
+  async function handleSaveIcon() {
     if (!iconPreview) return;
-    updateAppIcon(iconPreview);
-    setIconPreview(null);
+    const match = iconPreview.match(/^data:([^;]+);base64,(.*)$/);
+    if (!match) return;
+    const [, mimeType, base64] = match;
+    setIconBusy(true);
+    setIconError("");
+    try {
+      if (hasBackendConfig()) {
+        const uploaded = await gas.uploadFile("app-icon", mimeType, base64, "app-icon");
+        updateAppIcon(`drive:${uploaded.driveFileId}`);
+      } else {
+        updateAppIcon(iconPreview);
+      }
+      setIconPreview(null);
+    } catch (err) {
+      setIconError(err instanceof Error ? err.message : "아이콘 업로드에 실패했습니다.");
+    } finally {
+      setIconBusy(false);
+    }
   }
 
   function handleResetIcon() {
@@ -129,17 +144,19 @@ export function GeneralSection() {
           {iconPreview && (
             <button
               onClick={handleSaveIcon}
-              className="h-7 flex-none rounded-[2px] px-3 text-[11px] font-semibold"
+              disabled={iconBusy}
+              className="h-7 flex-none rounded-[2px] px-3 text-[11px] font-semibold disabled:opacity-50"
               style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
             >
-              저장
+              {iconBusy ? "저장 중..." : "저장"}
             </button>
           )}
 
           {(appIconUrl || iconPreview) && (
             <button
               onClick={handleResetIcon}
-              className="h-7 flex-none rounded-[2px] border px-2.5 text-[10.5px]"
+              disabled={iconBusy}
+              className="h-7 flex-none rounded-[2px] border px-2.5 text-[10.5px] disabled:opacity-50"
               style={{ borderColor: "var(--danger-soft-bg)", color: "var(--danger)" }}
             >
               기본 아이콘으로 되돌리기

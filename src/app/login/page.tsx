@@ -43,7 +43,7 @@ export default function LoginPage() {
         <div className="mb-6 flex flex-col items-center gap-1.5">
           <div
             className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-[4px]"
-            style={{ background: "var(--accent)" }}
+            style={{ background: appIconUrl ? "#ffffff" : "var(--accent)" }}
           >
             {appIconUrl ? (
               // eslint-disable-next-line @next/next/no-img-element

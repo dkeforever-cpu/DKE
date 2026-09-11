@@ -507,6 +507,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [backendError, setBackendError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // appIconUrl이 "drive:<id>" 형태(로고를 드라이브에 올린 경우)면, 실제
+  // 이미지를 한 번 받아와 data URI로 바꿔서 여기 담아둔다 — 컴포넌트들은
+  // 이 값이 있으면 그걸, 없으면(=일반 data URI이거나 아이콘 없음) 원래
+  // 값을 그대로 쓴다.
+  const [resolvedIconUrl, setResolvedIconUrl] = useState<string | null>(null);
 
   // 방금 로컬에서 만든 변경(pushCreate/Update/Delete)이 서버에 아직
   // 반영되지 않았을 수 있는 짧은 구간을 기록해둔다 — 이 구간에 백그라운드
@@ -1579,22 +1584,43 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [pushUpdate, logActivity]
   );
 
-  // 로그인 화면·상단바 로고에 쓸 아이콘(data URI, 수만자). 빈 문자열을
-  // 주면 기본 내장 아이콘으로 되돌린다. 일반 pushUpdate(GET 주소 하나에
-  // 전부 실어 보내는 방식)로 보내면 이렇게 큰 값 때문에 주소 길이 제한에
-  // 걸려 400으로 거부되므로, google.script.run 기반의 별도 경로
-  // (updateAppIconDirect)로 보낸다 — 그 제한이 없다.
+  // 로그인 화면·상단바 로고에 쓸 아이콘. 백엔드 연동 모드에서는
+  // "drive:<driveFileId>"(짧음, 실제 이미지는 드라이브에 파일로 있음),
+  // 로컬 저장 모드에서는 data URI를 그대로 저장한다. 빈 문자열을 주면
+  // 기본 내장 아이콘으로 되돌린다. 값 자체가 이제 항상 짧아서(드라이브
+  // 참조거나, 로컬 모드는 pushUpdate가 애초에 아무 것도 안 보냄) 일반
+  // pushUpdate로 충분하다.
   const updateAppIcon = useCallback(
     (url: string) => {
       setData((prev) => ({ ...prev, settings: { ...prev.settings, appIconUrl: url } }));
-      if (backendConfigured) {
-        markLocalMutation();
-        gas.updateAppIconDirect(url).catch((err) => setSyncError(errorMessage(err)));
-      }
+      pushUpdate("settings", "app", { appIconUrl: url });
       logActivity("update", "settings", "app", url ? "프로그램 아이콘 변경" : "프로그램 아이콘을 기본값으로 되돌림");
     },
-    [backendConfigured, markLocalMutation, logActivity]
+    [pushUpdate, logActivity]
   );
+
+  // "drive:<id>" 형태의 로고를 실제 이미지(data URI)로 한 번 받아온다.
+  // 값이 바뀔 때마다(아이콘을 새로 등록/초기화했을 때) 다시 받아온다.
+  // (아닌 경우는 여기서 아무 것도 안 해도 된다 — 아래 노출 값 계산에서
+  // rawAppIconUrl을 그대로 쓰도록 걸러지기 때문에, 여기서 굳이 상태를
+  // 리셋할 필요가 없다.)
+  const rawAppIconUrl = data.settings.appIconUrl;
+  useEffect(() => {
+    if (!rawAppIconUrl || !rawAppIconUrl.startsWith("drive:") || !backendConfigured) return;
+    let cancelled = false;
+    const driveFileId = rawAppIconUrl.slice("drive:".length);
+    gas
+      .getIcon(driveFileId)
+      .then((res) => {
+        if (!cancelled && res.base64) setResolvedIconUrl(`data:${res.mimeType};base64,${res.base64}`);
+      })
+      .catch(() => {
+        // 무시 — 못 받아오면 기본 아이콘이 대신 보일 뿐이다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rawAppIconUrl, backendConfigured]);
 
   const value: StoreContextValue = {
     teams: data.teams,
@@ -1613,7 +1639,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     newsItems: visibleNewsItems,
     dismissNewsItem,
     appTitle: data.settings.appTitle,
-    appIconUrl: data.settings.appIconUrl,
+    appIconUrl: rawAppIconUrl?.startsWith("drive:") ? (resolvedIconUrl ?? undefined) : rawAppIconUrl,
     currentUser,
     ready,
     backendConfigured,

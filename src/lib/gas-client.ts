@@ -116,7 +116,6 @@ interface GoogleScriptRun {
   withFailureHandler: (cb: (err: Error) => void) => GoogleScriptRun;
   getUploadUrl: (token: string, fileName: string, mimeType: string, folder: string) => void;
   finalizeDirectUpload: (token: string, uploadSessionUrl: string) => void;
-  updateAppIconDirect: (token: string, dataUri: string) => void;
 }
 
 function getScriptRun(): GoogleScriptRun | undefined {
@@ -188,17 +187,6 @@ async function uploadFile(
   return result;
 }
 
-// 로고 이미지(data URI)는 수만자짜리 값이라, 일반 update(GET 주소 하나에
-// 전부 실어 보내는 방식)로 보내면 주소 길이 제한에 걸려 실패한다.
-// google.script.run은 그 제한이 없어서 안전하게 보낼 수 있다.
-function updateAppIconDirect(dataUri: string): Promise<unknown> {
-  const cfg = getBackendConfig();
-  if (!cfg) {
-    throw new GasApiError("연동된 구글 시트가 없습니다. 설정에서 Apps Script 웹앱 URL을 등록해주세요.");
-  }
-  return scriptRun((run) => run.updateAppIconDirect(cfg.token, dataUri));
-}
-
 export const gas = {
   testConnection: (cfg: BackendConfig) => call<{ pong: boolean }>("ping", {}, cfg),
   bootstrap: <T>() => call<T>("bootstrap"),
@@ -208,6 +196,11 @@ export const gas = {
   list: <T>(entity: string, options?: { userId?: string; limit?: number }) =>
     call<T[]>("list", { entity, options }),
   uploadFile,
-  updateAppIconDirect,
+  // 로고 이미지는 드라이브에 파일로 올려 driveFileId만 시트에 저장하고
+  // (큰 값을 시트 셀에 직접 넣으면 글자 수 제한에 걸림), 화면에 띄울 때는
+  // 이 액션으로 서버가 대신 파일을 읽어 base64로 응답에 실어 돌려준다 —
+  // 드라이브 공개 링크를 <img src>에 직접 거는 방식은 안정적으로 뜨지
+  // 않아서(핫링크 제한) 쓰지 않는다.
+  getIcon: (driveFileId: string) => call<{ mimeType: string; base64: string }>("getIcon", { driveFileId }),
   deleteFile: (driveFileId: string) => call<{ deleted: boolean }>("deleteFile", { driveFileId }),
 };
