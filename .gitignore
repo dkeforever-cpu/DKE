@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# GAS bundle build outputs — apps-script/build/*.mjs (+entry.jsx, next-navigation-shim.js)
+# are the real build pipeline and ARE tracked; these are regenerated files.
+apps-script/build/out.css
+apps-script/build/out.js
+apps-script/build/out.wrapped.js
+apps-script/build/App.html
+apps-script/build/final.html
